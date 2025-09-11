@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Report - StrategIQ</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="main-header">
+    <div class="nav-left">
+      <a href="index.html" class="logo">
+        <img src="logo.jpg" alt="StrategIQ Logo" style="height:64px; width:auto; display:block;">
+      </a>
+      <nav class="main-nav">
+        <a href="loggedin.html" class="nav-link">Dashboard</a>
+        <a href="reports.html" class="nav-link admin-only active">Reports</a>
+      </nav>
+    </div>
+    <div class="nav-right">
+      <div class="lang-switch">
+        <a href="#" class="active">English</a> | <a href="#">हिन्दी</a>
+      </div>
+      <div class="user-dropdown">
+        <div class="user-name">Sunil Sharma ▼</div>
+        <div class="dropdown-content">
+          <a href="profile.html">My Profile</a>
+          <a href="logout.html" class="logout-btn">Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <h2>Overall Attendance Report</h2>
+      <div class="today-date">Generated on: Thursday, 11 September 2025</div>
+    </div>
+    <div class="filter-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div class="filter-group">
+      <label for="class-select">Select Class:</label>
+      <select id="class-select" name="class">
+        <option value="all">All Classes</option>
+        <option value="VI-B">Class VI-B</option> 
+        <option value="VIII-C">Class VIII-A</option>
+        <option value="IX-B">Class X-A</option>
+        <option value="X-A">Class XI-B</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="date-range-select">Date Range:</label>
+      <select id="date-range-select" name="date-range">
+        <option value="today">Today</option>
+        <option value="last-7-days">Last 7 Days</option>
+        <option value="last-30-days">Last 30 Days</option>
+        <option value="custom">Custom Range</option>
+      </select>
+      <input type="date" id="start-date" style="display: none;">
+      <input type="date" id="end-date" style="display: none;">
+    </div>
+  </div>
+    <div style="width:100%; max-width:700px; margin:0 auto;">
+      <canvas id="attendanceChart" height="400"></canvas>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    &copy; 2025 Team StrategIQ — Smart India Hackathon | <a href="help.html">Help & Support</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script src="reports.js"></script>
+</body>
+</html>
