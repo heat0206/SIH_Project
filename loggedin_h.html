@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>उपस्थिति डैशबोर्ड</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="main-header">
+    <div class="nav-left">
+      <a href="index.html" class="logo">
+        <img src="logo.jpg" alt="StrategIQ लोगो" style="height:64px; width:auto; display:block;">
+      </a>
+      <nav class="main-nav">
+        <a href="index.html" class="nav-link active">डैशबोर्ड</a>
+        <a href="reports.html" class="nav-link admin-only">रिपोर्ट्स</a>
+      </nav>
+    </div>
+    <div class="nav-right">
+      <div class="lang-switch">
+        <a href="#" class="">English</a> | <a href="#" class="active">हिन्दी</a>
+      </div>
+      <div class="user-dropdown">
+        <div class="user-name">सुनीता शर्मा ▼</div>
+        <div class="dropdown-content">
+          <a href="profile.html">मेरी प्रोफ़ाइल</a>
+          <a href="logout.html" class="logout-btn">लॉगआउट</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+        <h2>स्वागत है, सुनील शर्मा</h2>
+        <div class="today-date">बुधवार, 11 सितंबर 2025</div>
+    </div>
+    <section class="class-list">
+      <div class="class-card">
+        <div class="class-info">
+            <div class="class-title">कक्षा VI - खंड B</div>
+            <div class="student-count">कुल छात्र: 45</div>
+        </div>
+        <button class="mark-attendance-btn">✔️ उपस्थिति दर्ज करें</button>
+      </div>
+      <div class="class-card attendance-marked">
+         <div class="class-info">
+            <div class="class-title">कक्षा VIII - खंड A</div>
+            <div class="student-count">कुल छात्र: 38</div>
+            <div class="attendance-summary">उपस्थित: 36, अनुपस्थित: 2</div>
+        </div>
+        <div class="status-section">
+             <div class="attendance-status">✅ उपस्थिति दर्ज की गई</div>
+             <a href="view-edit.html" class="view-edit-link">देखें/संपादित करें</a>
+        </div>
+      </div>
+      </section>
+  </main>
+
+  <footer class="site-footer">
+    &copy; 2025 टीम StrategIQ — स्मार्ट इंडिया हैकाथॉन | <a href="help.html">सहायता और समर्थन</a>
+  </footer>
+</body>
+</html>
