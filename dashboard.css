@@ -1,0 +1,224 @@
+.main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--text-dark);
+}
+
+.nav-left, .nav-right {
+  display: flex;
+  align-items: center;
+}
+
+.main-nav {
+  margin-left: 2rem;
+}
+.nav-link {
+  color: var(--text-light);
+  margin: 0 1rem;
+  font-weight: 500;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+.nav-link:hover {
+  color: var(--primary-color);
+}
+.nav-link.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.lang-switch a {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+.lang-switch a.active {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.user-dropdown {
+  position: relative;
+  margin-left: 1.5rem;
+  cursor: pointer;
+}
+.user-name {
+  font-weight: 500;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 150%;
+  background-color: var(--card-bg);
+  min-width: 160px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  z-index: 1;
+  overflow: hidden;
+}
+.dropdown-content a {
+  color: var(--text-dark);
+  padding: 12px 16px;
+  display: block;
+  font-size: 0.9rem;
+}
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+}
+.user-dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dashboard-main {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+  flex: 1 0 auto;
+}
+
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+.dashboard-header h2 {
+  font-size: 2rem;
+  font-weight: 600;
+}
+.today-date {
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.class-list {
+  display: flex;
+  flex-direction: row;
+  gap: 1.5rem;
+  justify-content: flex-start;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+/* Optional: Make cards a bit narrower for horizontal scrolling */
+.class-card {
+  min-width: 320px;
+  max-width: 360px;
+  flex: 0 0 auto;
+}
+
+.class-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.class-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0,0,0,0.08);
+}
+
+.class-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.student-count {
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+.attendance-summary {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.mark-attendance-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.2s ease;
+}
+.mark-attendance-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.class-card.attendance-marked {
+  border-left: 5px solid var(--secondary-color);
+}
+.status-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.attendance-status {
+  color: var(--secondary-color);
+  font-weight: 600;
+}
+.view-edit-link {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+  .nav-right {
+    margin-top: 1rem;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .main-nav {
+      margin-left: 0;
+      margin-top: 1rem;
+  }
+  .dashboard-main {
+      padding: 0 1rem;
+  }
+  .dashboard-header h2 {
+      font-size: 1.5rem;
+  }
+}
+
+/* Responsive: Stack vertically on small screens */
+@media (max-width: 900px) {
+  .class-list {
+    flex-direction: column;
+    gap: 1.2rem;
+    overflow-x: unset;
+    padding-bottom: 0;
+  }
+  .class-card {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+}

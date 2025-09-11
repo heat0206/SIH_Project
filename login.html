@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - Attendance System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-bg">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <label for="userid">Mobile Number or User ID</label>
+        <input type="text" id="userid" name="userid" required />
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+
+        <button type="submit" class="login-btn">Login</button>
+        <button type="button" class="otp-btn">Login with OTP</button>
+      </form>
+      <div class="auth-links">
+        <a href="forgot.html">Forgot Password?</a>
+      </div>
+    </div>
+  </div>
+  <footer class="site-footer">
+    &copy; 2025 Team StrategIQ — Smart India Hackathon | <a href="help.html">Help & Support</a>
+  </footer>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      window.location.href = 'loggedin.html';
+    });
+  </script>
+</body>
+</html>
