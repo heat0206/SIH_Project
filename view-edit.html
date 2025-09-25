@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>View/Edit Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="view-edit.css" />
+</head>
+<body>
+  <header class="main-header">
+    <div class="nav-left">
+      <a href="index.html" class="logo">
+        <img src="logo.jpg" alt="StrategIQ Logo" style="height:64px; width:auto; display:block;">
+      </a>
+      <nav class="main-nav">
+        <a href="Dashboard.html" class="nav-link">Dashboard</a>
+        <a href="reports.html" class="nav-link admin-only">Reports</a>
+      </nav>
+    </div>
+    <div class="nav-right">
+      <div class="lang-switch">
+        <a href="#" data-lang="en" class="active">English</a> | <a href="#" data-lang="hi">हिन्दी</a>
+      </div>
+      <div class="user-dropdown">
+        <div class="user-name">Sunil Sharma ▼</div>
+        <div class="dropdown-content">
+          <a href="profile.html">My Profile</a>
+          <a href="logout.html" class="logout-btn">Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <a href="Dashboard.html" class="back-fab" aria-label="Back to Dashboard" title="Back to Dashboard">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </a>
+
+  <main class="attendance-detail-container">
+    <div class="detail-header">
+      <div>
+        <div class="detail-title" id="classTitle">Class</div>
+        <div class="detail-meta" id="markedOnWrap">Marked on: <span id="markTime">-</span></div>
+        <div class="summary-chips">
+          <span class="chip success">Present: <span id="chipPresent">0</span></span>
+          <span class="chip warn">Absent: <span id="chipAbsent">0</span></span>
+          <span class="chip">Total: <span id="chipTotal">0</span></span>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="markAllPresent" class="btn-sm">Mark All Present</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-inner">
+        <div class="tabs" role="tablist">
+          <div class="tab active" data-filter="all" role="tab">All</div>
+          <div class="tab" data-filter="present" role="tab">Present</div>
+          <div class="tab" data-filter="absent" role="tab">Absent</div>
+        </div>
+        <input id="search" class="search-input" placeholder="Search by name or roll" />
+        <div class="density">
+          <button id="denseCompact" class="active" data-density="compact">Compact</button>
+          <button id="denseComfort" data-density="comfortable">Comfort</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-shell" id="listShell">
+      <div class="list-header" id="listHeader">
+        <div id="hdrName">Name</div>
+        <div id="hdrStatus">Status</div>
+      </div>
+      <div id="studentList" class="student-list"></div>
+    </div>
+
+    <div class="action-bar">
+      <div class="action-inner">
+        <div class="action-summary">
+          <span id="summaryText"><span id="presentCount">0</span> Present • <span id="absentCount">0</span> Absent</span>
+        </div>
+        <button id="saveChanges" class="save-btn">Save Changes</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    &copy; 2025 Team StrategIQ — Smart India Hackathon | <a href="help.html">Help & Support</a>
+  </footer>
+
+  <script src="view-edit.js"></script>
+</body>
+</html>
+
+

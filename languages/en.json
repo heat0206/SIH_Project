@@ -1,0 +1,36 @@
+{
+  "class": "Class",
+  "marked_on": "Marked on:",
+  "present": "Present",
+  "absent": "Absent",
+  "total": "Total",
+  "mark_all_present": "Mark All Present",
+  "all": "All",
+  "present_tab": "Present",
+  "absent_tab": "Absent",
+  "search_placeholder": "Search by name or roll",
+  "compact": "Compact",
+  "comfortable": "Comfort",
+  "name": "Name",
+  "status": "Status",
+  "save_changes": "Save Changes",
+  "help_support": "Help & Support",
+  "present_count": "Present",
+  "absent_count": "Absent",
+
+  "pageTitle": "Attendance Dashboard",
+  "navDashboard": "Dashboard",
+  "navReports": "Reports",
+  "profileLink": "My Profile",
+  "logoutLink": "Logout",
+  "welcomeMessage": "Welcome, Sunil Sharma",
+  
+  "totalStudentsLabel": "Total Students",
+  "presentLabel": "Present",
+  "absentLabel": "Absent",
+  "statusMarkedLabel": "✅ Attendance Marked",
+  "viewEditLink": "View/Edit",
+
+  "footerText": "© 2025 Team StrategIQ — Smart India Hackathon | ",
+  "footerHelpLink": "Help & Support"
+}

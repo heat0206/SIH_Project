@@ -1,0 +1,36 @@
+{
+  "class": "कक्षा",
+  "marked_on": "मार्क किया गया:",
+  "present": "उपस्थित",
+  "absent": "अनुपस्थित",
+  "total": "कुल",
+  "mark_all_present": "सभी को उपस्थित चिह्नित करें",
+  "all": "सभी",
+  "present_tab": "उपस्थित",
+  "absent_tab": "अनुपस्थित",
+  "search_placeholder": "नाम या रोल से खोजें",
+  "compact": "कॉम्पैक्ट",
+  "comfortable": "आरामदायक",
+  "name": "नाम",
+  "status": "स्थिति",
+  "save_changes": "परिवर्तन सहेजें",
+  "help_support": "सहायता और समर्थन",
+  "present_count": "उपस्थित",
+  "absent_count": "अनुपस्थित",
+
+  "pageTitle": "उपस्थिति डैशबोर्ड",
+  "navDashboard": "डैशबोर्ड",
+  "navReports": "रिपोर्ट",
+  "profileLink": "मेरी प्रोफ़ाइल",
+  "logoutLink": "लॉग आउट",
+  "welcomeMessage": "नमस्ते, सुनील शर्मा",
+  
+  "totalStudentsLabel": "कुल छात्र",
+  "presentLabel": "उपस्थित",
+  "absentLabel": "अनुपस्थित",
+  "statusMarkedLabel": "✅ उपस्थिति दर्ज की गई",
+  "viewEditLink": "देखें/संपादित करें",
+
+  "footerText": "© 2025 टीम स्ट्रैटेजिक — स्मार्ट इंडिया हैकथॉन | ",
+  "footerHelpLink": "सहायता और समर्थन"
+}

@@ -1,0 +1,18 @@
+{
+  "students": [
+    { "id": "S001", "roll": 1,  "name": "Aarav Patel",     "photo": "https://i.pravatar.cc/100?img=11", "present": true },
+    { "id": "S002", "roll": 2,  "name": "Isha Sharma",     "photo": "https://i.pravatar.cc/100?img=12", "present": true },
+    { "id": "S003", "roll": 3,  "name": "Rahul Verma",     "photo": "https://i.pravatar.cc/100?img=13", "present": false },
+    { "id": "S004", "roll": 4,  "name": "Neha Singh",      "photo": "https://i.pravatar.cc/100?img=14", "present": true },
+    { "id": "S005", "roll": 5,  "name": "Kabir Mehta",     "photo": "https://i.pravatar.cc/100?img=15", "present": true },
+    { "id": "S006", "roll": 6,  "name": "Ananya Gupta",    "photo": "https://i.pravatar.cc/100?img=16", "present": true },
+    { "id": "S007", "roll": 7,  "name": "Devansh Rao",     "photo": "https://i.pravatar.cc/100?img=17", "present": true },
+    { "id": "S008", "roll": 8,  "name": "Sanya Kapoor",    "photo": "https://i.pravatar.cc/100?img=18", "present": false },
+    { "id": "S009", "roll": 9,  "name": "Vikram Joshi",    "photo": "https://i.pravatar.cc/100?img=19", "present": true },
+    { "id": "S010", "roll": 10, "name": "Meera Nair",      "photo": "https://i.pravatar.cc/100?img=20", "present": true },
+    { "id": "S011", "roll": 11, "name": "Arjun Kulkarni",  "photo": "https://i.pravatar.cc/100?img=21", "present": true },
+    { "id": "S012", "roll": 12, "name": "Riya Desai",      "photo": "https://i.pravatar.cc/100?img=22", "present": true }
+  ]
+}
+
+

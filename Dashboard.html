@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title id="pageTitle">Attendance Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="main-header">
+    <div class="nav-left">
+      <a href="index.html" class="logo">
+        <img src="logo.jpg" alt="StrategIQ Logo" style="height:64px; width:auto; display:block;">
+      </a>
+      <nav class="main-nav">
+        <a href="Dashboard.html" class="nav-link active" id="navDashboard">Dashboard</a>
+        <a href="reports.html" class="nav-link admin-only" id="navReports">Reports</a>
+      </nav>
+    </div>
+    <div class="nav-right">
+      <div class="lang-switch">
+        <a href="#" data-lang="en" onclick="setLanguage('en'); return false;" class="active">English</a> | 
+        <a href="#" data-lang="hi" onclick="setLanguage('hi'); return false;">हिन्दी</a>
+      </div>
+      <div class="user-dropdown">
+        <div class="user-name">Sunil Sharma ▼</div>
+        <div class="dropdown-content">
+          <a href="profile.html" id="profileLink">My Profile</a>
+          <a href="logout.html" class="logout-btn" id="logoutLink">Logout</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="dashboard-header">
+      <h2 id="welcomeMessage">Welcome, Sunil Sharma</h2>
+      <div class="today-date">Wednesday, 24 September 2025</div>
+    </div>
+
+    <section class="class-list">
+
+      <div class="class-card attendance-marked">
+        <div class="class-info">
+          <div class="class-title">Class VI - Section B</div>
+          <div class="student-count" id="totalStudentsLabel_1">Total Students: 45</div>
+          <div class="attendance-summary" id="attendanceSummaryLabel_1">Present: 43, Absent: 2</div>
+        </div>
+        <div class="status-section">
+          <div class="attendance-status" id="statusMarkedLabel_1">✅ Attendance Marked</div>
+          <a href="view-edit.html?classId=VI-B" class="view-edit-link" id="viewEditLink_1">View/Edit</a>
+        </div>
+      </div>
+
+      <div class="class-card attendance-marked">
+        <div class="class-info">
+          <div class="class-title">Class VIII - Section A</div>
+          <div class="student-count" id="totalStudentsLabel_2">Total Students: 38</div>
+          <div class="attendance-summary" id="attendanceSummaryLabel_2">Present: 36, Absent: 2</div>
+        </div>
+        <div class="status-section">
+          <div class="attendance-status" id="statusMarkedLabel_2">✅ Attendance Marked</div>
+          <a href="view-edit.html?classId=VIII-A" class="view-edit-link" id="viewEditLink_2">View/Edit</a>
+        </div>
+      </div>
+
+      <div class="class-card attendance-marked">
+        <div class="class-info">
+          <div class="class-title">Class X - Section A</div>
+          <div class="student-count" id="totalStudentsLabel_3">Total Students: 40</div>
+          <div class="attendance-summary" id="attendanceSummaryLabel_3">Present: 39, Absent: 1</div>
+        </div>
+        <div class="status-section">
+          <div class="attendance-status" id="statusMarkedLabel_3">✅ Attendance Marked</div>
+          <a href="view-edit.html?classId=X-A" class="view-edit-link" id="viewEditLink_3">View/Edit</a>
+        </div>
+      </div>
+
+      <div class="class-card attendance-marked">
+        <div class="class-info">
+          <div class="class-title">Class XI - Section B</div>
+          <div class="student-count" id="totalStudentsLabel_4">Total Students: 35</div>
+          <div class="attendance-summary" id="attendanceSummaryLabel_4">Present: 33, Absent: 2</div>
+        </div>
+        <div class="status-section">
+          <div class="attendance-status" id="statusMarkedLabel_4">✅ Attendance Marked</div>
+          <a href="view-edit.html?classId=XI-B" class="view-edit-link" id="viewEditLink_4">View/Edit</a>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span id="footerText">&copy; 2025 Team StrategIQ — Smart India Hackathon | </span>
+    <a href="help.html" id="footerHelpLink">Help & Support</a>
+  </footer>
+
+  <script src="language.js"></script>
+</body>
+</html>
