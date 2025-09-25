@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>StrategIQ - Smart Attendance for Rural Schools</title>
+  <title id="title">StrategIQ - Smart Attendance for Rural Schools</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,57 +16,77 @@
       <img src="logo.jpg" alt="StrategIQ Logo" style="height:64px; width:auto; display:block;">
     </a>
     <nav style="display: flex; align-items: center; gap: 1.5rem;">
-      <!-- Example for dashboard.html -->
-<div class="lang-switch">
-  <a href="#" data-lang="en" class="active">English</a> | <a href="#" data-lang="hi">हिन्दी</a>
-</div>
-      <a href="login.html" class="btn btn-primary">Teacher Login</a>
+      <div class="lang-switch">
+        <a href="#" data-lang="en" onclick="setLanguage('en'); return false;" class="active">English</a> | 
+        <a href="#" data-lang="hi" onclick="setLanguage('hi'); return false;">हिन्दी</a>
+      </div>
+      <a href="login.html" class="btn btn-primary" id="nav.teacherLogin">Teacher Login</a>
+      <a href="student_login.html" class="btn btn-primary" id="nav.studentLogin">Student Login</a>
     </nav>
   </header>
 
   <main>
     <section class="hero">
-  <div class="hero-content">
-    <h1>Digitizing Attendance, Empowering Education.</h1>
-    <p class="subtitle">A low-cost, user-friendly attendance system using facial recognition, designed for the needs of rural Indian schools.</p>
-    <a href="login.html" class="btn btn-primary btn-large">Get Started</a>
-  </div>
-  
-  <div class="hero-image">
-    <img src="https://images.pexels.com/photos/8613089/pexels-photo-8613089.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Teacher with students in a rural classroom">
-  </div>
-</section>
+      <div class="hero-content">
+        <h1 id="hero.heading">Digitizing Attendance, Empowering Education.</h1>
+        <p class="subtitle" id="hero.subtitle">
+          A low-cost, user-friendly attendance system using facial recognition, designed for the needs of rural Indian schools.
+        </p>
+        <a href="login.html" class="btn btn-primary btn-large" id="hero.getStarted">Get Started</a>
+      </div>
+      
+      <div class="hero-image">
+        <img src="https://images.pexels.com/photos/8613089/pexels-photo-8613089.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="Teacher with students in a rural classroom">
+      </div>
+    </section>
 
     <section class="features">
-      <h2>Why Choose StrategIQ?</h2>
+      <h2 id="features.title">Why Choose StrategIQ?</h2>
       <div class="features-grid">
+
         <div class="feature-card">
           <div class="feature-icon">⏱️</div>
-          <h3>Instant Attendance</h3>
-          <p>Mark attendance for an entire class in seconds using a single photo, saving valuable instructional time.</p>
+          <h3 id="features.instant.title">Instant Attendance</h3>
+          <p id="features.instant.desc">
+            Mark attendance for an entire class in seconds using a single photo, saving valuable instructional time.
+          </p>
         </div>
+
         <div class="feature-card">
           <div class="feature-icon">🌐</div>
-          <h3>Works Offline</h3>
-          <p>Our system is designed for rural areas. Mark attendance without an internet connection and sync data later.</p>
+          <h3 id="features.offline.title">Works Offline</h3>
+          <p id="features.offline.desc">
+            Our system is designed for rural areas. Mark attendance without an internet connection and sync data later.
+          </p>
         </div>
+
         <div class="feature-card">
           <div class="feature-icon">📊</div>
-          <h3>Automated Reports</h3>
-          <p>Generate daily, monthly, and Mid-Day Meal scheme reports with a single click, eliminating manual errors.</p>
+          <h3 id="features.reports.title">Automated Reports</h3>
+          <p id="features.reports.desc">
+            Generate daily, monthly, and Mid-Day Meal scheme reports with a single click, eliminating manual errors.
+          </p>
         </div>
-         <div class="feature-card">
+
+        <div class="feature-card">
           <div class="feature-icon">📱</div>
-          <h3>Simple & Accessible</h3>
-          <p>Works on any basic smartphone with no need for expensive hardware. The interface is available in multiple languages.</p>
+          <h3 id="features.accessible.title">Simple & Accessible</h3>
+          <p id="features.accessible.desc">
+            Works on any basic smartphone with no need for expensive hardware. The interface is available in multiple languages.
+          </p>
         </div>
+
       </div>
     </section>
   </main>
-  
+
   <footer class="site-footer">
-    &copy; 2025 Team StrategIQ — Smart India Hackathon | <a href="help.html">Help & Support</a>
+    <span id="footer.copyright">&copy; 2025 Team StrategIQ — Smart India Hackathon</span> |
+    <a href="help.html" id="footer.help">Help & Support</a>
   </footer>
+
+  <script src="language.js"></script>
+
 
 </body>
 </html>

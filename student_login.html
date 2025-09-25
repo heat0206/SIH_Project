@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title id="loginPageTitle">Login - Student Portal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-bg">
+  <div class="auth-container">
+    <div class="auth-card">
+      <h2 id="loginTitle">Student Login</h2>
+      <form id="studentLoginForm">
+        <label for="studentid" id="studentidLabel">Mobile Number or Student ID</label>
+        <input type="text" id="studentid" name="studentid" required />
+
+        <label for="password" id="passwordLabel">Password</label>
+        <input type="password" id="password" name="password" required />
+
+        <button type="submit" class="login-btn" id="studentLoginBtn">Login</button>
+        <button type="button" class="otp-btn" id="otpBtn">Login with OTP</button>
+      </form>
+      <div class="auth-links">
+        <a href="student-forgot.html" id="forgotLink">Forgot Password?</a>
+      </div>
+    </div>
+  </div>
+  <footer class="site-footer">
+    &copy; 2025 Team StrategIQ — Smart India Hackathon | <a href="help.html" id="helpSupportLink">Help & Support</a>
+  </footer>
+  <script>
+    document.getElementById('studentLoginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      window.location.href = 'StudentDashboard.html';
+    });
+
+    // Optional: handle OTP click (stub)
+    document.getElementById('otpBtn').addEventListener('click', function() {
+      // Redirect to OTP flow page if you have one
+      // window.location.href = 'student-otp.html';
+      alert('OTP login coming soon.');
+    });
+  </script>
+</body>
+</html>

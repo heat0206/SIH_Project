@@ -17,7 +17,7 @@
   "help_support": "Help & Support",
   "present_count": "Present",
   "absent_count": "Absent",
-
+  
   "pageTitle": "Attendance Dashboard",
   "navDashboard": "Dashboard",
   "navReports": "Reports",
@@ -32,5 +32,43 @@
   "viewEditLink": "View/Edit",
 
   "footerText": "© 2025 Team StrategIQ — Smart India Hackathon | ",
-  "footerHelpLink": "Help & Support"
+  "footerHelpLink": "Help & Support",
+  
+  "title": "StrategIQ - Smart Attendance for Rural Schools",
+  "lang": {
+    "en": "English",
+    "hi": "हिन्दी"
+  },
+  "nav": {
+    "teacherLogin": "Teacher Login",
+    "studentLogin": "Student Login"
+  },
+  "hero": {
+    "heading": "Digitizing Attendance, Empowering Education.",
+    "subtitle": "A low-cost, user-friendly attendance system using facial recognition, designed for the needs of rural Indian schools.",
+    "getStarted": "Get Started"
+  },
+  "features": {
+    "title": "Why Choose StrategIQ?",
+    "instant": {
+      "title": "Instant Attendance",
+      "desc": "Mark attendance for an entire class in seconds using a single photo, saving valuable instructional time."
+    },
+    "offline": {
+      "title": "Works Offline",
+      "desc": "Our system is designed for rural areas. Mark attendance without an internet connection and sync data later."
+    },
+    "reports": {
+      "title": "Automated Reports",
+      "desc": "Generate daily, monthly, and Mid-Day Meal scheme reports with a single click, eliminating manual errors."
+    },
+    "accessible": {
+      "title": "Simple & Accessible",
+      "desc": "Works on any basic smartphone with no need for expensive hardware. The interface is available in multiple languages."
+    }
+  },
+  "footer": {
+    "copyright": "© 2025 Team StrategIQ — Smart India Hackathon",
+    "help": "Help & Support"
+  }
 }
