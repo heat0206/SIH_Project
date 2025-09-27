@@ -39,7 +39,20 @@
   <main class="dashboard-main">
     <div class="dashboard-header">
       <h2 id="welcomeMessage">Welcome, Sunil Sharma</h2>
-      <div class="today-date">Wednesday, 24 September 2025</div>
+      <div class="date-selector">
+        <div class="date-input-wrapper">
+          <input type="date" id="datePicker" class="date-picker" style="display: none;" />
+          <div class="date-display" id="dateDisplay">24 September 2025</div>
+          <div class="calendar-icon" onclick="document.getElementById('datePicker').showPicker()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+              <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" stroke-width="2"/>
+              <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" stroke-width="2"/>
+              <line x1="3" y1="10" x2="21" y2="10" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
     </div>
 
     <section class="class-list">
@@ -101,5 +114,6 @@
   </footer>
 
   <script src="language.js"></script>
+  <script src="dashboard.js"></script>
 </body>
 </html>

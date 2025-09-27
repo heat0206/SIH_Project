@@ -8,6 +8,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="view-edit.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Test if Chart.js loaded
+    window.addEventListener('load', function() {
+      if (typeof Chart === 'undefined') {
+        console.error('Chart.js failed to load');
+        document.getElementById('attendanceChart').style.display = 'none';
+        document.querySelector('.chart-wrapper').innerHTML = '<div style="text-align: center; padding: 2rem; color: #666;">Chart loading failed</div>';
+      } else {
+        console.log('Chart.js loaded successfully');
+      }
+    });
+  </script>
 </head>
 <body>
   <header class="main-header">
@@ -40,51 +53,73 @@
     </svg>
   </a>
 
-  <main class="attendance-detail-container">
-    <div class="detail-header">
-      <div>
-        <div class="detail-title" id="classTitle">Class</div>
-        <div class="detail-meta" id="markedOnWrap">Marked on: <span id="markTime">-</span></div>
-        <div class="summary-chips">
-          <span class="chip success">Present: <span id="chipPresent">0</span></span>
-          <span class="chip warn">Absent: <span id="chipAbsent">0</span></span>
-          <span class="chip">Total: <span id="chipTotal">0</span></span>
+  <main class="main-container">
+    <div class="attendance-detail-container">
+      <div class="detail-header">
+        <div>
+          <div class="detail-title" id="classTitle">Class VI - Section B</div>
+          <div class="detail-meta" id="markedOnWrap">Marked on: <span id="markTime">-</span></div>
+          <div class="summary-chips">
+            <span class="chip success">Present: <span id="chipPresent">0</span></span>
+            <span class="chip warn">Absent: <span id="chipAbsent">0</span></span>
+            <span class="chip">Total: <span id="chipTotal">0</span></span>
+          </div>
+        </div>
+        <div class="controls">
+          <button id="markAllPresent" class="btn-sm">Mark All Present</button>
         </div>
       </div>
-      <div class="controls">
-        <button id="markAllPresent" class="btn-sm">Mark All Present</button>
+
+      <div class="toolbar">
+        <div class="toolbar-inner">
+          <div class="tabs" role="tablist">
+            <div class="tab active" data-filter="all" role="tab">All</div>
+            <div class="tab" data-filter="present" role="tab">Present</div>
+            <div class="tab" data-filter="absent" role="tab">Absent</div>
+          </div>
+          <input id="search" class="search-input" placeholder="Search by name or roll" />
+          <div class="density">
+            <button id="denseCompact" class="active" data-density="compact">Compact</button>
+            <button id="denseComfort" data-density="comfortable">Comfort</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="list-shell" id="listShell">
+        <div class="list-header" id="listHeader">
+          <div id="hdrName">Name</div>
+          <div id="hdrStatus">Status</div>
+          <div id="hdrNotify">Notify</div>
+        </div>
+        <div id="studentList" class="student-list"></div>
+      </div>
+
+      <div class="action-bar">
+        <div class="action-inner">
+          <div class="action-summary">
+            <span id="summaryText"><span id="presentCount">0</span> Present • <span id="absentCount">0</span> Absent</span>
+          </div>
+          <button id="saveChanges" class="save-btn">Save Changes</button>
+        </div>
       </div>
     </div>
 
-    <div class="toolbar">
-      <div class="toolbar-inner">
-        <div class="tabs" role="tablist">
-          <div class="tab active" data-filter="all" role="tab">All</div>
-          <div class="tab" data-filter="present" role="tab">Present</div>
-          <div class="tab" data-filter="absent" role="tab">Absent</div>
-        </div>
-        <input id="search" class="search-input" placeholder="Search by name or roll" />
-        <div class="density">
-          <button id="denseCompact" class="active" data-density="compact">Compact</button>
-          <button id="denseComfort" data-density="comfortable">Comfort</button>
-        </div>
+    <div class="chart-container">
+      <div class="chart-header">
+        <h3>Attendance Overview</h3>
       </div>
-    </div>
-
-    <div class="list-shell" id="listShell">
-      <div class="list-header" id="listHeader">
-        <div id="hdrName">Name</div>
-        <div id="hdrStatus">Status</div>
+      <div class="chart-wrapper">
+        <canvas id="attendanceChart" width="200" height="200"></canvas>
       </div>
-      <div id="studentList" class="student-list"></div>
-    </div>
-
-    <div class="action-bar">
-      <div class="action-inner">
-        <div class="action-summary">
-          <span id="summaryText"><span id="presentCount">0</span> Present • <span id="absentCount">0</span> Absent</span>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <span class="legend-color present"></span>
+          <span class="legend-text">Present: <span id="chartPresentPercent">0%</span></span>
         </div>
-        <button id="saveChanges" class="save-btn">Save Changes</button>
+        <div class="legend-item">
+          <span class="legend-color absent"></span>
+          <span class="legend-text">Absent: <span id="chartAbsentPercent">0%</span></span>
+        </div>
       </div>
     </div>
   </main>

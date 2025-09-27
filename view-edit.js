@@ -4,8 +4,119 @@
   const classParam = url.searchParams.get('class') || 'Class';
   const classId = url.searchParams.get('classId') || 'default';
   const timeParam = url.searchParams.get('time') || new Date().toISOString();
-  document.getElementById('classTitle').textContent = classParam;
+  
+  // Convert classId to proper class title format
+  function getClassTitleFromId(classId) {
+    if (classId === 'default') return 'Class VI - Section B';
+    
+    // Parse classId format like "VI-B", "VIII-A", "X-A", "XI-B"
+    const match = classId.match(/^([IVX]+)-([AB])$/);
+    if (match) {
+      const [, romanNumeral, section] = match;
+      return `Class ${romanNumeral} - Section ${section}`;
+    }
+    
+    // Fallback: return the classId as is or a default
+    return classId || 'Class VI - Section B';
+  }
+  
+  const classTitle = getClassTitleFromId(classId);
+  document.getElementById('classTitle').textContent = classTitle;
   document.getElementById('markTime').textContent = new Date(timeParam).toLocaleString();
+
+  // Initialize chart
+  let attendanceChart = null;
+
+  function initializeChart() {
+    const canvas = document.getElementById('attendanceChart');
+    if (!canvas) {
+      console.error('Chart canvas not found');
+      return;
+    }
+    
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js library not loaded');
+      return;
+    }
+    
+    console.log('Creating chart with canvas:', canvas);
+    const ctx = canvas.getContext('2d');
+    attendanceChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Present', 'Absent'],
+        datasets: [{
+          data: [0, 0], // Start with empty data
+          backgroundColor: ['#e5e7eb', '#e5e7eb'],
+          borderWidth: 0,
+          cutout: '70%'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        aspectRatio: 1,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                return `${context.label}: ${context.parsed} (${percentage}%)`;
+              }
+            }
+          }
+        },
+        layout: {
+          padding: {
+            top: 5,
+            bottom: 5,
+            left: 5,
+            right: 5
+          }
+        },
+        elements: {
+          arc: {
+            borderWidth: 0
+          }
+        }
+      }
+    });
+    
+    console.log('Chart initialized successfully');
+  }
+
+  function updateChart(presentCount, absentCount) {
+    if (attendanceChart) {
+      const total = presentCount + absentCount;
+      
+      // If no students, show empty chart
+      if (total === 0) {
+        attendanceChart.data.datasets[0].data = [0, 0];
+        attendanceChart.data.datasets[0].backgroundColor = ['#e5e7eb', '#e5e7eb'];
+        document.getElementById('chartPresentPercent').textContent = '0%';
+        document.getElementById('chartAbsentPercent').textContent = '0%';
+      } else {
+        attendanceChart.data.datasets[0].data = [presentCount, absentCount];
+        attendanceChart.data.datasets[0].backgroundColor = ['#10b981', '#ef4444'];
+        
+        const presentPercent = ((presentCount / total) * 100).toFixed(1);
+        const absentPercent = ((absentCount / total) * 100).toFixed(1);
+        
+        // Update legend percentages
+        document.getElementById('chartPresentPercent').textContent = `${presentPercent}%`;
+        document.getElementById('chartAbsentPercent').textContent = `${absentPercent}%`;
+      }
+      
+      attendanceChart.update();
+      console.log(`Chart updated: Present=${presentCount}, Absent=${absentCount}, Total=${total}`);
+    } else {
+      console.log('Chart not initialized yet');
+    }
+  }
 
   // i18n: strings
   const STRINGS = {
@@ -94,7 +205,8 @@
     const res = await fetch(`languages/${lang}.json`);
     const dict = await res.json();
 
-    document.getElementById('classTitle').textContent = dict.class;
+    // Don't override the class title - keep the dynamically generated one
+    // document.getElementById('classTitle').textContent = dict.class;
     document.getElementById('markedOnWrap').childNodes[0].textContent = dict.marked_on + " ";
     document.getElementById('chipPresent').parentNode.childNodes[0].textContent = dict.present + ": ";
     document.getElementById('chipAbsent').parentNode.childNodes[0].textContent = dict.absent + ": ";
@@ -173,6 +285,9 @@
       if (chipPresentEl) chipPresentEl.textContent = present;
       if (chipAbsentEl) chipAbsentEl.textContent = absent;
       if (chipTotalEl) chipTotalEl.textContent = state.students.length;
+      
+      // Update chart
+      updateChart(present, absent);
     }
 
     function renderList() {
@@ -200,6 +315,9 @@
               <span class="slider"></span>
             </label>
           </div>
+          <div class="notify-column">
+            ${!s.present ? `<button class="notify-btn" data-id="${s.id}" data-name="${s.name}" title="Notify Parent">Notify Parent</button>` : '<div class="notify-placeholder"></div>'}
+          </div>
         `;
         const checkbox = row.querySelector('input[type="checkbox"]');
         const pill = row.querySelector('.status-pill');
@@ -209,7 +327,33 @@
           pill.textContent = s.present ? sTr.present : sTr.absent;
           pill.className = 'status-pill ' + (s.present ? 'present' : 'absent');
           updateCounts();
+          // Re-render to show/hide notify button
+          renderList();
         });
+        
+        // Add notify button event listener for absent students
+        const notifyBtn = row.querySelector('.notify-btn');
+        if (notifyBtn) {
+          notifyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const studentName = notifyBtn.getAttribute('data-name');
+            const currentDate = new Date().toLocaleDateString();
+            const smsMessage = `This is to notify you that ${studentName} is absent for the class ${classTitle} on ${currentDate}.`;
+            
+            // Simulate SMS sending (in real implementation, this would call an SMS API)
+            if (confirm(`Send SMS notification to parent?\n\nMessage: "${smsMessage}"`)) {
+              // Here you would integrate with your SMS service
+              // For now, we'll just show a success message
+              alert('SMS notification sent successfully!');
+              
+              // Optional: Disable the button after sending
+              notifyBtn.disabled = true;
+              notifyBtn.textContent = 'Notified';
+              notifyBtn.title = 'Notification sent';
+            }
+          });
+        }
+        
         listEl.appendChild(row);
       });
       updateCounts();
@@ -222,7 +366,7 @@
 
     document.getElementById('saveChanges').addEventListener('click', () => {
       // Placeholder: simulate saving
-      alert('Attendance updated for ' + classParam + '\nPresent: ' + state.students.filter(s=>s.present).length + '\nAbsent: ' + state.students.filter(s=>!s.present).length);
+      alert('Attendance updated for ' + classTitle + '\nPresent: ' + state.students.filter(s=>s.present).length + '\nAbsent: ' + state.students.filter(s=>!s.present).length);
     });
 
     searchEl.addEventListener('input', renderList);
@@ -258,6 +402,11 @@
     }
 
     applyDensity();
+    
+    // Initialize chart first, then render list
+    console.log('Initializing chart...');
+    initializeChart();
+    
     renderList();
     // Apply persisted language
     applyLanguage(currentLang);
