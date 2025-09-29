@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="recent-scans.css" />
 </head>
 <body>
   <header class="main-header">
@@ -61,10 +62,18 @@
         <div class="class-info">
           <div class="class-title">Class VI - Section B</div>
           <div class="student-count" id="totalStudentsLabel_1">Total Students: 45</div>
-          <div class="attendance-summary" id="attendanceSummaryLabel_1">Present: 43, Absent: 2</div>
+          <div class="attendance-summary" id="attendanceSummaryLabel_1">
+            <span>Present: <strong>43</strong></span>
+            <span>Absent: <strong>2</strong></span>
+          </div>
         </div>
         <div class="status-section">
-          <div class="attendance-status" id="statusMarkedLabel_1">✅ Attendance Marked</div>
+          <div class="attendance-status" id="statusMarkedLabel_1">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zM7 11.4L3.6 8 5 6.6l2 2 4-4L12.4 6 7 11.4z" fill="currentColor"/>
+            </svg>
+            Attendance Marked
+          </div>
           <a href="view-edit.html?classId=VI-B" class="view-edit-link" id="viewEditLink_1">View/Edit</a>
         </div>
       </div>
@@ -106,6 +115,14 @@
       </div>
 
     </section>
+
+    <!-- Recent Attendance Scans Section -->
+    <div class="recent-scans-section">
+      <h3 id="recentScansTitle">Recent Attendance Scans</h3>
+      <div class="recent-scans-container" id="recentScansContainer">
+        <!-- Content will be populated by JavaScript -->
+      </div>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -115,5 +132,6 @@
 
   <script src="language.js"></script>
   <script src="dashboard.js"></script>
+  <script src="recent-scans-new.js"></script>
 </body>
 </html>

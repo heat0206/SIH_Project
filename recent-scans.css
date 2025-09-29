@@ -1,0 +1,88 @@
+/* Recent Scans Section Styles */
+.recent-scans-section {
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  max-width: 1200px;
+  border: 1px solid var(--border-color);
+}
+
+.recent-scans-section h3 {
+  margin-bottom: 1.2rem;
+  color: var(--text-dark);
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.recent-scans-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.student-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 8px;
+  background: var(--bg-color);
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.student-row:hover {
+  background: #ffffff;
+  border-color: var(--border-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.student-name {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.student-roll {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.scan-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.scan-time {
+  font-size: 0.9rem;
+  color: var(--text-light);
+}
+
+.status-chip {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-present {
+  background: var(--secondary-color);
+  color: #ffffff;
+}
+
+.status-absent {
+  background: #dc2626;
+  color: #ffffff;
+  opacity: 0.9;
+}

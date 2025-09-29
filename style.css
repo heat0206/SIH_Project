@@ -36,6 +36,83 @@ a {
   color: var(--primary-color);
 }
 
+/* Class Cards Grid Layout */
+.class-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.class-card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.class-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.class-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.25rem;
+  line-height: 1.4;
+}
+
+.student-count {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.attendance-summary {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.status-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.attendance-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--secondary-color);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.view-edit-link {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  background: var(--primary-color);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.view-edit-link:hover {
+  background: var(--primary-hover);
+}
+
 /* --- 2. Main Header / Navigation --- */
 .main-header {
   display: flex;

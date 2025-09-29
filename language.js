@@ -18,7 +18,11 @@ function flattenTranslations(object, prefix = "") {
 }
 
 // Function to fetch the language file and update the page
-const setLanguage = async (lang) => {
+window.setLanguage = async function(lang) {
+    // Update recent scans section if the function exists
+    if (typeof updateRecentScans === 'function') {
+        updateRecentScans(lang);
+    }
   const response = await fetch(`languages/${lang}.json`);
   const raw = await response.json();
   translations = flattenTranslations(raw);
