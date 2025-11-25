@@ -4,6 +4,8 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { db } from '../firebase';
+import { collection, getDocs, updateDoc, doc, query, where, writeBatch } from 'firebase/firestore';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -14,28 +16,149 @@ const AttendanceView = () => {
     const [students, setStudents] = useState([]);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const [density, setDensity] = useState('comfortable'); // Default to comfortable
+    const [density, setDensity] = useState('comfortable');
+    const [loading, setLoading] = useState(true);
 
-    // Mock data generator
+    // Fetch students from Firestore
     useEffect(() => {
-        const mockStudents = Array.from({ length: 12 }).map((_, i) => ({
-            id: 'S' + String(i + 1).padStart(3, '0'),
-            roll: i + 1,
-            name: `Student ${i + 1}`,
-            photo: `https://i.pravatar.cc/100?img=${(i % 70) + 1}`,
-            present: Math.random() > 0.15
-        }));
-        setStudents(mockStudents);
+        const fetchStudents = async () => {
+            setLoading(true);
+            try {
+                // For demonstration, we fetch all or filter by class if we had that field
+                // Using a simple query for now
+                const studentsRef = collection(db, 'students');
+                const q = classId === 'default'
+                    ? studentsRef
+                    : query(studentsRef, where('classId', '==', classId));
+
+                const querySnapshot = await getDocs(q);
+                const fetchedStudents = querySnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                // Sort by roll number
+                fetchedStudents.sort((a, b) => (a.roll || 0) - (b.roll || 0));
+                setStudents(fetchedStudents);
+            } catch (error) {
+                console.error("Error fetching students:", error);
+                // Fallback to empty or show error
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudents();
     }, [classId]);
 
-    const handleToggleAttendance = (id) => {
-        setStudents(prev => prev.map(s =>
-            s.id === id ? { ...s, present: !s.present } : s
-        ));
+    // RFID Scanning Logic
+    useEffect(() => {
+        let buffer = '';
+
+        const handleKeyDown = async (e) => {
+            // If user is typing in the search box, don't capture as RFID
+            if (e.target.tagName === 'INPUT') return;
+
+            if (e.key === 'Enter') {
+                if (buffer) {
+                    await handleRFIDScan(buffer);
+                    buffer = '';
+                }
+            } else if (e.key.length === 1) {
+                buffer += e.key;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [students]);
+
+    const handleRFIDScan = async (tagId) => {
+        const studentIndex = students.findIndex(s => s.rfid_tag == tagId); // Loose equality for string/number match
+        if (studentIndex !== -1) {
+            const student = students[studentIndex];
+            if (!student.present) {
+                await toggleAttendance(student);
+                // Play success sound
+                try {
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                    audio.play();
+                } catch (e) { console.log("Audio play failed", e); }
+            }
+        }
     };
 
-    const markAllPresent = () => {
-        setStudents(prev => prev.map(s => ({ ...s, present: true })));
+    const toggleAttendance = async (student) => {
+        // Optimistic update
+        const newStatus = !student.present;
+        setStudents(prev => prev.map(s =>
+            s.id === student.id ? { ...s, present: newStatus } : s
+        ));
+
+        try {
+            const studentRef = doc(db, 'students', student.id);
+            await updateDoc(studentRef, { present: newStatus });
+        } catch (error) {
+            console.error("Error updating attendance:", error);
+            // Revert
+            setStudents(prev => prev.map(s =>
+                s.id === student.id ? { ...s, present: !newStatus } : s
+            ));
+            alert("Failed to update attendance in database.");
+        }
+    };
+
+    const markAllPresent = async () => {
+        if (!window.confirm("Mark all students as present?")) return;
+
+        const batch = writeBatch(db);
+        const newStudents = students.map(s => ({ ...s, present: true }));
+        setStudents(newStudents); // Optimistic
+
+        try {
+            students.forEach(s => {
+                if (!s.present) {
+                    const ref = doc(db, 'students', s.id);
+                    batch.update(ref, { present: true });
+                }
+            });
+            await batch.commit();
+        } catch (error) {
+            console.error("Batch update failed", error);
+            alert("Failed to mark all present.");
+            // Ideally revert here, but for simplicity we'll just reload or let user retry
+        }
+    };
+
+    // Temporary Seed Data Function
+    const seedData = async () => {
+        if (!window.confirm("Add dummy students to Firestore?")) return;
+        setLoading(true);
+        try {
+            const batch = writeBatch(db);
+            const mockStudents = Array.from({ length: 5 }).map((_, i) => ({
+                roll: i + 1,
+                name: `Student ${i + 1}`,
+                photo: `https://i.pravatar.cc/100?img=${(i % 70) + 1}`,
+                present: false,
+                classId: classId === 'default' ? 'VI-B' : classId,
+                rfid_tag: `${1001 + i}` // Tags: 1001, 1002, 1003...
+            }));
+
+            const collectionRef = collection(db, "students");
+            mockStudents.forEach(s => {
+                const newRef = doc(collectionRef);
+                batch.set(newRef, s);
+            });
+
+            await batch.commit();
+            window.location.reload();
+        } catch (e) {
+            console.error(e);
+            alert("Seed failed: " + e.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleNotify = (name) => {
@@ -46,7 +169,7 @@ const AttendanceView = () => {
     };
 
     const filteredStudents = students.filter(s => {
-        const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || String(s.roll).includes(searchTerm);
+        const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || String(s.roll || '').includes(searchTerm);
         const matchesFilter = filter === 'all'
             ? true
             : filter === 'present' ? s.present : !s.present;
@@ -107,15 +230,26 @@ const AttendanceView = () => {
                                 <span className="chip" style={{ background: '#f3f4f6', color: '#374151', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #e5e7eb' }}>Total: {students.length}</span>
                             </div>
                         </div>
-                        <button onClick={markAllPresent} className="btn-sm" style={{
-                            padding: '0.75rem 1.25rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
-                            cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
-                        }}
-                            onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
-                            onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary-color)'}
-                        >
-                            Mark All Present
-                        </button>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            {/* Debug/Seed Button */}
+                            {students.length === 0 && !loading && (
+                                <button onClick={seedData} className="btn-sm" style={{
+                                    padding: '0.75rem 1.25rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer', fontWeight: 500
+                                }}>
+                                    Seed Dummy Data
+                                </button>
+                            )}
+                            <button onClick={markAllPresent} className="btn-sm" style={{
+                                padding: '0.75rem 1.25rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                                cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
+                            }}
+                                onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
+                                onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary-color)'}
+                            >
+                                Mark All Present
+                            </button>
+                        </div>
                     </div>
 
                     <div className="toolbar" style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', marginBottom: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
@@ -171,69 +305,75 @@ const AttendanceView = () => {
                             <div>Actions</div>
                         </div>
                         <div className="student-list">
-                            {filteredStudents.map(s => (
-                                <div key={s.id} className="student-row" style={{
-                                    display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 1.5rem',
-                                    borderBottom: '1px solid var(--border-color)', alignItems: 'center', transition: 'background 0.1s ease'
-                                }}
-                                    onMouseOver={(e) => e.currentTarget.style.background = '#f9fafb'}
-                                    onMouseOut={(e) => e.currentTarget.style.background = 'white'}
-                                >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <img src={s.photo} alt={s.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} />
+                            {loading ? (
+                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>Loading students...</div>
+                            ) : filteredStudents.length === 0 ? (
+                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>No students found.</div>
+                            ) : (
+                                filteredStudents.map(s => (
+                                    <div key={s.id} className="student-row" style={{
+                                        display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 1.5rem',
+                                        borderBottom: '1px solid var(--border-color)', alignItems: 'center', transition: 'background 0.1s ease'
+                                    }}
+                                        onMouseOver={(e) => e.currentTarget.style.background = '#f9fafb'}
+                                        onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <img src={s.photo || 'https://via.placeholder.com/100'} alt={s.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} />
+                                            <div>
+                                                <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-dark)' }}>{s.name}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '2px' }}>Roll #{s.roll} • ID: {s.rfid_tag || 'N/A'}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                            <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '52px', height: '28px' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={s.present || false}
+                                                    onChange={() => toggleAttendance(s)}
+                                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                                />
+                                                <span className="slider" style={{
+                                                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                                                    backgroundColor: s.present ? '#10b981' : '#e5e7eb', borderRadius: '34px', transition: '.3s ease'
+                                                }}>
+                                                    <span style={{
+                                                        position: 'absolute', content: '""', height: '22px', width: '22px', left: s.present ? '26px' : '4px', bottom: '3px',
+                                                        backgroundColor: 'white', borderRadius: '50%', transition: '.3s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                                    }}></span>
+                                                </span>
+                                            </label>
+                                            <span style={{
+                                                fontSize: '0.85rem', fontWeight: 600,
+                                                color: s.present ? '#059669' : '#dc2626',
+                                                minWidth: '60px'
+                                            }}>
+                                                {s.present ? 'Present' : 'Absent'}
+                                            </span>
+                                        </div>
                                         <div>
-                                            <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-dark)' }}>{s.name}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '2px' }}>Roll #{s.roll} • ID: {s.id}</div>
+                                            {!s.present && (
+                                                <button
+                                                    onClick={() => handleNotify(s.name)}
+                                                    style={{
+                                                        padding: '0.5rem 1rem', fontSize: '0.85rem', border: '1px solid #e5e7eb',
+                                                        background: 'white', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-dark)', fontWeight: 500,
+                                                        display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s ease'
+                                                    }}
+                                                    onMouseOver={(e) => { e.currentTarget.style.borderColor = '#dc2626'; e.currentTarget.style.color = '#dc2626'; }}
+                                                    onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = 'var(--text-dark)'; }}
+                                                >
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                                        <polyline points="22,6 12,13 2,6"></polyline>
+                                                    </svg>
+                                                    Notify Parent
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '52px', height: '28px' }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={s.present}
-                                                onChange={() => handleToggleAttendance(s.id)}
-                                                style={{ opacity: 0, width: 0, height: 0 }}
-                                            />
-                                            <span className="slider" style={{
-                                                position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                                                backgroundColor: s.present ? '#10b981' : '#e5e7eb', borderRadius: '34px', transition: '.3s ease'
-                                            }}>
-                                                <span style={{
-                                                    position: 'absolute', content: '""', height: '22px', width: '22px', left: s.present ? '26px' : '4px', bottom: '3px',
-                                                    backgroundColor: 'white', borderRadius: '50%', transition: '.3s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                                }}></span>
-                                            </span>
-                                        </label>
-                                        <span style={{
-                                            fontSize: '0.85rem', fontWeight: 600,
-                                            color: s.present ? '#059669' : '#dc2626',
-                                            minWidth: '60px'
-                                        }}>
-                                            {s.present ? 'Present' : 'Absent'}
-                                        </span>
-                                    </div>
-                                    <div>
-                                        {!s.present && (
-                                            <button
-                                                onClick={() => handleNotify(s.name)}
-                                                style={{
-                                                    padding: '0.5rem 1rem', fontSize: '0.85rem', border: '1px solid #e5e7eb',
-                                                    background: 'white', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-dark)', fontWeight: 500,
-                                                    display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s ease'
-                                                }}
-                                                onMouseOver={(e) => { e.currentTarget.style.borderColor = '#dc2626'; e.currentTarget.style.color = '#dc2626'; }}
-                                                onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = 'var(--text-dark)'; }}
-                                            >
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                                    <polyline points="22,6 12,13 2,6"></polyline>
-                                                </svg>
-                                                Notify Parent
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -247,7 +387,9 @@ const AttendanceView = () => {
                                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
                                 textAlign: 'center', pointerEvents: 'none'
                             }}>
-                                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', lineHeight: 1 }}>{((presentCount / students.length) * 100).toFixed(0)}%</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', lineHeight: 1 }}>
+                                    {students.length > 0 ? ((presentCount / students.length) * 100).toFixed(0) : 0}%
+                                </div>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Present</div>
                             </div>
                         </div>

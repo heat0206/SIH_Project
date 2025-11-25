@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
 
-const Header = ({ variant = 'landing' }) => {
+const Header = ({ variant = 'landing', role = 'admin' }) => {
     const setLanguage = (lang) => {
         // Placeholder for language logic
         console.log('Set language to', lang);
@@ -13,17 +13,19 @@ const Header = ({ variant = 'landing' }) => {
             {variant === 'dashboard' ? (
                 <div className="nav-left">
                     <Link to="/" className="logo">
-                        <img src={logo} alt="StrategIQ Logo" style={{ height: '64px', width: 'auto', display: 'block' }} />
+                        <img src={logo} alt="StrategIQ Logo" style={{ height: '60px', width: 'auto', display: 'block' }} />
                     </Link>
                     <nav className="main-nav">
                         <Link to="/dashboard" className="nav-link active" id="navDashboard">Dashboard</Link>
-                        <Link to="/reports" className="nav-link admin-only" id="navReports">Reports</Link>
+                        {role !== 'student' && (
+                            <Link to="/reports" className="nav-link admin-only" id="navReports">Reports</Link>
+                        )}
                     </nav>
                 </div>
             ) : (
                 <>
                     <Link to="/" className="logo">
-                        <img src={logo} alt="StrategIQ Logo" style={{ height: '64px', width: 'auto', display: 'block' }} />
+                        <img src={logo} alt="StrategIQ Logo" style={{ height: '60px', width: 'auto', display: 'block' }} />
                     </Link>
                     <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                         <div className="lang-switch">
