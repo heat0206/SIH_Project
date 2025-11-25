@@ -30,15 +30,6 @@
   "absentLabel": "अनुपस्थित",
   "statusMarkedLabel": "✅ उपस्थिति दर्ज की गई",
   "viewEditLink": "देखें/संपादित करें",
-  "datePickerLabel": "दिनांक चुनें",
-  "recentScans": {
-    "title": "हाल की उपस्थिति स्कैन",
-    "rollNo": "रोल नंबर",
-    "class": "कक्षा",
-    "time": "समय"
-  },
-  "present": "उपस्थित",
-  "absent": "अनुपस्थित",
 
   "footerText": "© 2025 टीम स्ट्रैटेजिक — स्मार्ट इंडिया हैकथॉन | ",
   "footerHelpLink": "सहायता और समर्थन",
