@@ -4,59 +4,40 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { db } from '../firebase';
-import { collection, getDocs, updateDoc, doc, query, where, writeBatch } from 'firebase/firestore';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../utils/translations';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const AttendanceView = () => {
     const [searchParams] = useSearchParams();
     const classId = searchParams.get('classId') || 'default';
+    const { language } = useLanguage();
+    const t = translations[language]?.attendance || {};
+    const tDashboard = translations[language]?.dashboard || {};
 
-    const [students, setStudents] = useState([]);
+    // Initial Mock Data
+    const initialStudents = Array.from({ length: 8 }).map((_, i) => ({
+        id: `student-${i}`,
+        roll: i + 1,
+        name: `Student ${i + 1}`,
+        photo: `https://i.pravatar.cc/100?img=${(i % 70) + 1}`,
+        present: Math.random() > 0.3, // Random initial status
+        classId: classId === 'default' ? 'VI-B' : classId,
+        rfid_tag: `${1001 + i}`
+    }));
+
+    const [students, setStudents] = useState(initialStudents);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [density, setDensity] = useState('comfortable');
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
-    // Fetch students from Firestore
-    useEffect(() => {
-        const fetchStudents = async () => {
-            setLoading(true);
-            try {
-                // For demonstration, we fetch all or filter by class if we had that field
-                // Using a simple query for now
-                const studentsRef = collection(db, 'students');
-                const q = classId === 'default'
-                    ? studentsRef
-                    : query(studentsRef, where('classId', '==', classId));
-
-                const querySnapshot = await getDocs(q);
-                const fetchedStudents = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                // Sort by roll number
-                fetchedStudents.sort((a, b) => (a.roll || 0) - (b.roll || 0));
-                setStudents(fetchedStudents);
-            } catch (error) {
-                console.error("Error fetching students:", error);
-                // Fallback to empty or show error
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStudents();
-    }, [classId]);
-
-    // RFID Scanning Logic
+    // RFID Scanning Logic (Mock)
     useEffect(() => {
         let buffer = '';
 
         const handleKeyDown = async (e) => {
-            // If user is typing in the search box, don't capture as RFID
             if (e.target.tagName === 'INPUT') return;
 
             if (e.key === 'Enter') {
@@ -74,12 +55,11 @@ const AttendanceView = () => {
     }, [students]);
 
     const handleRFIDScan = async (tagId) => {
-        const studentIndex = students.findIndex(s => s.rfid_tag == tagId); // Loose equality for string/number match
+        const studentIndex = students.findIndex(s => s.rfid_tag == tagId);
         if (studentIndex !== -1) {
             const student = students[studentIndex];
             if (!student.present) {
-                await toggleAttendance(student);
-                // Play success sound
+                toggleAttendance(student);
                 try {
                     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                     audio.play();
@@ -88,77 +68,15 @@ const AttendanceView = () => {
         }
     };
 
-    const toggleAttendance = async (student) => {
-        // Optimistic update
-        const newStatus = !student.present;
+    const toggleAttendance = (student) => {
         setStudents(prev => prev.map(s =>
-            s.id === student.id ? { ...s, present: newStatus } : s
+            s.id === student.id ? { ...s, present: !s.present } : s
         ));
-
-        try {
-            const studentRef = doc(db, 'students', student.id);
-            await updateDoc(studentRef, { present: newStatus });
-        } catch (error) {
-            console.error("Error updating attendance:", error);
-            // Revert
-            setStudents(prev => prev.map(s =>
-                s.id === student.id ? { ...s, present: !newStatus } : s
-            ));
-            alert("Failed to update attendance in database.");
-        }
     };
 
-    const markAllPresent = async () => {
+    const markAllPresent = () => {
         if (!window.confirm("Mark all students as present?")) return;
-
-        const batch = writeBatch(db);
-        const newStudents = students.map(s => ({ ...s, present: true }));
-        setStudents(newStudents); // Optimistic
-
-        try {
-            students.forEach(s => {
-                if (!s.present) {
-                    const ref = doc(db, 'students', s.id);
-                    batch.update(ref, { present: true });
-                }
-            });
-            await batch.commit();
-        } catch (error) {
-            console.error("Batch update failed", error);
-            alert("Failed to mark all present.");
-            // Ideally revert here, but for simplicity we'll just reload or let user retry
-        }
-    };
-
-    // Temporary Seed Data Function
-    const seedData = async () => {
-        if (!window.confirm("Add dummy students to Firestore?")) return;
-        setLoading(true);
-        try {
-            const batch = writeBatch(db);
-            const mockStudents = Array.from({ length: 5 }).map((_, i) => ({
-                roll: i + 1,
-                name: `Student ${i + 1}`,
-                photo: `https://i.pravatar.cc/100?img=${(i % 70) + 1}`,
-                present: false,
-                classId: classId === 'default' ? 'VI-B' : classId,
-                rfid_tag: `${1001 + i}` // Tags: 1001, 1002, 1003...
-            }));
-
-            const collectionRef = collection(db, "students");
-            mockStudents.forEach(s => {
-                const newRef = doc(collectionRef);
-                batch.set(newRef, s);
-            });
-
-            await batch.commit();
-            window.location.reload();
-        } catch (e) {
-            console.error(e);
-            alert("Seed failed: " + e.message);
-        } finally {
-            setLoading(false);
-        }
+        setStudents(prev => prev.map(s => ({ ...s, present: true })));
     };
 
     const handleNotify = (name) => {
@@ -180,7 +98,7 @@ const AttendanceView = () => {
     const absentCount = students.length - presentCount;
 
     const chartData = {
-        labels: ['Present', 'Absent'],
+        labels: [t.present || 'Present', t.absent || 'Absent'],
         datasets: [{
             data: [presentCount, absentCount],
             backgroundColor: ['#10b981', '#ef4444'],
@@ -194,11 +112,13 @@ const AttendanceView = () => {
         maintainAspectRatio: false
     };
 
+    const backLabel = tDashboard?.backToDashboard || "Back to Dashboard";
+
     return (
         <>
             <Header variant="dashboard" />
-            <Link to="/dashboard" className="back-fab" aria-label="Back to Dashboard" title="Back to Dashboard" style={{
-                position: 'fixed', left: '2rem', top: '100px', zIndex: 99,
+            <Link to="/dashboard" className="back-fab" aria-label={backLabel} title={backLabel} style={{
+                position: 'fixed', left: '2rem', top: '100px', zIndex: 2000,
                 width: '40px', height: '40px', borderRadius: '50%', background: 'white',
                 boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'var(--text-dark)', border: '1px solid var(--border-color)', transition: 'transform 0.2s ease'
@@ -222,24 +142,15 @@ const AttendanceView = () => {
                                 {classId === 'default' ? 'Class VI - Section B' : `Class ${classId}`}
                             </div>
                             <div className="detail-meta" style={{ color: 'var(--text-light)', fontSize: '1rem', marginTop: '0.25rem' }}>
-                                Marked on: <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                {t.markedOn}: <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{new Date().toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                             </div>
                             <div className="summary-chips" style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-                                <span className="chip success" style={{ background: '#ecfdf5', color: '#059669', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #d1fae5' }}>Present: {presentCount}</span>
-                                <span className="chip warn" style={{ background: '#fef2f2', color: '#dc2626', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #fee2e2' }}>Absent: {absentCount}</span>
-                                <span className="chip" style={{ background: '#f3f4f6', color: '#374151', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #e5e7eb' }}>Total: {students.length}</span>
+                                <span className="chip success" style={{ background: '#ecfdf5', color: '#059669', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #d1fae5' }}>{t.present}: {presentCount}</span>
+                                <span className="chip warn" style={{ background: '#fef2f2', color: '#dc2626', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #fee2e2' }}>{t.absent}: {absentCount}</span>
+                                <span className="chip" style={{ background: '#f3f4f6', color: '#374151', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #e5e7eb' }}>{t.total}: {students.length}</span>
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            {/* Debug/Seed Button */}
-                            {students.length === 0 && !loading && (
-                                <button onClick={seedData} className="btn-sm" style={{
-                                    padding: '0.75rem 1.25rem', background: '#6366f1', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
-                                    cursor: 'pointer', fontWeight: 500
-                                }}>
-                                    Seed Dummy Data
-                                </button>
-                            )}
                             <button onClick={markAllPresent} className="btn-sm" style={{
                                 padding: '0.75rem 1.25rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
                                 cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
@@ -247,7 +158,7 @@ const AttendanceView = () => {
                                 onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
                                 onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary-color)'}
                             >
-                                Mark All Present
+                                {t.markAllPresent}
                             </button>
                         </div>
                     </div>
@@ -255,29 +166,29 @@ const AttendanceView = () => {
                     <div className="toolbar" style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', marginBottom: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
                         <div className="toolbar-inner" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             <div className="tabs" style={{ display: 'flex', background: '#f3f4f6', padding: '4px', borderRadius: '8px' }}>
-                                {['all', 'present', 'absent'].map(t => (
+                                {['all', 'present', 'absent'].map(filterKey => (
                                     <button
-                                        key={t}
-                                        onClick={() => setFilter(t)}
+                                        key={filterKey}
+                                        onClick={() => setFilter(filterKey)}
                                         style={{
                                             padding: '0.5rem 1.25rem',
                                             border: 'none',
-                                            background: filter === t ? 'white' : 'transparent',
+                                            background: filter === filterKey ? 'white' : 'transparent',
                                             borderRadius: '6px',
                                             cursor: 'pointer',
-                                            fontWeight: filter === t ? 600 : 500,
-                                            color: filter === t ? 'var(--primary-color)' : 'var(--text-light)',
-                                            boxShadow: filter === t ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                                            fontWeight: filter === filterKey ? 600 : 500,
+                                            color: filter === filterKey ? 'var(--primary-color)' : 'var(--text-light)',
+                                            boxShadow: filter === filterKey ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
                                             transition: 'all 0.2s ease'
                                         }}
                                     >
-                                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                                        {t[filterKey] || filterKey}
                                     </button>
                                 ))}
                             </div>
                             <div style={{ position: 'relative', flex: 1 }}>
                                 <input
-                                    placeholder="Search by name or roll number..."
+                                    placeholder={t.searchPlaceholder}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     style={{
@@ -300,14 +211,12 @@ const AttendanceView = () => {
                             display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 1.5rem', background: '#f9fafb',
                             borderBottom: '1px solid var(--border-color)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)'
                         }}>
-                            <div>Student Details</div>
-                            <div>Attendance Status</div>
-                            <div>Actions</div>
+                            <div>{t.studentDetails}</div>
+                            <div>{t.status}</div>
+                            <div>{t.actions}</div>
                         </div>
                         <div className="student-list">
-                            {loading ? (
-                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>Loading students...</div>
-                            ) : filteredStudents.length === 0 ? (
+                            {filteredStudents.length === 0 ? (
                                 <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>No students found.</div>
                             ) : (
                                 filteredStudents.map(s => (
@@ -348,7 +257,7 @@ const AttendanceView = () => {
                                                 color: s.present ? '#059669' : '#dc2626',
                                                 minWidth: '60px'
                                             }}>
-                                                {s.present ? 'Present' : 'Absent'}
+                                                {s.present ? t.present : t.absent}
                                             </span>
                                         </div>
                                         <div>
@@ -367,7 +276,7 @@ const AttendanceView = () => {
                                                         <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                                                         <polyline points="22,6 12,13 2,6"></polyline>
                                                     </svg>
-                                                    Notify Parent
+                                                    {t.notifyParent}
                                                 </button>
                                             )}
                                         </div>
@@ -380,7 +289,7 @@ const AttendanceView = () => {
 
                 <div className="chart-container" style={{ width: '340px', flexShrink: 0 }}>
                     <div style={{ background: 'white', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', position: 'sticky', top: '2rem', boxShadow: 'var(--shadow-sm)' }}>
-                        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: 700, color: 'var(--text-dark)' }}>Attendance Overview</h3>
+                        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: 700, color: 'var(--text-dark)' }}>{t.overview}</h3>
                         <div style={{ height: '220px', marginBottom: '2rem', position: 'relative' }}>
                             <Doughnut data={chartData} options={chartOptions} />
                             <div style={{
@@ -390,21 +299,21 @@ const AttendanceView = () => {
                                 <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', lineHeight: 1 }}>
                                     {students.length > 0 ? ((presentCount / students.length) * 100).toFixed(0) : 0}%
                                 </div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>Present</div>
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text-light)' }}>{t.present}</div>
                             </div>
                         </div>
                         <div className="chart-legend" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#10b981' }}></span>
-                                    <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>Present</span>
+                                    <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{t.present}</span>
                                 </div>
                                 <span style={{ fontWeight: 700, color: '#059669' }}>{presentCount}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                     <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ef4444' }}></span>
-                                    <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>Absent</span>
+                                    <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{t.absent}</span>
                                 </div>
                                 <span style={{ fontWeight: 700, color: '#dc2626' }}>{absentCount}</span>
                             </div>

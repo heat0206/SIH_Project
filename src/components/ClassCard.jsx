@@ -43,7 +43,7 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id }) =
                 </div>
             </div>
             <div className="status-section" style={{ borderTop: 'none', paddingTop: 0, marginTop: '1rem' }}>
-                <Link to={`/view-edit?classId=${id}`} className="view-edit-link" style={{
+                <Link to={`/attendance/view?classId=${id}`} className="view-edit-link" style={{
                     width: '100%',
                     textAlign: 'center',
                     padding: '0.75rem',

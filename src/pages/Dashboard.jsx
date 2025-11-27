@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ClassCard from '../components/ClassCard';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../utils/translations';
 
 const Dashboard = () => {
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const { language } = useLanguage();
+    const t = translations[language].dashboard;
 
     // Mock logic for date status
     const getDateStatus = (selectedDate) => {
@@ -38,11 +42,11 @@ const Dashboard = () => {
             <main className="dashboard-main">
                 <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
-                        <h2 id="welcomeMessage">Welcome, Sunil Sharma</h2>
+                        <h2 id="welcomeMessage">{t.welcome}, Sunil Sharma</h2>
                         <p style={{ color: 'var(--text-light)', marginTop: '0.5rem' }}>
-                            {status === 'active' ? "Here's what's happening in your classes." :
-                                status === 'holiday' ? "Enjoy your day off!" :
-                                    "Viewing future schedule."}
+                            {status === 'active' ? t.subtitleActive :
+                                status === 'holiday' ? t.subtitleHoliday :
+                                    t.subtitleFuture}
                         </p>
                     </div>
 
@@ -85,7 +89,7 @@ const Dashboard = () => {
                                 </svg>
                             </div>
                             <span style={{ fontWeight: 500, color: 'var(--text-dark)', minWidth: '140px' }}>
-                                {new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                {new Date(date).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </span>
                             <input
                                 type="date"
@@ -103,20 +107,20 @@ const Dashboard = () => {
                         {/* Quick Stats Overview */}
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
                             <div style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>Total Students</div>
+                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>{t.totalStudents}</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary-color)', marginTop: '0.5rem' }}>158</div>
                             </div>
                             <div style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>Average Attendance</div>
+                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>{t.avgAttendance}</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--secondary-color)', marginTop: '0.5rem' }}>92%</div>
                             </div>
                             <div style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>Classes Today</div>
+                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>{t.classesToday}</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', marginTop: '0.5rem' }}>4</div>
                             </div>
                         </div>
 
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>Your Classes</h3>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>{t.yourClasses}</h3>
                         <section className="class-list">
                             {classes.map((cls) => (
                                 <ClassCard key={cls.id} {...cls} />
@@ -124,7 +128,7 @@ const Dashboard = () => {
                         </section>
 
                         <div className="recent-scans-section" style={{ marginTop: '3rem' }}>
-                            <h3 id="recentScansTitle" style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>Recent Attendance Scans</h3>
+                            <h3 id="recentScansTitle" style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>{t.recentScans}</h3>
                             <div className="recent-scans-container" id="recentScansContainer" style={{
                                 background: 'white',
                                 borderRadius: 'var(--radius-lg)',
@@ -134,8 +138,8 @@ const Dashboard = () => {
                                 color: 'var(--text-light)'
                             }}>
                                 <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📷</div>
-                                <p style={{ fontWeight: 500 }}>No recent scans found</p>
-                                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>Upload a photo to mark attendance instantly.</p>
+                                <p style={{ fontWeight: 500 }}>{t.noScans}</p>
+                                <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>{t.uploadPhoto}</p>
                             </div>
                         </div>
                     </>
@@ -152,8 +156,8 @@ const Dashboard = () => {
                         marginTop: '2rem'
                     }}>
                         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏖️</div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>It's a Holiday!</h3>
-                        <p style={{ color: 'var(--text-light)' }}>No classes are scheduled for this date. Enjoy your time off!</p>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>{t.holidayTitle}</h3>
+                        <p style={{ color: 'var(--text-light)' }}>{t.holidayDesc}</p>
                     </div>
                 )}
 
@@ -168,8 +172,8 @@ const Dashboard = () => {
                         marginTop: '2rem'
                     }}>
                         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</div>
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>Future Date Selected</h3>
-                        <p style={{ color: 'var(--text-light)' }}>Attendance cannot be marked for future dates yet.</p>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '0.5rem' }}>{t.futureTitle}</h3>
+                        <p style={{ color: 'var(--text-light)' }}>{t.futureDesc}</p>
                     </div>
                 )}
             </main>

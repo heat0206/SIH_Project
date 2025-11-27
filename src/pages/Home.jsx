@@ -3,8 +3,13 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FeatureCard from '../components/FeatureCard';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../utils/translations';
 
 const Home = () => {
+    const { language } = useLanguage();
+    const t = translations[language].home;
+
     return (
         <>
             <Header variant="landing" />
@@ -14,17 +19,17 @@ const Home = () => {
                     <div className="hero-content">
                         <div className="badge-new">🚀 Smart Attendance System</div>
                         <h1 id="hero.heading">
-                            Next-Gen <span className="highlight-text">RFID Attendance</span> for Modern Schools.
+                            {t.heroTitle}
                         </h1>
                         <p className="subtitle" id="hero.subtitle">
-                            Automate attendance, eliminate paperwork, and ensure student safety with our real-time RFID tracking and SMS notification system.
+                            {t.heroSubtitle}
                         </p>
                         <div className="hero-actions">
                             <Link to="/login" className="btn btn-primary btn-large" id="hero.getStarted">
-                                Get Started
+                                {t.getStarted}
                             </Link>
                             <a href="#features" className="btn btn-outline btn-large">
-                                Learn More
+                                {t.learnMore}
                             </a>
                         </div>
                         <div className="trust-badges">
@@ -63,32 +68,32 @@ const Home = () => {
                 {/* Features Section */}
                 <section className="features" id="features">
                     <div className="section-header">
-                        <h2 id="features.title">Why Choose StrategIQ?</h2>
+                        <h2 id="features.title">{t.featuresTitle}</h2>
                         <p>A complete ecosystem designed for efficiency and transparency.</p>
                     </div>
                     <div className="features-grid">
                         <FeatureCard
                             icon="📡"
-                            title="RFID Technology"
-                            description="Contactless attendance tracking using secure RFID tags. Fast, accurate, and durable."
+                            title={t.feature1Title}
+                            description={t.feature1Desc}
                             idPrefix="features.rfid"
                         />
                         <FeatureCard
                             icon="⚡"
-                            title="Real-time Sync"
-                            description="Attendance data is instantly synced to the cloud (Firebase) and accessible from anywhere."
+                            title={t.feature2Title}
+                            description={t.feature2Desc}
                             idPrefix="features.sync"
                         />
                         <FeatureCard
                             icon="🔔"
-                            title="Instant Alerts"
-                            description="Parents receive immediate SMS/WhatsApp notifications when their child arrives or leaves."
+                            title={t.feature3Title}
+                            description={t.feature3Desc}
                             idPrefix="features.alerts"
                         />
                         <FeatureCard
                             icon="📊"
-                            title="Smart Analytics"
-                            description="Visual dashboards to track attendance trends, identifying irregular students early."
+                            title={t.feature4Title}
+                            description={t.feature4Desc}
                             idPrefix="features.analytics"
                         />
                     </div>
@@ -97,26 +102,28 @@ const Home = () => {
                 {/* How It Works Section */}
                 <section className="how-it-works">
                     <div className="section-header">
-                        <h2>How It Works</h2>
+                        <h2>{t.howItWorksTitle}</h2>
                         <p>Simple steps to modernize your school's attendance.</p>
                     </div>
                     <div className="steps-container">
                         <div className="step-card">
                             <div className="step-number">1</div>
-                            <h3>Issue Smart Cards</h3>
-                            <p>Distribute RFID-enabled ID cards to every student.</p>
+                            <h3>{t.step1}</h3>
                         </div>
                         <div className="step-arrow">→</div>
                         <div className="step-card">
                             <div className="step-number">2</div>
-                            <h3>Tap to Mark</h3>
-                            <p>Students tap their card on the reader at the entrance.</p>
+                            <h3>{t.step2}</h3>
                         </div>
                         <div className="step-arrow">→</div>
                         <div className="step-card">
                             <div className="step-number">3</div>
-                            <h3>Instant Update</h3>
-                            <p>Dashboard updates instantly and parents get notified.</p>
+                            <h3>{t.step3}</h3>
+                        </div>
+                        <div className="step-arrow">→</div>
+                        <div className="step-card">
+                            <div className="step-number">4</div>
+                            <h3>{t.step4}</h3>
                         </div>
                     </div>
                 </section>
@@ -124,10 +131,10 @@ const Home = () => {
                 {/* CTA Section */}
                 <section className="cta-section">
                     <div className="cta-content">
-                        <h2>Ready to upgrade your campus?</h2>
-                        <p>Join the digital revolution in education today.</p>
+                        <h2>{t.ctaTitle}</h2>
+                        <p>{t.ctaDesc}</p>
                         <Link to="/login" className="btn btn-white btn-large">
-                            Start Free Trial
+                            {t.ctaButton}
                         </Link>
                     </div>
                 </section>

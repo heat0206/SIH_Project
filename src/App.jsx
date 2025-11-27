@@ -4,26 +4,37 @@ import './App.css'; // Imported styles
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import TeacherLogin from './pages/TeacherLogin';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 import StudentLogin from './pages/StudentLogin';
 import StudentDashboard from './pages/StudentDashboard';
 import PlaceholderPage from './components/PlaceholderPage';
 import AttendanceView from './pages/AttendanceView';
+import Reports from './pages/Reports';
+
+import { LanguageProvider } from './context/LanguageContext';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/login" element={<TeacherLogin />} />
-        <Route path="/student-login" element={<StudentLogin />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/reports" element={<PlaceholderPage title="Reports" />} />
-        <Route path="/view-edit" element={<AttendanceView />} />
-        <Route path="/profile" element={<PlaceholderPage title="My Profile" />} />
-        <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
-      </Routes>
-    </Router>
+    <LanguageProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/login" element={<TeacherLogin />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/attendance/view" element={<AttendanceView />} />
+          <Route path="/student/login" element={<StudentLogin />} />
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/profile" element={<PlaceholderPage title="My Profile" />} />
+          <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
+          <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
+          <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />
+        </Routes>
+      </Router>
+    </LanguageProvider>
   );
 }
 
