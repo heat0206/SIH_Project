@@ -12,6 +12,10 @@ import PlaceholderPage from './components/PlaceholderPage';
 import AttendanceView from './pages/AttendanceView';
 import Reports from './pages/Reports';
 
+import UserProfile from './pages/UserProfile';
+import LeaveApplication from './pages/LeaveApplication';
+import LeaveManagement from './pages/LeaveManagement';
+
 import { LanguageProvider } from './context/LanguageContext';
 
 function App() {
@@ -27,8 +31,10 @@ function App() {
           <Route path="/attendance/view" element={<AttendanceView />} />
           <Route path="/student/login" element={<StudentLogin />} />
           <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/student/leave" element={<LeaveApplication />} />
+          <Route path="/leave-management" element={<LeaveManagement />} />
           <Route path="/reports" element={<Reports />} />
-          <Route path="/profile" element={<PlaceholderPage title="My Profile" />} />
+          <Route path="/profile" element={<UserProfile />} />
           <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
           <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
           <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />

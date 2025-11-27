@@ -211,7 +211,8 @@ a {
     display: none;
     position: absolute;
     right: 0;
-    top: 150%;
+    top: 100%;
+    margin-top: 0.5rem;
     background-color: var(--card-bg);
     min-width: 160px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);

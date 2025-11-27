@@ -118,6 +118,25 @@ const Dashboard = () => {
                                 <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>{t.classesToday}</div>
                                 <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-dark)', marginTop: '0.5rem' }}>4</div>
                             </div>
+                            <div
+                                onClick={() => window.location.href = '/leave-management'}
+                                style={{
+                                    background: 'white',
+                                    padding: '1.5rem',
+                                    borderRadius: 'var(--radius-lg)',
+                                    boxShadow: 'var(--shadow-sm)',
+                                    border: '1px solid var(--border-color)',
+                                    cursor: 'pointer',
+                                    transition: 'transform 0.2s ease'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>Leave Requests</div>
+                                <div style={{ fontSize: '2rem', fontWeight: 700, color: '#F59E0B', marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    4 <span style={{ fontSize: '0.8rem', background: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.5rem', borderRadius: '999px' }}>Pending</span>
+                                </div>
+                            </div>
                         </div>
 
                         <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-dark)' }}>{t.yourClasses}</h3>

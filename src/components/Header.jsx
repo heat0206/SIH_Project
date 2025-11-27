@@ -9,9 +9,23 @@ const Header = ({ variant = 'landing' }) => {
     const { language, switchLanguage } = useLanguage();
     const t = translations[language].header;
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const timeoutRef = React.useRef(null);
 
     const toggleLanguage = () => {
         switchLanguage(language === 'en' ? 'hi' : 'en');
+    };
+
+    const handleMouseEnter = () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        setIsDropdownOpen(true);
+    };
+
+    const handleMouseLeave = () => {
+        timeoutRef.current = setTimeout(() => {
+            setIsDropdownOpen(false);
+        }, 300);
     };
 
     return (
@@ -71,8 +85,8 @@ const Header = ({ variant = 'landing' }) => {
                         </div>
                         <div
                             className="user-dropdown"
-                            onMouseEnter={() => setIsDropdownOpen(true)}
-                            onMouseLeave={() => setIsDropdownOpen(false)}
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
                         >
                             <div className="user-name" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <div style={{ width: '32px', height: '32px', background: '#e0e7ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-color)', fontWeight: 600 }}>SS</div>

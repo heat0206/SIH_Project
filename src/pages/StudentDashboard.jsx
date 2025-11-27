@@ -92,10 +92,16 @@ const StudentDashboard = () => {
                     <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center justify-center border-t-4 border-red-500">
                         <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wider mb-2">{t.daysAbsent}</h3>
                         <div className="text-4xl font-bold text-red-600 my-2">{daysAbsent}</div>
-                        <div className="flex items-center text-red-500 text-sm font-medium">
+                        <div className="flex items-center text-red-500 text-sm font-medium mb-3">
                             <XCircle className="w-4 h-4 mr-1" />
                             <span>{t.alert}</span>
                         </div>
+                        <button
+                            onClick={() => navigate('/student/leave')}
+                            className="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-full font-semibold hover:bg-red-100 transition-colors border border-red-100"
+                        >
+                            Apply for Leave
+                        </button>
                     </div>
                 </section>
 
