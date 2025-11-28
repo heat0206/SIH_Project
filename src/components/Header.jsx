@@ -37,29 +37,35 @@ const Header = ({ variant = 'landing' }) => {
 
             {variant === 'landing' ? (
                 <div className="auth-buttons" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <button
-                        onClick={toggleLanguage}
-                        style={{
-                            background: 'transparent',
-                            border: '1px solid var(--border-color)',
-                            padding: '0.4rem 0.8rem',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            color: 'var(--primary-color)'
-                        }}
-                    >
-                        {language === 'en' ? 'HI' : 'EN'}
-                    </button>
-                    <Link to="/login" className="btn btn-primary">
-                        <span style={{ marginRight: '6px' }}>👨‍🏫</span> {t.teacherLogin}
-                    </Link>
-                    <Link to="/student/login" className="btn btn-outline">
-                        <span style={{ marginRight: '6px' }}>🎓</span> {t.studentLogin}
-                    </Link>
-                    <Link to="/admin/login" className="btn btn-ghost">
-                        <span style={{ marginRight: '6px' }}>🛡️</span> Admin
-                    </Link>
+                    <div className="lang-switch">
+                        <a
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); switchLanguage('en'); }}
+                            className={language === 'en' ? 'active' : ''}
+                            style={{
+                                color: language === 'en' ? 'var(--primary-color)' : 'var(--text-light)',
+                                fontWeight: language === 'en' ? '600' : '400',
+                                textDecoration: 'none',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            English
+                        </a>
+                        <span style={{ margin: '0 0.5rem', color: 'var(--text-light)' }}>|</span>
+                        <a
+                            href="#"
+                            onClick={(e) => { e.preventDefault(); switchLanguage('hi'); }}
+                            className={language === 'hi' ? 'active' : ''}
+                            style={{
+                                color: language === 'hi' ? 'var(--primary-color)' : 'var(--text-light)',
+                                fontWeight: language === 'hi' ? '600' : '400',
+                                textDecoration: 'none',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            हिन्दी
+                        </a>
+                    </div>
                 </div>
             ) : (
                 <nav className="main-nav" style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between' }}>
