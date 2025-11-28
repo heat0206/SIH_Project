@@ -1,36 +1,58 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Calendar, Clock, FileText, Send, History, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../utils/translations';
 
 const LeaveApplication = () => {
+    const { language } = useLanguage();
+    const t = translations[language].leaveApplication;
+
     const [leaveType, setLeaveType] = useState('sick');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [reason, setReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
-    // Mock History Data
-    const [history, setHistory] = useState([
-        { id: 1, type: 'Medical', from: '2025-09-10', to: '2025-09-12', status: 'Approved', reason: 'Viral Fever' },
-        { id: 2, type: 'Family', from: '2025-08-05', to: '2025-08-06', status: 'Rejected', reason: 'Cousin Wedding' },
+    // Mock history data
+    const [leaveHistory, setLeaveHistory] = useState([
+        { id: 1, type: 'Sick Leave', from: '2023-11-10', to: '2023-11-12', status: 'Approved', days: 3 },
+        { id: 2, type: 'Casual Leave', from: '2023-10-05', to: '2023-10-05', status: 'Rejected', days: 1 },
     ]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const newRequest = {
-            id: history.length + 1,
-            type: leaveType.charAt(0).toUpperCase() + leaveType.slice(1),
-            from: startDate,
-            to: endDate,
-            status: 'Pending',
-            reason: reason
-        };
-        setHistory([newRequest, ...history]);
-        // Reset form
-        setStartDate('');
-        setEndDate('');
-        setReason('');
-        alert('Leave application submitted successfully!');
+        setIsSubmitting(true);
+
+        // Simulate API call
+        setTimeout(() => {
+            const newLeave = {
+                id: leaveHistory.length + 1,
+                type: leaveType === 'sick' ? 'Sick Leave' : leaveType === 'casual' ? 'Casual Leave' : leaveType === 'family' ? 'Family Function' : 'Emergency',
+                from: startDate,
+                to: endDate,
+                status: 'Pending',
+                days: calculateDays(startDate, endDate)
+            };
+            setLeaveHistory([newLeave, ...leaveHistory]);
+            setIsSubmitting(false);
+            setShowSuccess(true);
+            // Reset form
+            setReason('');
+            setStartDate('');
+            setEndDate('');
+
+            setTimeout(() => setShowSuccess(false), 3000);
+        }, 1500);
+    };
+
+    const calculateDays = (start, end) => {
+        if (!start || !end) return 0;
+        const diffTime = Math.abs(new Date(end) - new Date(start));
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        return diffDays;
     };
 
     const getStatusColor = (status) => {
@@ -43,138 +65,166 @@ const LeaveApplication = () => {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'Approved': return <CheckCircle className="w-4 h-4" />;
-            case 'Rejected': return <XCircle className="w-4 h-4" />;
-            default: return <Clock className="w-4 h-4" />;
+            case 'Approved': return <CheckCircle size={16} />;
+            case 'Rejected': return <XCircle size={16} />;
+            default: return <Clock size={16} />;
         }
     };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-            <Header variant="dashboard" role="student" />
+            <Header variant="dashboard" />
 
-            <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl">
-                <div className="flex flex-col lg:flex-row gap-8">
+            <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+                <div className="flex flex-col md:flex-row gap-8">
                     {/* Application Form */}
-                    <div className="lg:w-2/3">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="p-6 border-b border-gray-100 bg-blue-50">
-                                <h1 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-                                    <FileText className="w-5 h-5" />
-                                    Apply for Leave
-                                </h1>
-                                <p className="text-blue-700 text-sm mt-1">Submit your leave request for approval.</p>
+                    <div className="flex-grow">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="p-6 border-b border-gray-200 bg-blue-50">
+                                <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
+                                <p className="text-gray-600 mt-1">{t.subtitle}</p>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700">Leave Type</label>
-                                        <select
-                                            value={leaveType}
-                                            onChange={(e) => setLeaveType(e.target.value)}
-                                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                        >
-                                            <option value="sick">Sick Leave</option>
-                                            <option value="casual">Casual Leave</option>
-                                            <option value="family">Family Function</option>
-                                            <option value="emergency">Emergency</option>
-                                        </select>
+                            <div className="p-6">
+                                {showSuccess && (
+                                    <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3 animate-fade-in">
+                                        <CheckCircle className="w-5 h-5" />
+                                        <span className="font-medium">Leave application submitted successfully!</span>
                                     </div>
+                                )}
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700">Duration</label>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-200">
-                                            <Clock className="w-4 h-4" />
-                                            {startDate && endDate ? (
-                                                <span>
-                                                    {Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1} Days
-                                                </span>
-                                            ) : 'Select dates'}
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    {/* Leave Type */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">{t.leaveType}</label>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            {['sick', 'casual', 'family', 'emergency'].map((type) => (
+                                                <button
+                                                    key={type}
+                                                    type="button"
+                                                    onClick={() => setLeaveType(type)}
+                                                    className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all ${leaveType === type
+                                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                                        }`}
+                                                >
+                                                    {t[type]}
+                                                </button>
+                                            ))}
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700">From Date</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            value={startDate}
-                                            onChange={(e) => setStartDate(e.target.value)}
-                                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                        />
+                                    {/* Dates */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">{t.fromDate}</label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <Calendar className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    value={startDate}
+                                                    onChange={(e) => setStartDate(e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">{t.toDate}</label>
+                                            <div className="relative">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <Calendar className="h-5 w-5 text-gray-400" />
+                                                </div>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    value={endDate}
+                                                    onChange={(e) => setEndDate(e.target.value)}
+                                                    min={startDate}
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700">To Date</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            min={startDate}
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                            className="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                        />
+                                    {/* Duration Display */}
+                                    {startDate && endDate && (
+                                        <div className="bg-blue-50 text-blue-800 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                            <Clock size={16} />
+                                            {t.duration}: {calculateDays(startDate, endDate)} {t.days}
+                                        </div>
+                                    )}
+
+                                    {/* Reason */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">{t.reason}</label>
+                                        <div className="relative">
+                                            <textarea
+                                                required
+                                                rows="4"
+                                                className="block w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                                placeholder={t.reasonPlaceholder}
+                                                value={reason}
+                                                onChange={(e) => setReason(e.target.value)}
+                                            ></textarea>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700">Reason for Leave</label>
-                                    <textarea
-                                        required
-                                        rows="4"
-                                        value={reason}
-                                        onChange={(e) => setReason(e.target.value)}
-                                        placeholder="Please provide a detailed reason for your leave request..."
-                                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
-                                    ></textarea>
-                                </div>
-
-                                <div className="pt-4">
-                                    <button
-                                        type="submit"
-                                        className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm"
-                                    >
-                                        <Send className="w-4 h-4" />
-                                        Submit Application
-                                    </button>
-                                </div>
-                            </form>
+                                    {/* Submit Button */}
+                                    <div className="pt-2">
+                                        <button
+                                            type="submit"
+                                            disabled={isSubmitting}
+                                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                    Submitting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Send size={18} />
+                                                    {t.submit}
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
 
                     {/* History Sidebar */}
-                    <div className="lg:w-1/3">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full">
-                            <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                                <h2 className="font-bold text-gray-800 flex items-center gap-2">
-                                    <History className="w-5 h-5 text-gray-500" />
-                                    Application History
-                                </h2>
+                    <div className="w-full md:w-80 flex-shrink-0">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-8">
+                            <div className="p-4 border-b border-gray-200 bg-gray-50 flex items-center gap-2">
+                                <History className="text-gray-500" size={20} />
+                                <h2 className="text-lg font-bold text-gray-900">{t.history}</h2>
                             </div>
-
-                            <div className="p-4 space-y-4">
-                                {history.length === 0 ? (
-                                    <div className="text-center py-8 text-gray-500">
-                                        No leave history found.
+                            <div className="divide-y divide-gray-100 max-h-[600px] overflow-y-auto">
+                                {leaveHistory.length === 0 ? (
+                                    <div className="p-8 text-center text-gray-500 text-sm">
+                                        {t.noHistory}
                                     </div>
                                 ) : (
-                                    history.map((item) => (
-                                        <div key={item.id} className="border border-gray-100 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                                    leaveHistory.map((leave) => (
+                                        <div key={leave.id} className="p-4 hover:bg-gray-50 transition-colors">
                                             <div className="flex justify-between items-start mb-2">
-                                                <span className="font-semibold text-gray-800">{item.type} Leave</span>
-                                                <span className={`text-xs px-2 py-1 rounded-full border flex items-center gap-1 font-medium ${getStatusColor(item.status)}`}>
-                                                    {getStatusIcon(item.status)}
-                                                    {item.status}
+                                                <span className="font-semibold text-gray-800 text-sm">{leave.type}</span>
+                                                <span className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 font-medium ${getStatusColor(leave.status)}`}>
+                                                    {getStatusIcon(leave.status)}
+                                                    {leave.status === 'Approved' ? t.approved : leave.status === 'Rejected' ? t.rejected : t.pending}
                                                 </span>
                                             </div>
-                                            <div className="text-sm text-gray-500 flex items-center gap-1 mb-2">
-                                                <Calendar className="w-3 h-3" />
-                                                {item.from} - {item.to}
+                                            <div className="text-xs text-gray-500 mb-1">
+                                                {leave.from} - {leave.to}
                                             </div>
-                                            <p className="text-sm text-gray-600 line-clamp-2">
-                                                {item.reason}
-                                            </p>
+                                            <div className="text-xs font-medium text-gray-600">
+                                                {leave.days} {t.days}
+                                            </div>
                                         </div>
                                     ))
                                 )}

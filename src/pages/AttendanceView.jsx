@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
+import { Camera, CreditCard, Edit2, MessageCircle } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
+import { downloadCSV, generateClassRegisterReport } from '../utils/reportGenerator';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -16,22 +18,22 @@ const AttendanceView = () => {
     const t = translations[language]?.attendance || {};
     const tDashboard = translations[language]?.dashboard || {};
 
-    // Initial Mock Data
-    const initialStudents = Array.from({ length: 8 }).map((_, i) => ({
-        id: `student-${i}`,
-        roll: i + 1,
-        name: `Student ${i + 1}`,
-        photo: `https://i.pravatar.cc/100?img=${(i % 70) + 1}`,
-        present: Math.random() > 0.3, // Random initial status
-        classId: classId === 'default' ? 'VI-B' : classId,
-        rfid_tag: `${1001 + i}`
-    }));
+    // Realistic Mock Data with Verification Methods
+    const initialStudents = [
+        { id: 's1', roll: 1, name: 'Rohan Kumar', photo: null, present: true, verificationMethod: 'face', classId: 'VI-B', rfid_tag: '1001' },
+        { id: 's2', roll: 2, name: 'Anjali Devi', photo: null, present: true, verificationMethod: 'rfid', classId: 'VI-B', rfid_tag: '1002' },
+        { id: 's3', roll: 3, name: 'Vikram Singh', photo: null, present: false, verificationMethod: null, classId: 'VI-B', rfid_tag: '1003' },
+        { id: 's4', roll: 4, name: 'Priya Sharma', photo: null, present: true, verificationMethod: 'face', classId: 'VI-B', rfid_tag: '1004' },
+        { id: 's5', roll: 5, name: 'Amit Patel', photo: null, present: true, verificationMethod: 'manual', classId: 'VI-B', rfid_tag: '1005' },
+        { id: 's6', roll: 6, name: 'Sita Verma', photo: null, present: false, verificationMethod: null, classId: 'VI-B', rfid_tag: '1006' },
+        { id: 's7', roll: 7, name: 'Rahul Gupta', photo: null, present: true, verificationMethod: 'rfid', classId: 'VI-B', rfid_tag: '1007' },
+        { id: 's8', roll: 8, name: 'Kavita Yadav', photo: null, present: true, verificationMethod: 'face', classId: 'VI-B', rfid_tag: '1008' },
+    ];
 
     const [students, setStudents] = useState(initialStudents);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [density, setDensity] = useState('comfortable');
-    const [loading, setLoading] = useState(false);
 
     // RFID Scanning Logic (Mock)
     useEffect(() => {
@@ -59,7 +61,7 @@ const AttendanceView = () => {
         if (studentIndex !== -1) {
             const student = students[studentIndex];
             if (!student.present) {
-                toggleAttendance(student);
+                toggleAttendance(student, 'rfid');
                 try {
                     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                     audio.play();
@@ -68,15 +70,23 @@ const AttendanceView = () => {
         }
     };
 
-    const toggleAttendance = (student) => {
-        setStudents(prev => prev.map(s =>
-            s.id === student.id ? { ...s, present: !s.present } : s
-        ));
+    const toggleAttendance = (student, method = 'manual') => {
+        setStudents(prev => prev.map(s => {
+            if (s.id === student.id) {
+                const newStatus = !s.present;
+                return {
+                    ...s,
+                    present: newStatus,
+                    verificationMethod: newStatus ? method : null
+                };
+            }
+            return s;
+        }));
     };
 
     const markAllPresent = () => {
         if (!window.confirm("Mark all students as present?")) return;
-        setStudents(prev => prev.map(s => ({ ...s, present: true })));
+        setStudents(prev => prev.map(s => ({ ...s, present: true, verificationMethod: s.present ? s.verificationMethod : 'manual' })));
     };
 
     const handleNotify = (name) => {
@@ -113,6 +123,37 @@ const AttendanceView = () => {
     };
 
     const backLabel = tDashboard?.backToDashboard || "Back to Dashboard";
+
+    // Helper to get initials
+    const getInitials = (name) => {
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+
+    // Helper for verification badge
+    const getVerificationBadge = (method) => {
+        switch (method) {
+            case 'face':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                        <Camera size={12} /> Face Verified
+                    </span>
+                );
+            case 'rfid':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                        <CreditCard size={12} /> RFID Scan
+                    </span>
+                );
+            case 'manual':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
+                        <Edit2 size={12} /> Manual Override
+                    </span>
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
         <>
@@ -151,6 +192,27 @@ const AttendanceView = () => {
                             </div>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
+                            <button
+                                onClick={() => {
+                                    const className = classId === 'default' ? 'Class VI - Section B' : `Class ${classId}`;
+                                    const csv = generateClassRegisterReport(students, className);
+                                    downloadCSV(csv, `Class_Register_${className.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+                                }}
+                                className="btn-sm"
+                                style={{
+                                    padding: '0.75rem 1.25rem', background: 'white', color: 'var(--text-dark)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease', display: 'flex', alignItems: 'center', gap: '0.5rem'
+                                }}
+                                onMouseOver={(e) => e.currentTarget.style.background = '#f9fafb'}
+                                onMouseOut={(e) => e.currentTarget.style.background = 'white'}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                {t.download || 'Download'}
+                            </button>
                             <button onClick={markAllPresent} className="btn-sm" style={{
                                 padding: '0.75rem 1.25rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
                                 cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
@@ -228,55 +290,63 @@ const AttendanceView = () => {
                                         onMouseOut={(e) => e.currentTarget.style.background = 'white'}
                                     >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <img src={s.photo || 'https://via.placeholder.com/100'} alt={s.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} />
+                                            {s.photo ? (
+                                                <img src={s.photo} alt={s.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }} />
+                                            ) : (
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#e0e7ff', color: '#3730a3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.1rem', border: '2px solid white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                                    {getInitials(s.name)}
+                                                </div>
+                                            )}
                                             <div>
                                                 <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-dark)' }}>{s.name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '2px' }}>Roll #{s.roll} • ID: {s.rfid_tag || 'N/A'}</div>
                                             </div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '52px', height: '28px' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={s.present || false}
-                                                    onChange={() => toggleAttendance(s)}
-                                                    style={{ opacity: 0, width: 0, height: 0 }}
-                                                />
-                                                <span className="slider" style={{
-                                                    position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                                                    backgroundColor: s.present ? '#10b981' : '#e5e7eb', borderRadius: '34px', transition: '.3s ease'
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '52px', height: '28px' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={s.present || false}
+                                                        onChange={() => toggleAttendance(s)}
+                                                        style={{ opacity: 0, width: 0, height: 0 }}
+                                                    />
+                                                    <span className="slider" style={{
+                                                        position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                                                        backgroundColor: s.present ? '#10b981' : '#e5e7eb', borderRadius: '34px', transition: '.3s ease'
+                                                    }}>
+                                                        <span style={{
+                                                            position: 'absolute', content: '""', height: '22px', width: '22px', left: s.present ? '26px' : '4px', bottom: '3px',
+                                                            backgroundColor: 'white', borderRadius: '50%', transition: '.3s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                                        }}></span>
+                                                    </span>
+                                                </label>
+                                                <span style={{
+                                                    fontSize: '0.85rem', fontWeight: 600,
+                                                    color: s.present ? '#059669' : '#dc2626',
+                                                    minWidth: '60px'
                                                 }}>
-                                                    <span style={{
-                                                        position: 'absolute', content: '""', height: '22px', width: '22px', left: s.present ? '26px' : '4px', bottom: '3px',
-                                                        backgroundColor: 'white', borderRadius: '50%', transition: '.3s ease', boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                                                    }}></span>
+                                                    {s.present ? t.present : t.absent}
                                                 </span>
-                                            </label>
-                                            <span style={{
-                                                fontSize: '0.85rem', fontWeight: 600,
-                                                color: s.present ? '#059669' : '#dc2626',
-                                                minWidth: '60px'
-                                            }}>
-                                                {s.present ? t.present : t.absent}
-                                            </span>
+                                            </div>
+                                            {/* Verification Badge */}
+                                            {s.present && getVerificationBadge(s.verificationMethod)}
                                         </div>
                                         <div>
                                             {!s.present && (
                                                 <button
                                                     onClick={() => handleNotify(s.name)}
+                                                    title="Send Absence Alert to Parent"
                                                     style={{
-                                                        padding: '0.5rem 1rem', fontSize: '0.85rem', border: '1px solid #e5e7eb',
-                                                        background: 'white', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-dark)', fontWeight: 500,
+                                                        padding: '0.5rem', fontSize: '0.85rem', border: '1px solid #e5e7eb',
+                                                        background: 'white', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-dark)', fontWeight: 500,
                                                         display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s ease'
                                                     }}
-                                                    onMouseOver={(e) => { e.currentTarget.style.borderColor = '#dc2626'; e.currentTarget.style.color = '#dc2626'; }}
-                                                    onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = 'var(--text-dark)'; }}
+                                                    onMouseOver={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.background = '#eff6ff'; }}
+                                                    onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = 'var(--text-dark)'; e.currentTarget.style.background = 'white'; }}
                                                 >
-                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                                        <polyline points="22,6 12,13 2,6"></polyline>
-                                                    </svg>
-                                                    {t.notifyParent}
+                                                    <MessageCircle size={18} />
+                                                    <span className="hidden sm:inline">SMS</span>
                                                 </button>
                                             )}
                                         </div>
