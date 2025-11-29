@@ -8,6 +8,8 @@ import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 import { downloadCSV, generateClassRegisterReport } from '../utils/reportGenerator';
+import { getStudentsByClass } from '../services/studentService';
+import { markAttendance, getAttendanceByDate } from '../services/attendanceService';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -18,22 +20,41 @@ const AttendanceView = () => {
     const t = translations[language]?.attendance || {};
     const tDashboard = translations[language]?.dashboard || {};
 
-    // Realistic Mock Data with Verification Methods
-    const initialStudents = [
-        { id: 's1', roll: 1, name: 'Rohan Kumar', photo: null, present: true, verificationMethod: 'face', classId: 'VI-B', rfid_tag: '1001' },
-        { id: 's2', roll: 2, name: 'Anjali Devi', photo: null, present: true, verificationMethod: 'rfid', classId: 'VI-B', rfid_tag: '1002' },
-        { id: 's3', roll: 3, name: 'Vikram Singh', photo: null, present: false, verificationMethod: null, classId: 'VI-B', rfid_tag: '1003' },
-        { id: 's4', roll: 4, name: 'Priya Sharma', photo: null, present: true, verificationMethod: 'face', classId: 'VI-B', rfid_tag: '1004' },
-        { id: 's5', roll: 5, name: 'Amit Patel', photo: null, present: true, verificationMethod: 'manual', classId: 'VI-B', rfid_tag: '1005' },
-        { id: 's6', roll: 6, name: 'Sita Verma', photo: null, present: false, verificationMethod: null, classId: 'VI-B', rfid_tag: '1006' },
-        { id: 's7', roll: 7, name: 'Rahul Gupta', photo: null, present: true, verificationMethod: 'rfid', classId: 'VI-B', rfid_tag: '1007' },
-        { id: 's8', roll: 8, name: 'Kavita Yadav', photo: null, present: true, verificationMethod: 'face', classId: 'VI-B', rfid_tag: '1008' },
-    ];
-
-    const [students, setStudents] = useState(initialStudents);
+    const [students, setStudents] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [density, setDensity] = useState('comfortable');
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            if (classId === 'default') return;
+
+            try {
+                const studentsData = await getStudentsByClass(classId);
+                const date = new Date().toISOString().split('T')[0];
+                const existingAttendance = await getAttendanceByDate(classId, date);
+
+                const formattedStudents = studentsData.map(s => {
+                    const record = existingAttendance?.records?.find(r => r.studentId === s.id);
+                    return {
+                        ...s,
+                        present: record ? record.present : false,
+                        verificationMethod: record ? record.verificationMethod : null,
+                        photo: null
+                    };
+                });
+
+                setStudents(formattedStudents);
+            } catch (error) {
+                console.error("Failed to fetch students:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStudents();
+    }, [classId]);
 
     // RFID Scanning Logic (Mock)
     useEffect(() => {
@@ -57,7 +78,8 @@ const AttendanceView = () => {
     }, [students]);
 
     const handleRFIDScan = async (tagId) => {
-        const studentIndex = students.findIndex(s => s.rfid_tag == tagId);
+        // Match against rfidId from database
+        const studentIndex = students.findIndex(s => s.rfidId == tagId);
         if (studentIndex !== -1) {
             const student = students[studentIndex];
             if (!student.present) {
@@ -89,6 +111,28 @@ const AttendanceView = () => {
         setStudents(prev => prev.map(s => ({ ...s, present: true, verificationMethod: s.present ? s.verificationMethod : 'manual' })));
     };
 
+    const saveAttendance = async () => {
+        try {
+            const date = new Date().toISOString().split('T')[0];
+            const attendanceData = {
+                classId,
+                date,
+                records: students.map(s => ({
+                    studentId: s.id,
+                    name: s.name,
+                    present: s.present,
+                    verificationMethod: s.verificationMethod
+                }))
+            };
+
+            await markAttendance(attendanceData);
+            alert("Attendance saved successfully!");
+        } catch (error) {
+            console.error("Failed to save attendance:", error);
+            alert("Failed to save attendance.");
+        }
+    };
+
     const handleNotify = (name) => {
         const msg = `This is to notify you that ${name} is absent for the class on ${new Date().toLocaleDateString()}.`;
         if (window.confirm(`Send SMS notification to parent?\n\nMessage: "${msg}"`)) {
@@ -97,7 +141,7 @@ const AttendanceView = () => {
     };
 
     const filteredStudents = students.filter(s => {
-        const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || String(s.roll || '').includes(searchTerm);
+        const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || String(s.rollNo || '').includes(searchTerm);
         const matchesFilter = filter === 'all'
             ? true
             : filter === 'present' ? s.present : !s.present;
@@ -172,12 +216,9 @@ const AttendanceView = () => {
                 </svg>
             </Link>
 
-            <main className="main-container" style={{ display: 'flex', gap: '2rem', maxWidth: '1400px', margin: '2rem auto', padding: '0 2rem', alignItems: 'flex-start' }}>
-                <div className="attendance-detail-container" style={{ flex: 1 }}>
-                    <div className="detail-header" style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem',
-                        background: 'white', padding: '2rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)'
-                    }}>
+            <main className="main-container flex flex-col lg:flex-row gap-8 max-w-[1400px] mx-auto p-4 md:p-8 items-start">
+                <div className="attendance-detail-container flex-1 w-full">
+                    <div className="detail-header flex flex-col md:flex-row justify-between items-start mb-8 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200 gap-4">
                         <div>
                             <div className="detail-title" style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-dark)' }}>
                                 {classId === 'default' ? 'Class VI - Section B' : `Class ${classId}`}
@@ -222,11 +263,20 @@ const AttendanceView = () => {
                             >
                                 {t.markAllPresent}
                             </button>
+                            <button onClick={saveAttendance} className="btn-sm" style={{
+                                padding: '0.75rem 1.25rem', background: '#059669', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                                cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
+                            }}
+                                onMouseOver={(e) => e.currentTarget.style.background = '#047857'}
+                                onMouseOut={(e) => e.currentTarget.style.background = '#059669'}
+                            >
+                                Save Attendance
+                            </button>
                         </div>
                     </div>
 
-                    <div className="toolbar" style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', marginBottom: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
-                        <div className="toolbar-inner" style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="toolbar bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm">
+                        <div className="toolbar-inner flex flex-col md:flex-row gap-4 items-center flex-wrap">
                             <div className="tabs" style={{ display: 'flex', background: '#f3f4f6', padding: '4px', borderRadius: '8px' }}>
                                 {['all', 'present', 'absent'].map(filterKey => (
                                     <button
@@ -299,7 +349,7 @@ const AttendanceView = () => {
                                             )}
                                             <div>
                                                 <div style={{ fontWeight: 600, fontSize: '1rem', color: 'var(--text-dark)' }}>{s.name}</div>
-                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '2px' }}>Roll #{s.roll} • ID: {s.rfid_tag || 'N/A'}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '2px' }}>Roll #{s.rollNo} • ID: {s.rfidId || 'N/A'}</div>
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -357,7 +407,7 @@ const AttendanceView = () => {
                     </div>
                 </div>
 
-                <div className="chart-container" style={{ width: '340px', flexShrink: 0 }}>
+                <div className="chart-container w-full lg:w-[340px] flex-shrink-0">
                     <div style={{ background: 'white', padding: '2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', position: 'sticky', top: '2rem', boxShadow: 'var(--shadow-sm)' }}>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: 700, color: 'var(--text-dark)' }}>{t.overview}</h3>
                         <div style={{ height: '220px', marginBottom: '2rem', position: 'relative' }}>
@@ -390,7 +440,7 @@ const AttendanceView = () => {
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
             <Footer />
         </>
     );

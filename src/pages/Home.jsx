@@ -4,6 +4,8 @@ import { GraduationCap, Users, ShieldCheck } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { getUserProfile } from '../services/userService';
 import { translations } from '../utils/translations';
 
 const Home = () => {
@@ -29,40 +31,51 @@ const Home = () => {
         setError('');
     };
 
+    const { login } = useAuth();
+
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
-        // Simulate network delay for professional feel
-        await new Promise(resolve => setTimeout(resolve, 800));
-
         try {
-            if (role === 'student') {
-                // Mock Student/Parent Login
-                const studentData = {
-                    id: credentials.userid || 'S-GUEST',
-                    name: "Guest Student",
-                    roll: "N/A",
-                    classId: "8th Grade",
-                    photo: "https://via.placeholder.com/150"
-                };
-                navigate('/student-dashboard', { state: { student: studentData } });
-            } else if (role === 'teacher') {
-                // Mock Teacher Login
+            const userCredential = await login(credentials.userid, credentials.password);
+            const user = userCredential.user;
+
+            // Fetch user profile to check role
+            const userProfile = await getUserProfile(user.uid);
+
+            if (!userProfile) {
+                throw new Error("User profile not found.");
+            }
+
+            const selectedRole = role;
+            const dbRole = userProfile.role;
+
+            let isAuthorized = false;
+
+            if (selectedRole === 'admin' && dbRole === 'admin') isAuthorized = true;
+            else if (selectedRole === 'teacher' && dbRole === 'teacher') isAuthorized = true;
+            else if (selectedRole === 'student' && (dbRole === 'student' || dbRole === 'parent')) isAuthorized = true;
+
+            if (!isAuthorized) {
+                throw new Error(`Access denied. You are not a ${selectedRole}.`);
+            }
+
+            if (selectedRole === 'student') {
+                navigate('/parent-dashboard');
+            } else if (selectedRole === 'teacher') {
                 navigate('/dashboard');
-            } else if (role === 'admin') {
-                // Mock Admin Login
-                const admin = {
-                    name: 'Admin User',
-                    email: credentials.userid || 'admin@school.com',
-                    role: 'admin'
-                };
-                localStorage.setItem('currentUser', JSON.stringify(admin));
+            } else if (selectedRole === 'admin') {
                 navigate('/admin/dashboard');
             }
         } catch (err) {
-            setError('Login failed. Please try again.');
+            console.error(err);
+            if (err.message.includes('Access denied')) {
+                setError(err.message);
+            } else {
+                setError('Login failed. Please check your credentials.');
+            }
         } finally {
             setLoading(false);
         }

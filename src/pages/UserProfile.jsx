@@ -42,7 +42,7 @@ const UserProfile = () => {
                         <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
 
-                    <div className="px-8 pb-8 relative">
+                    <div className="px-4 md:px-8 pb-8 relative">
                         {/* Profile Header */}
                         <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 mb-8 gap-6">
                             <div className="relative">

@@ -37,7 +37,7 @@ const StudentLogin = () => {
             photo: "https://via.placeholder.com/150"
         };
 
-        navigate('/student-dashboard', { state: { student: studentData } });
+        navigate('/parent-dashboard', { state: { student: studentData } });
         setLoading(false);
     };
 

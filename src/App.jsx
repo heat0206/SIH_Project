@@ -15,31 +15,36 @@ import Reports from './pages/Reports';
 import UserProfile from './pages/UserProfile';
 import LeaveApplication from './pages/LeaveApplication';
 import LeaveManagement from './pages/LeaveManagement';
+import ParentDashboard from './pages/ParentDashboard';
 
 import { LanguageProvider } from './context/LanguageContext';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
     <LanguageProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/login" element={<TeacherLogin />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/attendance/view" element={<AttendanceView />} />
-          <Route path="/student/login" element={<StudentLogin />} />
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/student/leave" element={<LeaveApplication />} />
-          <Route path="/leave-management" element={<LeaveManagement />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/profile" element={<UserProfile />} />
-          <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
-          <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
-          <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />
-        </Routes>
-      </Router>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/login" element={<TeacherLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/attendance/view" element={<AttendanceView />} />
+            <Route path="/student/login" element={<StudentLogin />} />
+            <Route path="/student-dashboard" element={<StudentDashboard />} />
+            <Route path="/student/leave" element={<LeaveApplication />} />
+            <Route path="/leave-management" element={<LeaveManagement />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/parent-dashboard" element={<ParentDashboard />} />
+            <Route path="/profile" element={<UserProfile />} />
+            <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
+            <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
+            <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </LanguageProvider>
   );
 }

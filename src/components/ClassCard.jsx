@@ -1,14 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const ClassCard = ({ className, studentCount, present, absent, isMarked, id }) => {
+const ClassCard = ({ className, studentCount, present, absent, isMarked, id, role, subject }) => {
     return (
         <div className={`bg-white rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${isMarked ? 'border-[#1e3a8a]' : 'border-gray-300'}`}>
             <div className="p-5">
                 <div className="flex justify-between items-start mb-4">
                     <div>
-                        <h3 className="text-xl font-bold text-gray-800">{className}</h3>
-                        <p className="text-sm text-gray-500 font-medium mt-1">Total Strength: {studentCount}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-xl font-bold text-gray-800">{className}</h3>
+                            {role === 'Class Teacher' && (
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                                    Class Teacher
+                                </span>
+                            )}
+                            {role === 'Subject Teacher' && (
+                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">
+                                    {subject}
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-500 font-medium">Total Strength: {studentCount}</p>
                     </div>
                 </div>
 

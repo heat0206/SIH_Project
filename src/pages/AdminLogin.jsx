@@ -4,6 +4,8 @@ import { ShieldCheck, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import { getUserProfile } from '../services/userService';
 import { translations } from '../utils/translations';
 
 const AdminLogin = () => {
@@ -16,28 +18,37 @@ const AdminLogin = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = (e) => {
+    const { login } = useAuth();
+
+    const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
-        // Mock Admin Login Logic
-        // In a real app, this would be an API call
-        setTimeout(() => {
-            if (email === 'admin@school.com' && password === 'admin123') {
-                localStorage.setItem('adminLoggedIn', 'true');
-                navigate('/admin-dashboard');
-            } else {
-                // For demo purposes, allow any login if it looks like an admin email
-                if (email.includes('admin')) {
-                    localStorage.setItem('adminLoggedIn', 'true');
-                    navigate('/admin-dashboard');
-                } else {
-                    setError('Invalid admin credentials. Please try again.');
-                }
+        try {
+            const userCredential = await login(email, password);
+            const user = userCredential.user;
+
+            // Fetch user profile to check role
+            const userProfile = await getUserProfile(user.uid);
+
+            if (!userProfile || userProfile.role !== 'admin') {
+                throw new Error("Access denied. You are not an administrator.");
             }
+
+            // Check if user is actually an admin (in a real app, you'd check claims or Firestore role)
+            // For now, we assume if they can login here, they are an admin or we redirect them
+            navigate('/admin/dashboard');
+        } catch (err) {
+            console.error(err);
+            if (err.message.includes('Access denied')) {
+                setError(err.message);
+            } else {
+                setError('Failed to log in. Please check your credentials.');
+            }
+        } finally {
             setIsLoading(false);
-        }, 1000);
+        }
     };
 
     return (

@@ -2,7 +2,7 @@ export const translations = {
     en: {
         header: {
             teacherLogin: "Teacher Login",
-            studentLogin: "Student Login",
+            studentLogin: "Parent Login",
             dashboard: "Dashboard",
             reports: "Reports",
             profile: "My Profile",
@@ -80,10 +80,10 @@ export const translations = {
             overview: "Attendance Overview"
         },
         studentLogin: {
-            title: "Student Portal",
-            subtitle: "View your attendance and performance",
-            idLabel: "Student ID / Roll No",
-            idPlaceholder: "Enter your ID (e.g., S001)",
+            title: "Parent Portal",
+            subtitle: "View your child's attendance and performance",
+            idLabel: "Parent ID / Mobile No",
+            idPlaceholder: "Enter your ID",
             passwordLabel: "Password",
             passwordPlaceholder: "Any password works",
             buttonLoading: "Signing In...",
@@ -239,12 +239,28 @@ export const translations = {
             duration: "Duration",
             reason: "Reason",
             to: "to"
+        },
+        parentDashboard: {
+            greeting: "Namaste, Rajesh Ji",
+            welcomeMessage: "Welcome to Parent Portal",
+            isSafe: "is Safe at School",
+            clockedIn: "Clocked in at 08:15 AM via Face ID",
+            poshanStatus: "Poshan Status",
+            mealServed: "Mid-Day Meal Served Today",
+            attendance: "Attendance",
+            thisMonth: "This Month",
+            present: "Present",
+            absent: "Absent",
+            holiday: "Holiday",
+            applyLeave: "Apply Leave",
+            message: "Message",
+            timetable: "Timetable"
         }
     },
     hi: {
         header: {
             teacherLogin: "शिक्षक लॉगिन",
-            studentLogin: "छात्र लॉगिन",
+            studentLogin: "अभिभावक लॉगिन",
             dashboard: "डैशबोर्ड",
             reports: "रिपोर्ट्स",
             profile: "मेरी प्रोफाइल",
@@ -322,10 +338,10 @@ export const translations = {
             overview: "उपस्थिति अवलोकन"
         },
         studentLogin: {
-            title: "छात्र पोर्टल",
-            subtitle: "अपनी उपस्थिति और प्रदर्शन देखें",
-            idLabel: "छात्र आईडी / रोल नंबर",
-            idPlaceholder: "अपनी आईडी दर्ज करें (जैसे, S001)",
+            title: "अभिभावक पोर्टल",
+            subtitle: "अपने बच्चे की उपस्थिति और प्रदर्शन देखें",
+            idLabel: "अभिभावक आईडी / मोबाइल नंबर",
+            idPlaceholder: "अपनी आईडी दर्ज करें",
             passwordLabel: "पासवर्ड",
             passwordPlaceholder: "कोई भी पासवर्ड काम करता है",
             buttonLoading: "साइन इन हो रहा है...",
@@ -481,6 +497,22 @@ export const translations = {
             duration: "छुट्टी की अवधि",
             reason: "कारण",
             to: "से"
+        },
+        parentDashboard: {
+            greeting: "नमस्ते, राजेश जी",
+            welcomeMessage: "अभिभावक पोर्टल में आपका स्वागत है",
+            isSafe: "स्कूल में सुरक्षित है",
+            clockedIn: "फेस आईडी के माध्यम से सुबह 08:15 बजे उपस्थिति दर्ज की गई",
+            poshanStatus: "पोषण स्थिति",
+            mealServed: "आज मध्याह्न भोजन परोसा गया",
+            attendance: "उपस्थिति",
+            thisMonth: "इस महीने",
+            present: "उपस्थित",
+            absent: "अनुपस्थित",
+            holiday: "छुट्टी",
+            applyLeave: "छुट्टी के लिए आवेदन करें",
+            message: "संदेश",
+            timetable: "समय सारिणी"
         }
     }
 };
