@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { getTeacherClasses } from '../services/classService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { User, Mail, Phone, Briefcase, Calendar, MapPin, Edit2, Save, X, QrCode, Fingerprint, Smartphone, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react';
@@ -9,23 +11,66 @@ const UserProfile = () => {
     const { language } = useLanguage();
     const t = translations[language].userProfile;
 
-    const [user, setUser] = useState({
-        name: 'Sunil Sharma',
-        role: 'Government Primary Teacher (Level 2)',
-        email: 'sunil.sharma@school.edu',
-        phone: '+91 98765 43210',
-        id: 'EMP-2023-045',
-        department: 'Mathematics',
-        joiningDate: '15 June 2018',
-        address: '42, Saraswati Vihar, New Delhi',
-        udise: '09090200401',
-        block: 'Rampur Block, Varanasi',
-        dutyRoster: {
-            classTeacher: 'Class VIII - Section A',
-            subjects: 'Mathematics (VI, VII, X)',
-            additional: 'Mid-Day Meal Supervisor'
-        }
+    const { currentUser } = useAuth();
+    const [dutyRosterData, setDutyRosterData] = useState({
+        classTeacher: 'N/A',
+        subjects: 'N/A',
+        additional: 'N/A'
     });
+
+    useEffect(() => {
+        const fetchDutyRoster = async () => {
+            if (currentUser?.uid) {
+                try {
+                    const classes = await getTeacherClasses(currentUser.uid);
+
+                    // 1. Find Class Teacher assignment
+                    const classTeacherClass = classes.find(c => c.teacherId === currentUser.uid);
+                    const classTeacherText = classTeacherClass
+                        ? classTeacherClass.name
+                        : 'N/A';
+
+                    // 2. Find Subject Teacher assignments
+                    const subjectAssignments = [];
+                    classes.forEach(c => {
+                        if (c.subjectTeachers) {
+                            const teacherEntry = c.subjectTeachers.find(t => t.id === currentUser.uid);
+                            if (teacherEntry) {
+                                subjectAssignments.push(`${teacherEntry.subject} (${c.name})`);
+                            }
+                        }
+                    });
+                    const subjectsText = subjectAssignments.length > 0 ? subjectAssignments.join(', ') : 'N/A';
+
+                    setDutyRosterData({
+                        classTeacher: classTeacherText,
+                        subjects: subjectsText,
+                        additional: currentUser.dutyRoster?.additional || 'N/A' // Keep existing additional info if any
+                    });
+
+                } catch (error) {
+                    console.error("Error fetching duty roster:", error);
+                }
+            }
+        };
+
+        fetchDutyRoster();
+    }, [currentUser]);
+
+    // Default values in case data is missing
+    const user = {
+        name: currentUser?.name || 'N/A',
+        role: currentUser?.role || 'Teacher',
+        email: currentUser?.email || 'N/A',
+        phone: currentUser?.phone || 'N/A',
+        id: currentUser?.employeeId || currentUser?.uid || 'N/A',
+        department: currentUser?.department || 'N/A',
+        joiningDate: currentUser?.joiningDate || 'N/A',
+        address: currentUser?.address || 'N/A',
+        udise: currentUser?.udise || 'N/A',
+        block: currentUser?.block || 'N/A',
+        dutyRoster: dutyRosterData
+    };
 
     const handleRequestCorrection = () => {
         alert("Data correction request sent to Block Education Officer.");

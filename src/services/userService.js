@@ -41,6 +41,25 @@ import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth'
 import { firebaseConfig } from '../firebase';
 import { setDoc } from 'firebase/firestore';
 
+// Helper to generate professional Employee ID
+const generateEmployeeId = async () => {
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("role", "==", "teacher"));
+        const snapshot = await getDocs(q);
+        const count = snapshot.size;
+
+        // Format: EMP-YYYY-XXXX (e.g., EMP-2025-001)
+        const year = new Date().getFullYear();
+        const sequence = (count + 1).toString().padStart(3, '0');
+        return `EMP-${year}-${sequence}`;
+    } catch (error) {
+        console.error("Error generating employee ID:", error);
+        // Fallback to a random string if generation fails, but keep format if possible
+        return `EMP-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+};
+
 export const createTeacherProfile = async (teacherData) => {
     let secondaryApp = null;
     try {
@@ -52,6 +71,9 @@ export const createTeacherProfile = async (teacherData) => {
         const userCredential = await createUserWithEmailAndPassword(secondaryAuth, teacherData.email, teacherData.password);
         const uid = userCredential.user.uid;
 
+        // Generate Professional Employee ID
+        const employeeId = await generateEmployeeId();
+
         // 3. Create the user profile in Firestore using the SAME UID
         // We remove the password from the data stored in Firestore for security
         const { password, ...profileData } = teacherData;
@@ -59,6 +81,7 @@ export const createTeacherProfile = async (teacherData) => {
         await setDoc(doc(db, "users", uid), {
             ...profileData,
             uid: uid, // Store UID explicitly as well
+            employeeId: employeeId, // Store the professional ID
             role: 'teacher',
             createdAt: new Date()
         });
@@ -84,5 +107,50 @@ export const deleteTeacherProfile = async (teacherId) => {
     } catch (error) {
         console.error("Error deleting teacher profile:", error);
         throw error;
+    }
+};
+
+export const migrateExistingTeacherIds = async () => {
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("role", "==", "teacher"));
+        const snapshot = await getDocs(q);
+
+        const teachers = [];
+        snapshot.forEach((doc) => {
+            teachers.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Sort by creation time if available, otherwise by name
+        teachers.sort((a, b) => {
+            if (a.createdAt && b.createdAt) {
+                return a.createdAt.seconds - b.createdAt.seconds;
+            }
+            return a.name.localeCompare(b.name);
+        });
+
+        let updatedCount = 0;
+        const year = new Date().getFullYear();
+
+        for (let i = 0; i < teachers.length; i++) {
+            const teacher = teachers[i];
+            // Only update if no employeeId or if it doesn't match the new format
+            if (!teacher.employeeId || !teacher.employeeId.startsWith('EMP-')) {
+                const sequence = (i + 1).toString().padStart(3, '0');
+                const newId = `EMP-${year}-${sequence}`;
+
+                await setDoc(doc(db, "users", teacher.id), {
+                    ...teacher,
+                    employeeId: newId
+                }, { merge: true });
+
+                updatedCount++;
+            }
+        }
+
+        return { success: true, count: updatedCount };
+    } catch (error) {
+        console.error("Error migrating teacher IDs:", error);
+        return { success: false, error };
     }
 };

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGenerator';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { getAllTeachers, createTeacherProfile, deleteTeacherProfile } from '../services/userService';
+import { getAllTeachers, createTeacherProfile, deleteTeacherProfile, migrateExistingTeacherIds } from '../services/userService';
 import { getAllClasses, assignTeacherToClass, createClass, addSubjectTeacher, removeSubjectTeacher } from '../services/classService';
 import { addStudent } from '../services/studentService';
 import { translations } from '../utils/translations';
@@ -263,6 +263,30 @@ const AdminDashboard = () => {
                             {t.logout}
                         </button>
                     </div>
+                </div>
+
+                {/* Migration Tool (Temporary) */}
+                <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-yellow-800">System Maintenance</h3>
+                        <p className="text-sm text-yellow-700">Update all existing teachers to the new Employee ID format (EMP-YYYY-XXX).</p>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            if (window.confirm("This will update Employee IDs for all teachers. Continue?")) {
+                                const result = await migrateExistingTeacherIds();
+                                if (result.success) {
+                                    alert(`Migration successful! Updated ${result.count} teachers.`);
+                                    fetchData();
+                                } else {
+                                    alert("Migration failed. Check console for details.");
+                                }
+                            }
+                        }}
+                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-medium"
+                    >
+                        Migrate IDs
+                    </button>
                 </div>
 
                 {/* Quick Actions */}
