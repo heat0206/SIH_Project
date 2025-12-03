@@ -7,6 +7,7 @@ import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGene
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getAllTeachers, createTeacherProfile, deleteTeacherProfile, migrateExistingTeacherIds } from '../services/userService';
+import { getRFIDLogsByDate, processRFIDLogsToAttendance, subscribeToRFIDLogs } from '../services/attendanceService';
 import { getAllClasses, assignTeacherToClass, createClass, addSubjectTeacher, removeSubjectTeacher } from '../services/classService';
 import { addStudent } from '../services/studentService';
 import { translations } from '../utils/translations';
@@ -19,6 +20,8 @@ const AdminDashboard = () => {
 
     const [teachers, setTeachers] = useState([]);
     const [classes, setClasses] = useState([]);
+    const [rfidLogs, setRfidLogs] = useState([]);
+    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(true);
 
     // Assign Class State
@@ -30,6 +33,10 @@ const AdminDashboard = () => {
     const [isSubjectTeacherMode, setIsSubjectTeacherMode] = useState(false);
     const [selectedSubjectTeacher, setSelectedSubjectTeacher] = useState('');
     const [subjectName, setSubjectName] = useState('');
+
+    // Filter State
+    const [filterSubject, setFilterSubject] = useState('');
+    const [searchName, setSearchName] = useState('');
 
     // Add Teacher State
     const [isAddingTeacher, setIsAddingTeacher] = useState(false);
@@ -52,7 +59,25 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+
+        // Subscribe to live RFID logs for selected date
+        const unsubscribe = subscribeToRFIDLogs(selectedDate, async (logs) => {
+            setRfidLogs(logs);
+            // Auto-sync attendance when new logs arrive
+            // Only auto-sync if viewing TODAY's logs
+            const today = new Date().toISOString().split('T')[0];
+            if (selectedDate === today && logs.length > 0) {
+                try {
+                    await processRFIDLogsToAttendance();
+                    console.log("Auto-synced attendance from live logs");
+                } catch (e) {
+                    console.error("Auto-sync failed", e);
+                }
+            }
+        });
+
+        return () => unsubscribe();
+    }, [selectedDate]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -63,6 +88,7 @@ const AdminDashboard = () => {
             ]);
             setTeachers(teachersData);
             setClasses(classesData);
+            // Logs are handled by subscription now
         } catch (error) {
             console.error("Error fetching admin data:", error);
         } finally {
@@ -265,29 +291,7 @@ const AdminDashboard = () => {
                     </div>
                 </div>
 
-                {/* Migration Tool (Temporary) */}
-                <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex justify-between items-center">
-                    <div>
-                        <h3 className="font-bold text-yellow-800">System Maintenance</h3>
-                        <p className="text-sm text-yellow-700">Update all existing teachers to the new Employee ID format (EMP-YYYY-XXX).</p>
-                    </div>
-                    <button
-                        onClick={async () => {
-                            if (window.confirm("This will update Employee IDs for all teachers. Continue?")) {
-                                const result = await migrateExistingTeacherIds();
-                                if (result.success) {
-                                    alert(`Migration successful! Updated ${result.count} teachers.`);
-                                    fetchData();
-                                } else {
-                                    alert("Migration failed. Check console for details.");
-                                }
-                            }
-                        }}
-                        className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 font-medium"
-                    >
-                        Migrate IDs
-                    </button>
-                </div>
+
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -470,106 +474,224 @@ const AdminDashboard = () => {
                         </table>
                     </div>
                 </div>
-            </main>
+
+
+                {/* RFID Logs Section */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
+                    <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-xl font-bold text-gray-900">Today's RFID Scans</h2>
+                            <button
+                                onClick={async () => {
+                                    if (confirm("Sync these scans to the official Class Attendance records?")) {
+                                        try {
+                                            const result = await processRFIDLogsToAttendance(selectedDate);
+                                            alert(result.message);
+                                        } catch (e) {
+                                            alert("Sync failed: " + e.message);
+                                        }
+                                    }
+                                }}
+                                className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                            >
+                                Sync to Attendance
+                            </button>
+                        </div>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="text-sm border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm sticky top-0">
+                                <tr>
+                                    <th className="px-6 py-4">Time</th>
+                                    <th className="px-6 py-4">Student Name</th>
+                                    <th className="px-6 py-4">RFID ID</th>
+                                    <th className="px-6 py-4">Class ID</th>
+                                    <th className="px-6 py-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {rfidLogs.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500 italic">
+                                            No RFID scans recorded today.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    rfidLogs.map((log) => (
+                                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 text-gray-600 text-sm">
+                                                {log.timestamp?.seconds
+                                                    ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString()
+                                                    : (log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : 'Just now')}
+                                            </td>
+                                            <td className="px-6 py-4 font-medium text-gray-900">{log.studentName}</td>
+                                            <td className="px-6 py-4 text-gray-500 font-mono text-xs">{log.rfidId}</td>
+                                            <td className="px-6 py-4 text-gray-600">{log.classId}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                                                    }`}>
+                                                    {log.status === 'present' ? 'Present' : 'Absent'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main >
             <Footer />
 
             {/* Assign Teacher Modal */}
-            {isAssigning && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl">
-                        <h3 className="text-xl font-bold mb-4">Manage Teachers for {selectedClass?.name}</h3>
+            {
+                isAssigning && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+                            <h3 className="text-xl font-bold mb-4">Manage Teachers for {selectedClass?.name}</h3>
 
-                        {/* Tabs */}
-                        <div className="flex border-b border-gray-200 mb-4">
-                            <button
-                                className={`px-4 py-2 font-medium text-sm ${!isSubjectTeacherMode ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setIsSubjectTeacherMode(false)}
-                            >
-                                Class Teacher
-                            </button>
-                            <button
-                                className={`px-4 py-2 font-medium text-sm ${isSubjectTeacherMode ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                onClick={() => setIsSubjectTeacherMode(true)}
-                            >
-                                Subject Teachers
-                            </button>
-                        </div>
-
-                        {/* Class Teacher Section */}
-                        {!isSubjectTeacherMode && (
-                            <div className="space-y-4">
-                                <p className="text-sm text-gray-600">The Class Teacher is responsible for daily attendance and overall class management.</p>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Class Teacher</label>
-                                    <select
-                                        value={selectedTeacher}
-                                        onChange={(e) => setSelectedTeacher(e.target.value)}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    >
-                                        <option value="">-- Select Teacher --</option>
-                                        {teachers.map(t => (
-                                            <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="flex justify-end gap-3 pt-4">
-                                    <button
-                                        onClick={() => setIsAssigning(false)}
-                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleAssignTeacher}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    >
-                                        Save Class Teacher
-                                    </button>
-                                </div>
+                            {/* Tabs */}
+                            <div className="flex border-b border-gray-200 mb-4">
+                                <button
+                                    className={`px-4 py-2 font-medium text-sm ${!isSubjectTeacherMode ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    onClick={() => { setIsSubjectTeacherMode(false); setFilterSubject(''); setSearchName(''); }}
+                                >
+                                    Class Teacher
+                                </button>
+                                <button
+                                    className={`px-4 py-2 font-medium text-sm ${isSubjectTeacherMode ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    onClick={() => { setIsSubjectTeacherMode(true); setFilterSubject(''); setSearchName(''); }}
+                                >
+                                    Subject Teachers
+                                </button>
                             </div>
-                        )}
 
-                        {/* Subject Teachers Section */}
-                        {isSubjectTeacherMode && (
-                            <div className="space-y-4">
-                                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                                    <h4 className="font-medium text-sm text-gray-900 mb-2">Current Subject Teachers</h4>
-                                    {selectedClass?.subjectTeachers && selectedClass.subjectTeachers.length > 0 ? (
-                                        <ul className="space-y-2">
-                                            {selectedClass.subjectTeachers.map((st, index) => (
-                                                <li key={index} className="flex justify-between items-center bg-white p-2 rounded border border-gray-200 text-sm">
-                                                    <span>
-                                                        <span className="font-medium">{st.name}</span>
-                                                        <span className="text-gray-500 mx-1">•</span>
-                                                        <span className="text-blue-600">{st.subject}</span>
-                                                    </span>
-                                                    <button
-                                                        onClick={() => handleRemoveSubjectTeacher(st)}
-                                                        className="text-red-500 hover:text-red-700 p-1"
-                                                    >
-                                                        <Trash2 size={14} />
-                                                    </button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-sm text-gray-500 italic">No subject teachers assigned yet.</p>
-                                    )}
+                            {/* Filters */}
+                            <div className="mb-4 space-y-3">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search teacher by name..."
+                                        value={searchName}
+                                        onChange={(e) => setSearchName(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
                                 </div>
+                                <select
+                                    value={filterSubject}
+                                    onChange={(e) => setFilterSubject(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                >
+                                    <option value="">All Subjects</option>
+                                    {[...new Set(teachers.map(t => t.subject).filter(Boolean))].map(subject => (
+                                        <option key={subject} value={subject}>{subject}</option>
+                                    ))}
+                                </select>
+                            </div>
 
-                                <div className="border-t border-gray-200 pt-4">
-                                    <h4 className="font-medium text-sm text-gray-900 mb-2">Add Subject Teacher</h4>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <select
-                                            value={selectedSubjectTeacher}
-                                            onChange={(e) => setSelectedSubjectTeacher(e.target.value)}
-                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                        >
-                                            <option value="">-- Select Teacher --</option>
-                                            {teachers.map(t => (
-                                                <option key={t.id} value={t.id}>{t.name} - {t.subject || 'No Subject'}</option>
+                            {/* Class Teacher Section */}
+                            {!isSubjectTeacherMode && (
+                                <div className="space-y-4">
+                                    <p className="text-sm text-gray-600">Select a Class Teacher responsible for daily attendance.</p>
+
+                                    <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
+                                        {teachers
+                                            .filter(t =>
+                                                (filterSubject ? t.subject === filterSubject : true) &&
+                                                (searchName ? t.name.toLowerCase().includes(searchName.toLowerCase()) : true)
+                                            )
+                                            .map(t => (
+                                                <div
+                                                    key={t.id}
+                                                    onClick={() => setSelectedTeacher(t.id)}
+                                                    className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 flex justify-between items-center ${selectedTeacher === t.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''}`}
+                                                >
+                                                    <div>
+                                                        <div className="font-medium text-gray-900">{t.name}</div>
+                                                        <div className="text-xs text-gray-500">{t.subject || 'No Subject'} • {t.email}</div>
+                                                    </div>
+                                                    {selectedTeacher === t.id && <div className="w-3 h-3 bg-blue-600 rounded-full"></div>}
+                                                </div>
                                             ))}
-                                        </select>
+                                    </div>
+
+                                    <div className="flex justify-end gap-3 pt-4">
+                                        <button
+                                            onClick={() => setIsAssigning(false)}
+                                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleAssignTeacher}
+                                            disabled={!selectedTeacher}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                        >
+                                            Save Class Teacher
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Subject Teachers Section */}
+                            {isSubjectTeacherMode && (
+                                <div className="space-y-4">
+                                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                                        <h4 className="font-medium text-sm text-gray-900 mb-2">Current Subject Teachers</h4>
+                                        {selectedClass?.subjectTeachers && selectedClass.subjectTeachers.length > 0 ? (
+                                            <ul className="space-y-2">
+                                                {selectedClass.subjectTeachers.map((st, index) => (
+                                                    <li key={index} className="flex justify-between items-center bg-white p-2 rounded border border-gray-200 text-sm">
+                                                        <span>
+                                                            <span className="font-medium">{st.name}</span>
+                                                            <span className="text-gray-500 mx-1">•</span>
+                                                            <span className="text-blue-600">{st.subject}</span>
+                                                        </span>
+                                                        <button
+                                                            onClick={() => handleRemoveSubjectTeacher(st)}
+                                                            className="text-red-500 hover:text-red-700 p-1"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic">No subject teachers assigned yet.</p>
+                                        )}
+                                    </div>
+
+                                    <div className="border-t border-gray-200 pt-4">
+                                        <h4 className="font-medium text-sm text-gray-900 mb-2">Select Subject Teacher to Add</h4>
+
+                                        <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto mb-3">
+                                            {teachers
+                                                .filter(t =>
+                                                    (filterSubject ? t.subject === filterSubject : true) &&
+                                                    (searchName ? t.name.toLowerCase().includes(searchName.toLowerCase()) : true)
+                                                )
+                                                .map(t => (
+                                                    <div
+                                                        key={t.id}
+                                                        onClick={() => setSelectedSubjectTeacher(t.id)}
+                                                        className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 flex justify-between items-center ${selectedSubjectTeacher === t.id ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : ''}`}
+                                                    >
+                                                        <div>
+                                                            <div className="font-medium text-gray-900">{t.name}</div>
+                                                            <div className="text-xs text-gray-500">{t.subject || 'No Subject'}</div>
+                                                        </div>
+                                                        {selectedSubjectTeacher === t.id && <div className="w-3 h-3 bg-indigo-600 rounded-full"></div>}
+                                                    </div>
+                                                ))}
+                                        </div>
+
                                         <button
                                             onClick={handleAddSubjectTeacher}
                                             disabled={!selectedSubjectTeacher}
@@ -578,215 +700,221 @@ const AdminDashboard = () => {
                                             Add Subject Teacher
                                         </button>
                                     </div>
-                                </div>
 
-                                <div className="flex justify-end pt-2">
-                                    <button
-                                        onClick={() => setIsAssigning(false)}
-                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                                    >
-                                        Close
-                                    </button>
+                                    <div className="flex justify-end pt-2">
+                                        <button
+                                            onClick={() => setIsAssigning(false)}
+                                            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Add Teacher Modal */}
-            {isAddingTeacher && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                        <h3 className="text-xl font-bold mb-4">Add New Teacher</h3>
-                        <form onSubmit={handleAddTeacher} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={newTeacher.name}
-                                    onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    placeholder="e.g. Sunil Sharma"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    required
-                                    value={newTeacher.email}
-                                    onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    placeholder="e.g. sunil@school.com"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={newTeacher.password || ''}
-                                    onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    placeholder="Set a password (min 6 chars)"
-                                    minLength={6}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                                <input
-                                    type="text"
-                                    value={newTeacher.subject}
-                                    onChange={(e) => setNewTeacher({ ...newTeacher, subject: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    placeholder="e.g. Mathematics"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAddingTeacher(false)}
-                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                >
-                                    Add Teacher
-                                </button>
-                            </div>
-                        </form>
+            {
+                isAddingTeacher && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+                            <h3 className="text-xl font-bold mb-4">Add New Teacher</h3>
+                            <form onSubmit={handleAddTeacher} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={newTeacher.name}
+                                        onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                        placeholder="e.g. Sunil Sharma"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={newTeacher.email}
+                                        onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                        placeholder="e.g. sunil@school.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={newTeacher.password || ''}
+                                        onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                        placeholder="Set a password (min 6 chars)"
+                                        minLength={6}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                    <input
+                                        type="text"
+                                        value={newTeacher.subject}
+                                        onChange={(e) => setNewTeacher({ ...newTeacher, subject: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                        placeholder="e.g. Mathematics"
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingTeacher(false)}
+                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Add Teacher
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Add Class Modal */}
-            {isAddingClass && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                        <h3 className="text-xl font-bold mb-4">Add New Class</h3>
-                        <form onSubmit={handleCreateClass} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={newClass.name}
-                                    onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                    placeholder="e.g. Class 10-A"
-                                />
-                            </div>
-                            <div className="flex justify-end gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAddingClass(false)}
-                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                                >
-                                    Cancel
+            {
+                isAddingClass && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+                            <h3 className="text-xl font-bold mb-4">Add New Class</h3>
+                            <form onSubmit={handleCreateClass} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={newClass.name}
+                                        onChange={(e) => setNewClass({ ...newClass, name: e.target.value })}
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                        placeholder="e.g. Class 10-A"
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingClass(false)}
+                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Create Class
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+            {/* Add Student Modal */}
+            {
+                isAddingStudent && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-900">Add New Student</h3>
+                                <button onClick={() => setIsAddingStudent(false)} className="text-gray-400 hover:text-gray-600">
+                                    <LogOut size={20} className="rotate-45" />
                                 </button>
+                            </div>
+                            <form onSubmit={handleAddStudent} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={newStudent.name}
+                                        onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">RFID / Student ID</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Scan RFID or enter ID"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
+                                        value={newStudent.rfidId}
+                                        onChange={(e) => setNewStudent({ ...newStudent, rfidId: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={newStudent.rollNo}
+                                        onChange={(e) => setNewStudent({ ...newStudent, rollNo: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Assign Class</label>
+                                    <select
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={newStudent.classId}
+                                        onChange={(e) => setNewStudent({ ...newStudent, classId: e.target.value })}
+                                    >
+                                        <option value="">-- Select Class --</option>
+                                        {classes.map(cls => (
+                                            <option key={cls.id} value={cls.id}>{cls.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={newStudent.parentName}
+                                        onChange={(e) => setNewStudent({ ...newStudent, parentName: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={newStudent.parentPhone}
+                                        onChange={(e) => setNewStudent({ ...newStudent, parentPhone: e.target.value })}
+                                    />
+                                </div>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
                                 >
-                                    Create Class
+                                    Add Student
                                 </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-            {/* Add Student Modal */}
-            {isAddingStudent && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-gray-900">Add New Student</h3>
-                            <button onClick={() => setIsAddingStudent(false)} className="text-gray-400 hover:text-gray-600">
-                                <LogOut size={20} className="rotate-45" />
-                            </button>
+                            </form>
                         </div>
-                        <form onSubmit={handleAddStudent} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={newStudent.name}
-                                    onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">RFID / Student ID</label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="Scan RFID or enter ID"
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
-                                    value={newStudent.rfidId}
-                                    onChange={(e) => setNewStudent({ ...newStudent, rfidId: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={newStudent.rollNo}
-                                    onChange={(e) => setNewStudent({ ...newStudent, rollNo: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Assign Class</label>
-                                <select
-                                    required
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={newStudent.classId}
-                                    onChange={(e) => setNewStudent({ ...newStudent, classId: e.target.value })}
-                                >
-                                    <option value="">-- Select Class --</option>
-                                    {classes.map(cls => (
-                                        <option key={cls.id} value={cls.id}>{cls.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={newStudent.parentName}
-                                    onChange={(e) => setNewStudent({ ...newStudent, parentName: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
-                                <input
-                                    type="tel"
-                                    required
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    value={newStudent.parentPhone}
-                                    onChange={(e) => setNewStudent({ ...newStudent, parentPhone: e.target.value })}
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
-                            >
-                                Add Student
-                            </button>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

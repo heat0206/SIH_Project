@@ -47,12 +47,15 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                 <div className="mt-5">
                     <Link
                         to={`/attendance/view?classId=${id}`}
-                        className={`block w-full text-center py-3 rounded-lg font-semibold text-sm transition-colors ${isMarked
-                            ? 'bg-white text-[#1e3a8a] border border-[#1e3a8a] hover:bg-blue-50'
-                            : 'bg-[#1e3a8a] text-white hover:bg-blue-800 shadow-md'
+                        className={`block w-full text-center py-3 rounded-lg font-semibold text-sm transition-colors ${role === 'Class Teacher' && isMarked
+                                ? 'bg-white text-[#1e3a8a] border border-[#1e3a8a] hover:bg-blue-50'
+                                : 'bg-[#1e3a8a] text-white hover:bg-blue-800 shadow-md'
                             }`}
                     >
-                        {isMarked ? 'View / Edit Record' : 'Mark Attendance Now'}
+                        {role === 'Class Teacher'
+                            ? (isMarked ? 'View / Edit Record' : 'Mark Attendance Now')
+                            : 'View Attendance'
+                        }
                     </Link>
                 </div>
             </div>

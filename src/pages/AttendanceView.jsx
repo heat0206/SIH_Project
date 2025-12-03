@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { Camera, CreditCard, Edit2, MessageCircle } from 'lucide-react';
@@ -8,8 +9,9 @@ import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 import { downloadCSV, generateClassRegisterReport } from '../utils/reportGenerator';
-import { getStudentsByClass } from '../services/studentService';
-import { markAttendance, getAttendanceByDate } from '../services/attendanceService';
+import { getClassById } from '../services/classService';
+import { getStudentsByClass as getStudentsByClassService } from '../services/studentService';
+import { markAttendance, getAttendanceByDate, logRFIDScan } from '../services/attendanceService';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -25,13 +27,24 @@ const AttendanceView = () => {
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [density, setDensity] = useState('comfortable');
+    const [canEdit, setCanEdit] = useState(false);
+    const [className, setClassName] = useState('');
+    const { currentUser } = useAuth();
 
     useEffect(() => {
         const fetchStudents = async () => {
             if (classId === 'default') return;
 
             try {
-                const studentsData = await getStudentsByClass(classId);
+                const studentsData = await getStudentsByClassService(classId);
+                const classDetails = await getClassById(classId);
+
+                if (classDetails) {
+                    setClassName(classDetails.name || classDetails.id);
+                    if (currentUser) {
+                        setCanEdit(classDetails.teacherId === currentUser.uid);
+                    }
+                }
                 const date = new Date().toISOString().split('T')[0];
                 const existingAttendance = await getAttendanceByDate(classId, date);
 
@@ -82,17 +95,21 @@ const AttendanceView = () => {
         const studentIndex = students.findIndex(s => s.rfidId == tagId);
         if (studentIndex !== -1) {
             const student = students[studentIndex];
-            if (!student.present) {
+            if (!student.present && canEdit) {
                 toggleAttendance(student, 'rfid');
                 try {
                     const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
                     audio.play();
                 } catch (e) { console.log("Audio play failed", e); }
+
+                // Log the scan
+                logRFIDScan(student, classId, 'present');
             }
         }
     };
 
     const toggleAttendance = (student, method = 'manual') => {
+        if (!canEdit) return;
         setStudents(prev => prev.map(s => {
             if (s.id === student.id) {
                 const newStatus = !s.present;
@@ -221,7 +238,7 @@ const AttendanceView = () => {
                     <div className="detail-header flex flex-col md:flex-row justify-between items-start mb-8 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200 gap-4">
                         <div>
                             <div className="detail-title" style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-dark)' }}>
-                                {classId === 'default' ? 'Class VI - Section B' : `Class ${classId}`}
+                                {classId === 'default' ? 'Class VI - Section B' : (className || `Class ${classId}`)}
                             </div>
                             <div className="detail-meta" style={{ color: 'var(--text-light)', fontSize: '1rem', marginTop: '0.25rem' }}>
                                 {t.markedOn}: <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{new Date().toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
@@ -235,9 +252,9 @@ const AttendanceView = () => {
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button
                                 onClick={() => {
-                                    const className = classId === 'default' ? 'Class VI - Section B' : `Class ${classId}`;
-                                    const csv = generateClassRegisterReport(students, className);
-                                    downloadCSV(csv, `Class_Register_${className.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+                                    const nameForReport = classId === 'default' ? 'Class VI - Section B' : (className || `Class ${classId}`);
+                                    const csv = generateClassRegisterReport(students, nameForReport);
+                                    downloadCSV(csv, `Class_Register_${nameForReport.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
                                 }}
                                 className="btn-sm"
                                 style={{
@@ -254,24 +271,29 @@ const AttendanceView = () => {
                                 </svg>
                                 {t.download || 'Download'}
                             </button>
-                            <button onClick={markAllPresent} className="btn-sm" style={{
-                                padding: '0.75rem 1.25rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
-                                cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
-                            }}
-                                onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
-                                onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary-color)'}
-                            >
-                                {t.markAllPresent}
-                            </button>
-                            <button onClick={saveAttendance} className="btn-sm" style={{
-                                padding: '0.75rem 1.25rem', background: '#059669', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
-                                cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
-                            }}
-                                onMouseOver={(e) => e.currentTarget.style.background = '#047857'}
-                                onMouseOut={(e) => e.currentTarget.style.background = '#059669'}
-                            >
-                                Save Attendance
-                            </button>
+                            {canEdit && (
+                                <button onClick={markAllPresent} className="btn-sm" style={{
+                                    padding: '0.75rem 1.25rem', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
+                                }}
+                                    onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary-hover)'}
+                                    onMouseOut={(e) => e.currentTarget.style.background = 'var(--primary-color)'}
+                                >
+                                    {t.markAllPresent}
+                                </button>
+                            )}
+
+                            {canEdit && (
+                                <button onClick={saveAttendance} className="btn-sm" style={{
+                                    padding: '0.75rem 1.25rem', background: '#059669', color: 'white', border: 'none', borderRadius: 'var(--radius-md)',
+                                    cursor: 'pointer', fontWeight: 500, boxShadow: 'var(--shadow-sm)', transition: 'background 0.2s ease'
+                                }}
+                                    onMouseOver={(e) => e.currentTarget.style.background = '#047857'}
+                                    onMouseOut={(e) => e.currentTarget.style.background = '#059669'}
+                                >
+                                    Save Attendance
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -359,11 +381,13 @@ const AttendanceView = () => {
                                                         type="checkbox"
                                                         checked={s.present || false}
                                                         onChange={() => toggleAttendance(s)}
+                                                        disabled={!canEdit}
                                                         style={{ opacity: 0, width: 0, height: 0 }}
                                                     />
                                                     <span className="slider" style={{
-                                                        position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
-                                                        backgroundColor: s.present ? '#10b981' : '#e5e7eb', borderRadius: '34px', transition: '.3s ease'
+                                                        position: 'absolute', cursor: canEdit ? 'pointer' : 'not-allowed', top: 0, left: 0, right: 0, bottom: 0,
+                                                        backgroundColor: s.present ? '#10b981' : (canEdit ? '#e5e7eb' : '#f3f4f6'), borderRadius: '34px', transition: '.3s ease',
+                                                        opacity: canEdit ? 1 : 0.7
                                                     }}>
                                                         <span style={{
                                                             position: 'absolute', content: '""', height: '22px', width: '22px', left: s.present ? '26px' : '4px', bottom: '3px',
@@ -383,7 +407,7 @@ const AttendanceView = () => {
                                             {s.present && getVerificationBadge(s.verificationMethod)}
                                         </div>
                                         <div>
-                                            {!s.present && (
+                                            {!s.present && canEdit && (
                                                 <button
                                                     onClick={() => handleNotify(s.name)}
                                                     title="Send Absence Alert to Parent"

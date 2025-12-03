@@ -1,5 +1,5 @@
 import { db } from '../firebase';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
 
 
 export const getTeacherClasses = async (teacherId) => {
@@ -29,6 +29,21 @@ export const getTeacherClasses = async (teacherId) => {
         return Array.from(classesMap.values());
     } catch (error) {
         console.error("Error fetching teacher classes:", error);
+        throw error;
+    }
+};
+
+export const getClassById = async (classId) => {
+    try {
+        const classRef = doc(db, "classes", classId);
+        const classDoc = await getDoc(classRef);
+        if (classDoc.exists()) {
+            return { id: classDoc.id, ...classDoc.data() };
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching class by ID:", error);
         throw error;
     }
 };
