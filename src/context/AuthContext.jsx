@@ -3,7 +3,10 @@ import { auth } from '../firebase';
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
-    signOut
+    signOut,
+    setPersistence,
+    browserLocalPersistence,
+    browserSessionPersistence
 } from 'firebase/auth';
 import { getUserProfile } from '../services/userService';
 
@@ -17,12 +20,30 @@ export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    function login(email, password) {
-        return signInWithEmailAndPassword(auth, email, password);
+    async function login(email, password, rememberMe = false) {
+        try {
+            const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+            await setPersistence(auth, persistenceType);
+            return signInWithEmailAndPassword(auth, email, password);
+        } catch (error) {
+            console.error("Login error:", error);
+            throw error;
+        }
     }
 
     function logout() {
         return signOut(auth);
+    }
+
+    async function refreshProfile() {
+        if (currentUser && currentUser.uid) {
+            try {
+                const profile = await getUserProfile(currentUser.uid);
+                setCurrentUser(prev => ({ ...prev, ...profile }));
+            } catch (error) {
+                console.error("Error refreshing user profile:", error);
+            }
+        }
     }
 
     useEffect(() => {
@@ -47,7 +68,8 @@ export function AuthProvider({ children }) {
     const value = {
         currentUser,
         login,
-        logout
+        logout,
+        refreshProfile
     };
 
     return (

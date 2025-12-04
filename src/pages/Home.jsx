@@ -19,6 +19,7 @@ const Home = () => {
         userid: '',
         password: ''
     });
+    const [rememberMe, setRememberMe] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -39,7 +40,7 @@ const Home = () => {
         setError('');
 
         try {
-            const userCredential = await login(credentials.userid, credentials.password);
+            const userCredential = await login(credentials.userid, credentials.password, rememberMe);
             const user = userCredential.user;
 
             // Fetch user profile to check role
@@ -83,7 +84,10 @@ const Home = () => {
 
     const RoleCard = ({ id, icon: Icon, label }) => (
         <div
-            onClick={() => setRole(id)}
+            onClick={() => {
+                setRole(id);
+                setRememberMe(false);
+            }}
             className={`cursor-pointer flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all duration-200 ${role === id
                 ? 'border-blue-600 bg-blue-50 shadow-md transform scale-105'
                 : 'border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm'
@@ -118,7 +122,10 @@ const Home = () => {
                             <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-semibold tracking-wide uppercase border border-blue-100">
                                 {t.digitalHazri}
                             </div>
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-gray-900">
+                            <h1
+                                className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-gray-900"
+                                style={{ lineHeight: language === 'hi' ? '1.4' : undefined }}
+                            >
                                 {t.heroTitle}
                             </h1>
                             <p className="text-lg md:text-xl text-gray-600 max-w-lg leading-relaxed">
@@ -186,6 +193,22 @@ const Home = () => {
                                             />
                                         </div>
                                     </div>
+
+                                    {role === 'student' && (
+                                        <div className="flex items-center">
+                                            <input
+                                                id="remember-me"
+                                                name="remember-me"
+                                                type="checkbox"
+                                                checked={rememberMe}
+                                                onChange={(e) => setRememberMe(e.target.checked)}
+                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            />
+                                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                                                {t.rememberMe || "Remember me"}
+                                            </label>
+                                        </div>
+                                    )}
 
                                     {error && (
                                         <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center animate-pulse">

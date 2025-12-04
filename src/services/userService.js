@@ -18,6 +18,16 @@ export const getUserProfile = async (uid) => {
     }
 };
 
+export const updateUserProfile = async (uid, data) => {
+    try {
+        const userDocRef = doc(db, "users", uid);
+        await setDoc(userDocRef, data, { merge: true });
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        throw error;
+    }
+};
+
 export const getAllTeachers = async () => {
     try {
         const usersRef = collection(db, "users");
@@ -95,6 +105,42 @@ export const createTeacherProfile = async (teacherData) => {
         throw error;
     } finally {
         // 5. Clean up the secondary app instance
+        if (secondaryApp) {
+            await deleteApp(secondaryApp);
+        }
+    }
+};
+
+export const createParentProfile = async (parentData) => {
+    let secondaryApp = null;
+    try {
+        // 1. Initialize a secondary Firebase app
+        secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+        const secondaryAuth = getAuth(secondaryApp);
+
+        // 2. Create the user in Firebase Authentication
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, parentData.email, parentData.password);
+        const uid = userCredential.user.uid;
+
+        // 3. Create the user profile in Firestore
+        await setDoc(doc(db, "users", uid), {
+            uid: uid,
+            email: parentData.email,
+            role: 'parent',
+            studentId: parentData.studentId,
+            studentName: parentData.studentName,
+            createdAt: new Date()
+        });
+
+        // 4. Sign out the secondary auth
+        await signOut(secondaryAuth);
+
+        return uid;
+    } catch (error) {
+        console.error("Error creating parent profile:", error);
+        throw error;
+    } finally {
+        // 5. Clean up
         if (secondaryApp) {
             await deleteApp(secondaryApp);
         }

@@ -1,117 +1,204 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    Users,
+    GraduationCap,
+    School,
+    LayoutDashboard,
+    LogOut,
+    Plus,
+    Search,
+    Edit,
+    Trash2,
+    Video,
+    Download,
+    Filter,
+    RefreshCw,
+    BookOpen,
+    Phone,
+    UserCheck,
+    Utensils,
+    Wifi
+} from 'lucide-react';
+import {
+    collection,
+    getDocs,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    doc,
+    query,
+    where,
+    orderBy,
+    limit,
+    onSnapshot,
+    serverTimestamp
+} from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { translations } from '../utils/translations';
+import { useLanguage } from '../context/LanguageContext';
+import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGenerator';
+import { deleteStudent } from '../services/studentService';
+import { createParentProfile } from '../services/userService';
+import { subscribeToRFIDLogs, processRFIDLogsToAttendance } from '../services/attendanceService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Users, BookOpen, Calendar, Settings, LogOut, Plus, Search, MoreVertical, Download, Trash2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGenerator';
-import { useLanguage } from '../context/LanguageContext';
-import { useAuth } from '../context/AuthContext';
-import { getAllTeachers, createTeacherProfile, deleteTeacherProfile, migrateExistingTeacherIds } from '../services/userService';
-import { getRFIDLogsByDate, processRFIDLogsToAttendance, subscribeToRFIDLogs } from '../services/attendanceService';
-import { getAllClasses, assignTeacherToClass, createClass, addSubjectTeacher, removeSubjectTeacher } from '../services/classService';
-import { addStudent } from '../services/studentService';
-import { translations } from '../utils/translations';
-import { db } from '../firebase';
-import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, addDoc, onSnapshot, limit } from 'firebase/firestore';
+
+// Admin Dashboard Component
 const AdminDashboard = () => {
+    const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
     const { language } = useLanguage();
     const t = translations[language].adminDashboard;
-    const { logout } = useAuth();
 
+    // State Management
+    const [activeTab, setActiveTab] = useState('dashboard');
+    const [students, setStudents] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [classes, setClasses] = useState([]);
-    const [rfidLogs, setRfidLogs] = useState([]);
-    const [faceLogs, setFaceLogs] = useState([]);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [faceLogs, setFaceLogs] = useState([]);
+    const [totalPresent, setTotalPresent] = useState(0);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-    // Assign Class State
+    // Modal States
+    const [isAddingStudent, setIsAddingStudent] = useState(false);
+    const [isAddingTeacher, setIsAddingTeacher] = useState(false);
+    const [isEditingTeacher, setIsEditingTeacher] = useState(false);
+    const [editingTeacher, setEditingTeacher] = useState(null);
+    const [isAddingClass, setIsAddingClass] = useState(false);
     const [isAssigning, setIsAssigning] = useState(false);
     const [selectedClass, setSelectedClass] = useState(null);
     const [selectedTeacher, setSelectedTeacher] = useState('');
-
-    // Multi-teacher state
     const [isSubjectTeacherMode, setIsSubjectTeacherMode] = useState(false);
-    const [selectedSubjectTeacher, setSelectedSubjectTeacher] = useState('');
-    const [subjectName, setSubjectName] = useState('');
-
-    // Filter State
     const [filterSubject, setFilterSubject] = useState('');
     const [searchName, setSearchName] = useState('');
-
-    // Add Teacher State
-    const [isAddingTeacher, setIsAddingTeacher] = useState(false);
+    const [selectedSubjectTeacher, setSelectedSubjectTeacher] = useState('');
     const [newTeacher, setNewTeacher] = useState({ name: '', email: '', subject: '', password: '' });
-
-    // Add Student State
-    const [isAddingStudent, setIsAddingStudent] = useState(false);
-    const [newStudent, setNewStudent] = useState({
-        name: '',
-        rfidId: '',
-        rollNo: '',
-        parentName: '',
-        parentPhone: '',
-        classId: ''
-    });
-
-    // Add Class State
-    const [isAddingClass, setIsAddingClass] = useState(false);
     const [newClass, setNewClass] = useState({ name: '' });
+    const [newStudent, setNewStudent] = useState({ name: '', rollNo: '', classId: '', rfidId: '', parentName: '', parentPhone: '', parentUid: '', parentPassword: '' });
 
-    useEffect(() => {
-        fetchData();
+    // Edit States
+    const [isEditingStudent, setIsEditingStudent] = useState(false);
+    const [editingStudent, setEditingStudent] = useState(null);
 
-        // Subscribe to live RFID logs for selected date
-        const unsubscribe = subscribeToRFIDLogs(selectedDate, async (logs) => {
-            setRfidLogs(logs);
-            // Auto-sync attendance when new logs arrive
-            // Only auto-sync if viewing TODAY's logs
-            const today = new Date().toISOString().split('T')[0];
-            if (selectedDate === today && logs.length > 0) {
-                try {
-                    await processRFIDLogsToAttendance(selectedDate);
-                    console.log("Auto-synced attendance from live logs");
-                } catch (e) {
-                    console.error("Auto-sync failed", e);
-                }
-            }
-        });
+    // Search & Filter States
+    const [searchStudentQuery, setSearchStudentQuery] = useState('');
+    const [studentClassFilter, setStudentClassFilter] = useState('');
+    const [filteredStudents, setFilteredStudents] = useState([]);
+    const [searchTeacherQuery, setSearchTeacherQuery] = useState('');
+    const [searchClassQuery, setSearchClassQuery] = useState('');
 
-        // Subscribe to Face Logs (Simple fetch for now, can be realtime later)
-        const faceLogsRef = collection(db, "face_logs");
-        const qFace = query(faceLogsRef, limit(20)); // Get last 20
-        const unsubscribeFace = onSnapshot(qFace, (snapshot) => {
-            const logs = [];
-            snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
-            // Sort by timestamp (descending)
-            logs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-            setFaceLogs(logs);
-        });
 
-        return () => {
-            unsubscribe();
-            unsubscribeFace();
-        };
-    }, [selectedDate]);
-
+    // Data Fetching
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [teachersData, classesData] = await Promise.all([
-                getAllTeachers(),
-                getAllClasses()
-            ]);
-            setTeachers(teachersData);
-            setClasses(classesData);
-            // Logs are handled by subscription now
+            // Fetch Students
+            const studentsSnapshot = await getDocs(collection(db, 'students'));
+            const studentsList = studentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setStudents(studentsList);
+
+            // Fetch Teachers
+            const teachersQuery = query(collection(db, 'users'), where('role', '==', 'teacher'));
+            const teachersSnapshot = await getDocs(teachersQuery);
+            const teachersList = teachersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setTeachers(teachersList);
+
+            // Fetch Classes
+            const classesSnapshot = await getDocs(collection(db, 'classes'));
+            const classesList = classesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setClasses(classesList);
+
+            // Fetch Logs (Mock or Real)
+            // Removed manual fetch to use real-time subscription below
+
         } catch (error) {
-            console.error("Error fetching admin data:", error);
+            console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
         }
     };
 
+    useEffect(() => {
+        fetchData();
+
+        // Real-time listener for RFID logs & Auto-Process Attendance
+        const today = new Date().toISOString().split('T')[0];
+        console.log("[Dashboard] Setting up RFID subscription for date:", today);
+
+        const unsubscribeLogs = subscribeToRFIDLogs(today, (newLogs) => {
+            console.log("[Dashboard] Received logs update:", newLogs.length);
+            setLogs(newLogs);
+            // Auto-process attendance whenever new logs arrive
+            console.log("[Dashboard] Triggering auto-process...");
+            processRFIDLogsToAttendance(today).catch(err => console.error("Auto-process failed", err));
+        });
+
+        const unsubscribeFace = onSnapshot(
+            query(collection(db, 'face_recognition_logs'), orderBy('timestamp', 'desc'), limit(1)),
+            (snapshot) => {
+                const newLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (newLogs.length > 0) {
+                    setFaceLogs(newLogs);
+                }
+            }
+        );
+
+        // Real-time listener for Total Attendance (Mid-Day Meal)
+        const attendanceQuery = query(collection(db, 'attendance'), where('date', '==', today));
+        const unsubscribeAttendance = onSnapshot(attendanceQuery, (snapshot) => {
+            let count = 0;
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                if (data.records) {
+                    count += data.records.filter(r => r.present).length;
+                }
+            });
+            setTotalPresent(count);
+        });
+
+        // Online/Offline Listeners
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            unsubscribeLogs();
+            unsubscribeFace();
+            unsubscribeAttendance();
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    // Filter Logic
+    useEffect(() => {
+        let filtered = students;
+
+        // Filter by Search Query
+        if (searchStudentQuery.trim()) {
+            const query = searchStudentQuery.toLowerCase();
+            filtered = filtered.filter(student =>
+                student.name.toLowerCase().includes(query) ||
+                (student.rfidId && student.rfidId.toLowerCase().includes(query)) ||
+                (student.rollNo && student.rollNo.toLowerCase().includes(query))
+            );
+        }
+
+        // Filter by Class
+        if (studentClassFilter) {
+            filtered = filtered.filter(student => student.classId === studentClassFilter);
+        }
+
+        setFilteredStudents(filtered);
+    }, [searchStudentQuery, studentClassFilter, students]);
+
+    // Handlers
     const handleLogout = async () => {
         try {
             await logout();
@@ -121,22 +208,231 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleAddStudent = async (e) => {
+        e.preventDefault();
+        // Use state directly instead of FormData because inputs are controlled
+        const studentData = {
+            name: newStudent.name,
+            rollNo: newStudent.rollNo,
+            classId: newStudent.classId,
+            className: classes.find(c => c.id === newStudent.classId)?.name || '',
+            rfidId: newStudent.rfidId,
+            parentName: newStudent.parentName,
+            parentPhone: newStudent.parentPhone,
+            parentEmail: newStudent.parentUid, // Save parent email for linking
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            // 1. Create Student
+            const studentRef = await addDoc(collection(db, 'students'), studentData);
+
+            // 2. Create Parent Account if credentials provided
+            if (newStudent.parentUid && newStudent.parentPassword) {
+                await createParentProfile({
+                    email: newStudent.parentUid,
+                    password: newStudent.parentPassword,
+                    studentId: studentRef.id,
+                    studentName: studentData.name
+                });
+            }
+
+            setIsAddingStudent(false);
+            fetchData();
+            alert("Student and Parent Account added successfully!");
+        } catch (error) {
+            console.error("Error adding student/parent:", error);
+            alert("Failed to add student or parent account. Check console for details.");
+        }
+    };
+
+    const handleUpdateStudent = async (e) => {
+        e.preventDefault();
+        if (!editingStudent) return;
+
+        const formData = new FormData(e.target);
+        const updatedStudent = {
+            name: formData.get('name'),
+            rollNo: formData.get('rollNo'),
+            classId: formData.get('classId'),
+            className: classes.find(c => c.id === formData.get('classId'))?.name || '',
+            rfidId: formData.get('rfidId'),
+            parentName: formData.get('parentName'),
+            parentPhone: formData.get('parentPhone'),
+        };
+
+        try {
+            const studentRef = doc(db, 'students', editingStudent.id);
+            await updateDoc(studentRef, updatedStudent);
+            setIsEditingStudent(false);
+            setEditingStudent(null);
+            fetchData();
+            alert("Student updated successfully!");
+        } catch (error) {
+            console.error("Error updating student:", error);
+            alert("Failed to update student.");
+        }
+    };
+
+    const handleDeleteStudent = async (studentId) => {
+        if (window.confirm("Are you sure you want to delete this student? This action cannot be undone.")) {
+            try {
+                await deleteStudent(studentId);
+                await fetchData();
+            } catch (error) {
+                console.error("Failed to delete student:", error);
+                alert("Failed to delete student. Please try again.");
+            }
+        }
+    };
+
+    const handleAddTeacher = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const newTeacher = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            subject: formData.get('subject'),
+            role: 'teacher',
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            await addDoc(collection(db, 'users'), newTeacher);
+            setIsAddingTeacher(false);
+            fetchData();
+            alert("Teacher added successfully!");
+        } catch (error) {
+            console.error("Error adding teacher:", error);
+            alert("Failed to add teacher.");
+        }
+    };
+
+    const handleUpdateTeacher = async (e) => {
+        e.preventDefault();
+        if (!editingTeacher) return;
+
+        const formData = new FormData(e.target);
+        const updatedTeacher = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            subject: formData.get('subject')
+        };
+
+        try {
+            const teacherRef = doc(db, 'users', editingTeacher.id);
+            await updateDoc(teacherRef, updatedTeacher);
+            setIsEditingTeacher(false);
+            setEditingTeacher(null);
+            fetchData();
+            alert("Teacher updated successfully!");
+        } catch (error) {
+            console.error("Error updating teacher:", error);
+            alert("Failed to update teacher.");
+        }
+    };
+
+    const handleRemoveTeacher = async (teacherId) => {
+        if (window.confirm("Are you sure you want to remove this teacher?")) {
+            try {
+                await deleteDoc(doc(db, 'users', teacherId));
+                fetchData();
+            } catch (error) {
+                console.error("Error removing teacher:", error);
+            }
+        }
+    };
+
+    const handleAddClass = async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const newClass = {
+            id: formData.get('classId'), // Using ID as manual input for simplicity like '6B'
+            name: formData.get('className'),
+            teacherId: '',
+            teacherName: '',
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            // Check if ID exists
+            if (classes.some(c => c.id === newClass.id)) {
+                alert("Class ID already exists!");
+                return;
+            }
+            // We use setDoc if we want custom ID, but addDoc generates one.
+            // For this app, let's use custom ID if possible, but Firestore addDoc is safer.
+            // We'll store 'id' as a field.
+            await addDoc(collection(db, 'classes'), newClass);
+            setIsAddingClass(false);
+            fetchData();
+            alert("Class added successfully!");
+        } catch (error) {
+            console.error("Error adding class:", error);
+            alert("Failed to add class.");
+        }
+    };
+
     const handleAssignTeacher = async () => {
         if (!selectedClass || !selectedTeacher) return;
 
         try {
+            const classRef = doc(db, 'classes', selectedClass.id);
             const teacher = teachers.find(t => t.id === selectedTeacher);
-            await assignTeacherToClass(selectedClass.id, selectedTeacher, teacher?.name);
 
-            // Refresh data
-            await fetchData();
-            // Don't close modal, just refresh to show update if we were in that mode, but actually for class teacher we usually close
+            if (!isSubjectTeacherMode) {
+                // Assign Class Teacher
+                await updateDoc(classRef, {
+                    teacherId: teacher.id,
+                    teacherName: teacher.name
+                });
+            } else {
+                // Assign Subject Teacher
+                const newSubjectTeacher = {
+                    id: teacher.id,
+                    name: teacher.name,
+                    subject: teacher.subject || 'General'
+                };
+                const currentSubjectTeachers = selectedClass.subjectTeachers || [];
+                // Check if subject already exists
+                if (currentSubjectTeachers.some(st => st.subject === newSubjectTeacher.subject)) {
+                    if (!window.confirm(`A teacher for ${newSubjectTeacher.subject} is already assigned. Overwrite?`)) {
+                        return;
+                    }
+                    // Remove old one
+                    const filtered = currentSubjectTeachers.filter(st => st.subject !== newSubjectTeacher.subject);
+                    await updateDoc(classRef, {
+                        subjectTeachers: [...filtered, newSubjectTeacher]
+                    });
+                } else {
+                    await updateDoc(classRef, {
+                        subjectTeachers: [...currentSubjectTeachers, newSubjectTeacher]
+                    });
+                }
+            }
+
             setIsAssigning(false);
-            setSelectedClass(null);
-            setSelectedTeacher('');
+            fetchData();
+            alert("Teacher assigned successfully!");
         } catch (error) {
-            console.error("Failed to assign teacher:", error);
-            alert("Failed to assign teacher. Please try again.");
+            console.error("Error assigning teacher:", error);
+            alert("Failed to assign teacher.");
+        }
+    };
+
+    const handleRemoveSubjectTeacher = async (teacherToRemove) => {
+        if (!window.confirm(`Remove ${teacherToRemove.name} as ${teacherToRemove.subject} teacher?`)) return;
+        try {
+            const classRef = doc(db, 'classes', selectedClass.id);
+            const updatedSubjectTeachers = selectedClass.subjectTeachers.filter(st => st.id !== teacherToRemove.id || st.subject !== teacherToRemove.subject);
+            await updateDoc(classRef, {
+                subjectTeachers: updatedSubjectTeachers
+            });
+            // Update local state to reflect change immediately in modal
+            setSelectedClass(prev => ({ ...prev, subjectTeachers: updatedSubjectTeachers }));
+            fetchData();
+        } catch (error) {
+            console.error("Error removing subject teacher:", error);
         }
     };
 
@@ -145,121 +441,82 @@ const AdminDashboard = () => {
 
         try {
             const teacher = teachers.find(t => t.id === selectedSubjectTeacher);
-            // Use the teacher's subject from their profile, or fallback to 'General' if missing
-            const subject = teacher?.subject || 'General';
+            if (!teacher) return;
 
-            await addSubjectTeacher(selectedClass.id, selectedSubjectTeacher, teacher?.name, subject);
+            const newSubjectTeacher = {
+                id: teacher.id,
+                name: teacher.name,
+                subject: teacher.subject || 'General'
+            };
 
-            // Refresh data locally to update the modal list immediately
-            await fetchData();
+            const classRef = doc(db, 'classes', selectedClass.id);
+            const currentSubjectTeachers = selectedClass.subjectTeachers || [];
 
-            // Reset form but keep modal open
+            // Check if subject already exists
+            if (currentSubjectTeachers.some(st => st.subject === newSubjectTeacher.subject)) {
+                if (!window.confirm(`A teacher for ${newSubjectTeacher.subject} is already assigned. Overwrite?`)) {
+                    return;
+                }
+                // Remove old one and add new
+                const filtered = currentSubjectTeachers.filter(st => st.subject !== newSubjectTeacher.subject);
+                const updated = [...filtered, newSubjectTeacher];
+
+                await updateDoc(classRef, { subjectTeachers: updated });
+                setSelectedClass(prev => ({ ...prev, subjectTeachers: updated }));
+            } else {
+                const updated = [...currentSubjectTeachers, newSubjectTeacher];
+                await updateDoc(classRef, { subjectTeachers: updated });
+                setSelectedClass(prev => ({ ...prev, subjectTeachers: updated }));
+            }
+
             setSelectedSubjectTeacher('');
-            // setSubjectName(''); // No longer used
-
-            // We need to update selectedClass to the new data so the list updates
-            const updatedClasses = await getAllClasses();
-            setClasses(updatedClasses);
-            const updatedClass = updatedClasses.find(c => c.id === selectedClass.id);
-            setSelectedClass(updatedClass);
-
+            fetchData();
+            alert("Subject teacher assigned successfully!");
         } catch (error) {
-            console.error("Failed to add subject teacher:", error);
-            alert("Failed to add subject teacher. Please try again.");
-        }
-    };
-
-    const handleRemoveSubjectTeacher = async (teacherObject) => {
-        if (!selectedClass) return;
-        if (!window.confirm(`Remove ${teacherObject.name} from ${teacherObject.subject}?`)) return;
-
-        try {
-            await removeSubjectTeacher(selectedClass.id, teacherObject);
-
-            // Refresh
-            const updatedClasses = await getAllClasses();
-            setClasses(updatedClasses);
-            const updatedClass = updatedClasses.find(c => c.id === selectedClass.id);
-            setSelectedClass(updatedClass);
-        } catch (error) {
-            console.error("Failed to remove subject teacher:", error);
-            alert("Failed to remove subject teacher. Please try again.");
-        }
-    };
-
-    const handleAddTeacher = async (e) => {
-        e.preventDefault();
-        try {
-            await createTeacherProfile(newTeacher);
-            await fetchData();
-            setIsAddingTeacher(false);
-            setNewTeacher({ name: '', email: '', subject: '', password: '' });
-        } catch (error) {
-            console.error("Failed to add teacher:", error);
-            alert("Failed to add teacher. Please try again.");
+            console.error("Error assigning subject teacher:", error);
+            alert("Failed to assign subject teacher.");
         }
     };
 
     const handleCreateClass = async (e) => {
         e.preventDefault();
+        if (!newClass.name) return;
+
         try {
-            await createClass(newClass);
-            await fetchData();
+            // Generate a simple ID from name if not provided (e.g. "Class 6A" -> "6A")
+            // For now, let's just use the name as ID if it's short, or generate one.
+            // Actually, let's just use addDoc to let Firestore generate ID, 
+            // OR use the name as ID if we want readable IDs.
+            // Let's stick to addDoc for safety, but store name.
+
+            await addDoc(collection(db, 'classes'), {
+                name: newClass.name,
+                createdAt: serverTimestamp(),
+                teacherId: '',
+                teacherName: '',
+                subjectTeachers: []
+            });
+
             setIsAddingClass(false);
             setNewClass({ name: '' });
+            fetchData();
+            alert("Class created successfully!");
         } catch (error) {
-            console.error("Failed to create class:", error);
-            alert("Failed to create class. Please try again.");
+            console.error("Error creating class:", error);
+            alert("Failed to create class.");
         }
     };
 
-    const handleAddStudent = async (e) => {
-        e.preventDefault();
-        try {
-            if (!newStudent.classId) {
-                alert("Please select a class for the student.");
-                return;
-            }
+    // Filtered Lists
+    const filteredTeachers = teachers.filter(t =>
+        t.name.toLowerCase().includes(searchTeacherQuery.toLowerCase()) ||
+        (t.email && t.email.toLowerCase().includes(searchTeacherQuery.toLowerCase()))
+    );
 
-            const selectedClassObj = classes.find(c => c.id === newStudent.classId);
-            const studentData = {
-                name: newStudent.name,
-                rollNo: newStudent.rollNo,
-                parentName: newStudent.parentName,
-                parentPhone: newStudent.parentPhone,
-                classId: newStudent.classId,
-                className: selectedClassObj?.name || ''
-            };
-
-            await addStudent(studentData, newStudent.rfidId);
-
-            alert("Student added successfully!");
-            setIsAddingStudent(false);
-            setNewStudent({
-                name: '',
-                rfidId: '',
-                rollNo: '',
-                parentName: '',
-                parentPhone: '',
-                classId: ''
-            });
-        } catch (error) {
-            console.error("Failed to add student:", error);
-            alert("Failed to add student. Please try again.");
-        }
-    };
-
-    const handleRemoveTeacher = async (teacherId) => {
-        if (window.confirm("Are you sure you want to remove this teacher? This action cannot be undone.")) {
-            try {
-                await deleteTeacherProfile(teacherId);
-                await fetchData();
-            } catch (error) {
-                console.error("Failed to remove teacher:", error);
-                alert("Failed to remove teacher. Please try again.");
-            }
-        }
-    };
+    const filteredClasses = classes.filter(c =>
+        (c.name && c.name.toLowerCase().includes(searchClassQuery.toLowerCase())) ||
+        (c.teacherName && c.teacherName.toLowerCase().includes(searchClassQuery.toLowerCase()))
+    );
 
     const openAssignModal = (cls) => {
         setSelectedClass(cls);
@@ -277,319 +534,538 @@ const AdminDashboard = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-            <Header variant="simple" />
+        <div className="flex flex-col h-screen bg-gray-50 font-sans">
+            <Header variant="dashboard" />
 
-            <main className="flex-grow container mx-auto px-4 py-8">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">{t.title}</h1>
-                        <p className="text-gray-600 mt-1">{t.subtitle}</p>
-                    </div>
-                    <div className="flex gap-3 w-full md:w-auto">
-                        <button
-                            onClick={() => {
-                                const csv = generateMasterComplianceReport(teachers, classes);
-                                downloadCSV(csv, `Master_Compliance_Report_${new Date().toISOString().split('T')[0]}.csv`);
-                            }}
-                            className="flex-1 md:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2 shadow-sm"
-                        >
-                            <Download size={18} />
-                            {t.masterReport}
+            <div className="flex flex-1 overflow-hidden">
+                {/* Sidebar */}
+                <div className="w-64 bg-white border-r border-gray-200 flex flex-col z-10">
+                    <nav className="flex-1 p-4 space-y-2 mt-4">
+                        <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <LayoutDashboard size={20} /> {t.dashboard}
                         </button>
-                        <button
-                            onClick={handleLogout}
-                            className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium flex items-center gap-2"
-                        >
-                            <LogOut size={18} />
-                            {t.logout}
+                        <button onClick={() => setActiveTab('students')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'students' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <Users size={20} /> {t.students}
                         </button>
-                    </div>
+                        <button onClick={() => setActiveTab('teachers')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'teachers' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <GraduationCap size={20} /> {t.teachers}
+                        </button>
+                        <button onClick={() => setActiveTab('classes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'classes' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <School size={20} /> {t.classes}
+                        </button>
+                    </nav>
                 </div>
 
-
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <button
-                        onClick={() => setIsAddingTeacher(true)}
-                        className="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 group"
-                    >
-                        <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                            <Users size={24} />
-                        </div>
-                        <span className="font-semibold text-gray-700">Add New Teacher</span>
-                    </button>
-
-                    <button
-                        onClick={() => setIsAddingClass(true)}
-                        className="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 group"
-                    >
-                        <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                            <BookOpen size={24} />
-                        </div>
-                        <span className="font-semibold text-gray-700">Add New Class</span>
-                    </button>
-
-                    <button
-                        onClick={() => setIsAddingStudent(true)}
-                        className="p-6 bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 group"
-                    >
-                        <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform">
-                            <Users size={24} />
-                        </div>
-                        <span className="font-semibold text-gray-700">Add New Student</span>
-                    </button>
-                </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10">
+                        <h1 className="text-2xl font-bold text-gray-900 capitalize">{t[activeTab]}</h1>
                         <div className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                                <Users size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-medium">{t.totalTeachers}</p>
-                                <h3 className="text-2xl font-bold text-gray-900">{teachers.length}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
-                                <BookOpen size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-medium">{t.totalClasses}</p>
-                                <h3 className="text-2xl font-bold text-gray-900">{classes.length}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-green-50 text-green-600 rounded-lg">
-                                <Settings size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 font-medium">{t.systemStatus}</p>
-                                <h3 className="text-2xl font-bold text-gray-900">{t.active}</h3>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Class Assignments */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-gray-900">{t.classAssignments}</h2>
-
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
-                                <tr>
-                                    <th className="px-6 py-4">{t.className}</th>
-                                    <th className="px-6 py-4">{t.assignedTeacher}</th>
-                                    <th className="px-6 py-4 text-right">{t.action}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {classes.map((cls) => (
-                                    <tr key={cls.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-gray-900">{cls.name || cls.id}</td>
-                                        <td className="px-6 py-4 text-gray-600">
-                                            {cls.teacherName ? (
-                                                <span className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
-                                                        {cls.teacherName.charAt(0)}
-                                                    </div>
-                                                    {cls.teacherName}
-                                                </span>
-                                            ) : (
-                                                <span className="text-red-500 italic">{t.unassigned}</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => openAssignModal(cls)}
-                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                                            >
-                                                Assign
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                {/* Teachers List */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
-                    <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-gray-900">{t.registeredTeachers}</h2>
-
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
-                                <tr>
-                                    <th className="px-6 py-4">{t.assignedTeacher}</th>
-                                    <th className="px-6 py-4">{t.className}</th>
-                                    <th className="px-6 py-4 text-right">{t.action}</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {teachers.map((teacher) => (
-                                    <tr key={teacher.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 font-medium text-gray-900">
-                                            <span className="flex items-center gap-2">
-                                                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm font-bold">
-                                                    {teacher.name ? teacher.name.charAt(0) : 'T'}
-                                                </div>
-                                                <div>
-                                                    <div className="font-medium">{teacher.name}</div>
-                                                    <div className="text-xs text-gray-500">{teacher.email}</div>
-                                                </div>
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-600">
-                                            <div className="flex gap-2">
-                                                {classes.filter(c => c.teacherId === teacher.id).map(c => (
-                                                    <span key={c.id} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200">
-                                                        {c.name || c.id}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => handleRemoveTeacher(teacher.id)}
-                                                className="text-red-400 hover:text-red-600"
-                                                title="Remove Teacher"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-
-                {/* RFID Logs Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
-                    <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-xl font-bold text-gray-900">Today's RFID Scans</h2>
+                            <div className="text-sm text-gray-500">{new Date().toLocaleDateString()}</div>
                             <button
-                                onClick={async () => {
-                                    if (confirm("Sync these scans to the official Class Attendance records?")) {
-                                        try {
-                                            const result = await processRFIDLogsToAttendance(selectedDate);
-                                            alert(result.message);
-                                        } catch (e) {
-                                            alert("Sync failed: " + e.message);
-                                        }
-                                    }
+                                onClick={() => {
+                                    const csv = generateMasterComplianceReport(teachers, classes);
+                                    downloadCSV(csv, `Master_Compliance_Report_${new Date().toISOString().split('T')[0]}.csv`);
                                 }}
-                                className="px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-full border border-indigo-100 hover:bg-indigo-100 transition-colors"
+                                className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 font-medium flex items-center gap-2 text-sm"
                             >
-                                Sync to Attendance
+                                <Download size={16} />
+                                Report
                             </button>
                         </div>
-                        <input
-                            type="date"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                            className="text-sm border border-gray-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                    </div>
-                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm sticky top-0">
-                                <tr>
-                                    <th className="px-6 py-4">Time</th>
-                                    <th className="px-6 py-4">Student Name</th>
-                                    <th className="px-6 py-4">RFID ID</th>
-                                    <th className="px-6 py-4">Class ID</th>
-                                    <th className="px-6 py-4">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                                {rfidLogs.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500 italic">
-                                            No RFID scans recorded today.
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    rfidLogs.map((log) => (
-                                        <tr key={log.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 text-gray-600 text-sm">
-                                                {log.timestamp?.seconds
-                                                    ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString()
-                                                    : (log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : 'Just now')}
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-gray-900">{log.studentName}</td>
-                                            <td className="px-6 py-4 text-gray-500 font-mono text-xs">{log.rfidId}</td>
-                                            <td className="px-6 py-4 text-gray-600">{log.classId}</td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${log.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                    {log.status === 'present' ? 'Present' : 'Absent'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                    </header>
 
-                {/* Face Recognition Logs Section */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
-                    <div className="p-6 border-b border-gray-200">
-                        <h2 className="text-xl font-bold text-gray-900">Face Recognition Logs</h2>
-                        <span className="text-sm text-gray-500">Recent Captures</span>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {faceLogs.length === 0 ? (
-                            <p className="text-gray-500 col-span-full text-center py-4">No face logs detected yet.</p>
-                        ) : (
-                            faceLogs.map((log) => (
-                                <div key={log.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                                    <div className="aspect-video bg-gray-100 relative">
-                                        {log.imageUrl ? (
-                                            <img
-                                                src={log.imageUrl}
-                                                alt="Face Capture"
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/300x200?text=Image+Error' }}
-                                            />
-                                        ) : (
-                                            <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
-                                        )}
+                    <main className="flex-1 overflow-y-auto p-8">
+                        {activeTab === 'dashboard' && (
+                            <>
+                                {/* KPI Cards Row */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                    {/* Card 1: Total Students */}
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+                                        <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                                            <Users size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 font-medium">{t.totalStudents}</p>
+                                            <h3 className="text-2xl font-bold text-gray-900">{students.length}</h3>
+                                        </div>
                                     </div>
-                                    <div className="p-3">
-                                        <p className="text-xs text-gray-500">
-                                            {log.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'Just now'}
-                                        </p>
-                                        <p className="text-sm font-medium text-gray-800 mt-1">
-                                            {log.device || "Unknown Device"}
-                                        </p>
+
+                                    {/* Card 2: Staff Present */}
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+                                        <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                                            <UserCheck size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 font-medium">{t.teachersPresent}</p>
+                                            <h3 className="text-2xl font-bold text-gray-900">
+                                                {teachers.length > 0 ? `${Math.floor(teachers.length * 0.8)}/${teachers.length}` : "0/0"}
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 3: Mid-Day Meal Eligible */}
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-200 flex items-center gap-4">
+                                        <div className="p-3 bg-orange-50 text-orange-600 rounded-lg">
+                                            <Utensils size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 font-medium">{t.midDayMealEligible}</p>
+                                            <h3 className="text-2xl font-bold text-orange-600">
+                                                {totalPresent}
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    {/* Card 4: Connectivity Status */}
+                                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center gap-4">
+                                        <div className={`p-3 rounded-lg ${isOnline ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                                            <Wifi size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 font-medium">{t.connectivityStatus}</p>
+                                            <h3 className={`text-2xl font-bold ${isOnline ? 'text-green-600' : 'text-red-600'}`}>
+                                                {isOnline ? t.online : t.offline}
+                                            </h3>
+                                        </div>
                                     </div>
                                 </div>
-                            ))
+
+                                {/* Live Feed Section */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                                    {/* Left: Recent Scans */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[400px] flex flex-col">
+                                        <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                                <Users size={18} /> Recent Scans
+                                            </h2>
+                                            <span className="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">Live</span>
+                                        </div>
+                                        <div className="overflow-y-auto flex-grow p-0">
+                                            <table className="w-full text-left">
+                                                <thead className="bg-gray-50 text-gray-500 text-xs uppercase sticky top-0">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Time</th>
+                                                        <th className="px-4 py-3">Name</th>
+                                                        <th className="px-4 py-3 text-right">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {logs.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan="3" className="px-4 py-8 text-center text-gray-400 text-sm">
+                                                                No scans yet today.
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        logs.slice(0, 20).map((log) => (
+                                                            <tr key={log.id} className="hover:bg-blue-50 transition-colors">
+                                                                <td className="px-4 py-3 text-gray-500 text-xs font-mono">
+                                                                    {log.timestamp?.seconds
+                                                                        ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                                                        : 'Just now'}
+                                                                </td>
+                                                                <td className="px-4 py-3 font-medium text-gray-800 text-sm">{log.studentName}</td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${log.status === 'present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                                        {log.status === 'present' ? 'Present' : 'Absent'}
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Live Camera Feed */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[400px] flex flex-col">
+                                        <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                                <Video size={18} /> Live Camera Feed
+                                            </h2>
+                                            <span className="text-xs font-mono bg-red-100 text-red-800 px-2 py-1 rounded animate-pulse">REC</span>
+                                        </div>
+                                        <div className="flex-grow bg-gray-900 flex flex-col items-center justify-center text-gray-500 relative">
+                                            {/* Placeholder for Stream */}
+                                            <div className="text-center p-6">
+                                                <div className="w-16 h-16 border-4 border-gray-700 border-t-gray-500 rounded-full animate-spin mb-4 mx-auto"></div>
+                                                <p className="text-gray-400 font-mono text-sm">Awaiting ESP32 Stream...</p>
+                                                <p className="text-gray-600 text-xs mt-2">Device ID: ESP32-CAM-01</p>
+                                            </div>
+
+                                            {/* Overlay latest face log if available */}
+                                            {faceLogs.length > 0 && (
+                                                <div className="absolute bottom-4 right-4 w-32 h-24 bg-black border border-gray-700 rounded overflow-hidden shadow-lg">
+                                                    <img
+                                                        src={faceLogs[0].imageUrl}
+                                                        alt="Latest Face"
+                                                        className="w-full h-full object-cover opacity-80"
+                                                    />
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] px-1 py-0.5 truncate">
+                                                        Last: {faceLogs[0].timestamp?.seconds ? new Date(faceLogs[0].timestamp.seconds * 1000).toLocaleTimeString() : 'Now'}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
                         )}
-                    </div>
+
+                        {activeTab === 'classes' && (
+                            <>
+                                <div className="flex justify-end mb-6">
+                                    <button onClick={() => setIsAddingClass(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <Plus size={18} /> Add New Class
+                                    </button>
+                                </div>
+                                {/* Class Assignments */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                    <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <h2 className="text-xl font-bold text-gray-900">{t.classAssignments}</h2>
+                                        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                                            {/* Search */}
+                                            <div className="relative w-full md:w-64">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search class..."
+                                                    value={searchClassQuery}
+                                                    onChange={(e) => setSearchClassQuery(e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                />
+                                            </div>
+                                            {/* Sync Button */}
+                                            <button
+                                                onClick={fetchData}
+                                                className="flex items-center justify-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium"
+                                            >
+                                                <RefreshCw size={18} />
+                                                Sync Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
+                                                <tr>
+                                                    <th className="px-6 py-4">Class Info</th>
+                                                    <th className="px-6 py-4">{t.assignedTeacher}</th>
+                                                    <th className="px-6 py-4 text-right">{t.action}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {filteredClasses.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="3" className="px-6 py-8 text-center text-gray-500 italic">
+                                                            No classes found.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredClasses.map((cls) => (
+                                                        <tr key={cls.id} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                                                        <BookOpen size={20} />
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-bold text-gray-900">{cls.name || cls.id}</div>
+                                                                        <div className="text-xs text-gray-500">ID: {cls.id}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-gray-600">
+                                                                {cls.teacherName ? (
+                                                                    <span className="flex items-center gap-2">
+                                                                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                                                            {cls.teacherName.charAt(0)}
+                                                                        </div>
+                                                                        <span className="font-medium text-gray-900">{cls.teacherName}</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-block px-3 py-1 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                                                                        {t.unassigned}
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <button
+                                                                    onClick={() => openAssignModal(cls)}
+                                                                    className="px-3 py-1.5 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 text-sm font-medium transition-colors"
+                                                                >
+                                                                    Assign
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {activeTab === 'teachers' && (
+                            <>
+                                <div className="flex justify-end mb-6">
+                                    <button onClick={() => setIsAddingTeacher(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <Plus size={18} /> Add New Teacher
+                                    </button>
+                                </div>
+                                {/* Teachers List */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
+                                    <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <h2 className="text-xl font-bold text-gray-900">{t.registeredTeachers}</h2>
+                                        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                                            {/* Search */}
+                                            <div className="relative w-full md:w-64">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search teacher..."
+                                                    value={searchTeacherQuery}
+                                                    onChange={(e) => setSearchTeacherQuery(e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                />
+                                            </div>
+                                            {/* Sync Button */}
+                                            <button
+                                                onClick={fetchData}
+                                                className="flex items-center justify-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium"
+                                            >
+                                                <RefreshCw size={18} />
+                                                Sync Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
+                                                <tr>
+                                                    <th className="px-6 py-4">Teacher Info</th>
+                                                    <th className="px-6 py-4">Subject</th>
+                                                    <th className="px-6 py-4">Classes Assigned</th>
+                                                    <th className="px-6 py-4 text-right">{t.action}</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {filteredTeachers.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="4" className="px-6 py-8 text-center text-gray-500 italic">
+                                                            No teachers found.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredTeachers.map((teacher) => (
+                                                        <tr key={teacher.id} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-4">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg font-bold">
+                                                                        {teacher.name ? teacher.name.charAt(0) : 'T'}
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-bold text-gray-900">{teacher.name}</div>
+                                                                        <div className="text-xs text-gray-500">{teacher.email}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                                                                    {teacher.subject || 'General'}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-gray-600">
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {classes.filter(c => c.teacherId === teacher.id).length > 0 ? (
+                                                                        classes.filter(c => c.teacherId === teacher.id).map(c => (
+                                                                            <span key={c.id} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md border border-gray-200">
+                                                                                {c.name || c.id}
+                                                                            </span>
+                                                                        ))
+                                                                    ) : (
+                                                                        <span className="text-gray-400 italic text-xs">No classes assigned</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setEditingTeacher(teacher);
+                                                                            setIsEditingTeacher(true);
+                                                                        }}
+                                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                        title="Edit Teacher"
+                                                                    >
+                                                                        <Edit size={18} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleRemoveTeacher(teacher.id)}
+                                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                        title="Remove Teacher"
+                                                                    >
+                                                                        <Trash2 size={18} />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {activeTab === 'students' && (
+                            <>
+                                <div className="flex justify-end mb-6">
+                                    <button onClick={() => setIsAddingStudent(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                        <Plus size={18} /> Add New Student
+                                    </button>
+                                </div>
+                                {/* Manage Students Section */}
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
+                                    <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                        <h2 className="text-xl font-bold text-gray-900">Manage Students</h2>
+
+                                        <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                                            {/* Search */}
+                                            <div className="relative w-full md:w-64">
+                                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search student..."
+                                                    value={searchStudentQuery}
+                                                    onChange={(e) => setSearchStudentQuery(e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                />
+                                            </div>
+
+                                            {/* Class Filter */}
+                                            <div className="relative w-full md:w-48">
+                                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                                <select
+                                                    value={studentClassFilter}
+                                                    onChange={(e) => setStudentClassFilter(e.target.value)}
+                                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                                                >
+                                                    <option value="">All Classes</option>
+                                                    {classes.map(cls => (
+                                                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
+                                            {/* Sync Button */}
+                                            <button
+                                                onClick={fetchData}
+                                                className="flex items-center justify-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium"
+                                            >
+                                                <RefreshCw size={18} />
+                                                Sync Data
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm sticky top-0 z-10">
+                                                <tr>
+                                                    <th className="px-6 py-4">Profile</th>
+                                                    <th className="px-6 py-4">Student Info</th>
+                                                    <th className="px-6 py-4">Class</th>
+                                                    <th className="px-6 py-4">Attendance Rate</th>
+                                                    <th className="px-6 py-4">Parent Contact</th>
+                                                    <th className="px-6 py-4 text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {filteredStudents.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="6" className="px-6 py-8 text-center text-gray-500 italic">
+                                                            No students found.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    filteredStudents.map((student) => {
+                                                        // Mock attendance rate for demo
+                                                        const attendanceRate = Math.floor(Math.random() * 30) + 70;
+
+                                                        return (
+                                                            <tr key={student.id} className="hover:bg-gray-50 transition-colors">
+                                                                <td className="px-6 py-4">
+                                                                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
+                                                                        {student.name.charAt(0)}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="font-bold text-gray-900">{student.name}</div>
+                                                                    <div className="text-xs text-gray-500 font-mono">Roll: {student.rollNo}</div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                                                        {student.className || 'Unassigned'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                                                                            <div
+                                                                                className="bg-green-500 h-2 rounded-full"
+                                                                                style={{ width: `${attendanceRate}%` }}
+                                                                            ></div>
+                                                                        </div>
+                                                                        <span className="text-xs text-gray-600 font-medium">{attendanceRate}%</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                                        <Phone size={14} className="text-gray-400" />
+                                                                        <span className="text-sm">{student.parentPhone}</span>
+                                                                    </div>
+                                                                    <div className="text-xs text-gray-400 ml-6">{student.parentName}</div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setEditingStudent(student);
+                                                                                setIsEditingStudent(true);
+                                                                            }}
+                                                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                            title="Edit Student"
+                                                                        >
+                                                                            <Edit size={18} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteStudent(student.id)}
+                                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                            title="Delete Student"
+                                                                        >
+                                                                            <Trash2 size={18} />
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <Footer />
+                    </main >
                 </div>
-            </main >
-            <Footer />
+            </div>
 
             {/* Assign Teacher Modal */}
             {
@@ -936,6 +1412,26 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent User ID (Email)</label>
+                                    <input
+                                        type="email"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="For Parent Login"
+                                        value={newStudent.parentUid}
+                                        onChange={(e) => setNewStudent({ ...newStudent, parentUid: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Password</label>
+                                    <input
+                                        type="password"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Min 6 chars"
+                                        value={newStudent.parentPassword}
+                                        onChange={(e) => setNewStudent({ ...newStudent, parentPassword: e.target.value })}
+                                    />
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
                                     <input
                                         type="tel"
@@ -950,6 +1446,146 @@ const AdminDashboard = () => {
                                     className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
                                 >
                                     Add Student
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+            {/* Edit Student Modal */}
+            {
+                isEditingStudent && editingStudent && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-900">Edit Student Details</h3>
+                                <button onClick={() => setIsEditingStudent(false)} className="text-gray-400 hover:text-gray-600">
+                                    <LogOut size={20} className="rotate-45" />
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdateStudent} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingStudent.name}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">RFID / Student ID (Read Only)</label>
+                                    <input
+                                        type="text"
+                                        readOnly
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-500 font-mono cursor-not-allowed"
+                                        value={editingStudent.rfidId}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingStudent.rollNo}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, rollNo: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Assign Class</label>
+                                    <select
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingStudent.classId}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, classId: e.target.value })}
+                                    >
+                                        <option value="">-- Select Class --</option>
+                                        {classes.map(cls => (
+                                            <option key={cls.id} value={cls.id}>{cls.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingStudent.parentName}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, parentName: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
+                                    <input
+                                        type="tel"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingStudent.parentPhone}
+                                        onChange={(e) => setEditingStudent({ ...editingStudent, parentPhone: e.target.value })}
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
+                                >
+                                    Update Student
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* Edit Teacher Modal */}
+            {
+                isEditingTeacher && editingTeacher && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-gray-900">Edit Teacher Details</h3>
+                                <button onClick={() => setIsEditingTeacher(false)} className="text-gray-400 hover:text-gray-600">
+                                    <LogOut size={20} className="rotate-45" />
+                                </button>
+                            </div>
+                            <form onSubmit={handleUpdateTeacher} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingTeacher.name}
+                                        onChange={(e) => setEditingTeacher({ ...editingTeacher, name: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        required
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingTeacher.email}
+                                        onChange={(e) => setEditingTeacher({ ...editingTeacher, email: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                    <input
+                                        type="text"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        value={editingTeacher.subject || ''}
+                                        onChange={(e) => setEditingTeacher({ ...editingTeacher, subject: e.target.value })}
+                                        placeholder="e.g. Mathematics"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
+                                >
+                                    Update Teacher
                                 </button>
                             </form>
                         </div>

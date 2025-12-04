@@ -185,7 +185,17 @@ export const translations = {
             action: "Action",
             registeredTeachers: "Registered Teachers",
             addNew: "+ Add New",
-            unassigned: "Unassigned"
+            unassigned: "Unassigned",
+            dashboard: "Dashboard",
+            students: "Students",
+            teachers: "Teachers",
+            classes: "Classes",
+            totalStudents: "Total Students",
+            teachersPresent: "Teachers Present",
+            midDayMealEligible: "Mid-Day Meal Eligible",
+            connectivityStatus: "Connectivity Status",
+            online: "Online",
+            offline: "Offline"
         },
         adminLogin: {
             title: "Admin Portal",
@@ -443,7 +453,17 @@ export const translations = {
             action: "कार्रवाई",
             registeredTeachers: "पंजीकृत शिक्षक",
             addNew: "+ नया जोड़ें",
-            unassigned: "अनसाइंड"
+            unassigned: "अनसाइंड",
+            dashboard: "डैशबोर्ड",
+            students: "छात्र",
+            teachers: "शिक्षक",
+            classes: "कक्षाएं",
+            totalStudents: "कुल छात्र",
+            teachersPresent: "उपस्थित शिक्षक",
+            midDayMealEligible: "मध्याह्न भोजन पात्र",
+            connectivityStatus: "कनेक्टिविटी स्थिति",
+            online: "ऑनलाइन",
+            offline: "ऑफलाइन"
         },
         adminLogin: {
             title: "एडमिन पोर्टल",

@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getTeacherClasses } from '../services/classService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { User, Mail, Phone, Briefcase, Calendar, MapPin, Edit2, Save, X, QrCode, Fingerprint, Smartphone, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, Calendar, MapPin, Edit2, Save, X, QrCode, Fingerprint, Smartphone, RefreshCw, ShieldCheck, AlertCircle, GraduationCap, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 
 const UserProfile = () => {
     const { language } = useLanguage();
     const t = translations[language].userProfile;
+    const navigate = useNavigate();
 
     const { currentUser } = useAuth();
     const [dutyRosterData, setDutyRosterData] = useState({
@@ -18,9 +20,11 @@ const UserProfile = () => {
         additional: 'N/A'
     });
 
+    const isParent = currentUser?.role === 'parent';
+
     useEffect(() => {
         const fetchDutyRoster = async () => {
-            if (currentUser?.uid) {
+            if (currentUser?.uid && currentUser?.role === 'teacher') {
                 try {
                     const classes = await getTeacherClasses(currentUser.uid);
 
@@ -60,7 +64,7 @@ const UserProfile = () => {
     // Default values in case data is missing
     const user = {
         name: currentUser?.name || 'N/A',
-        role: currentUser?.role || 'Teacher',
+        role: currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User',
         email: currentUser?.email || 'N/A',
         phone: currentUser?.phone || 'N/A',
         id: currentUser?.employeeId || currentUser?.uid || 'N/A',
@@ -69,11 +73,14 @@ const UserProfile = () => {
         address: currentUser?.address || 'N/A',
         udise: currentUser?.udise || 'N/A',
         block: currentUser?.block || 'N/A',
-        dutyRoster: dutyRosterData
+        dutyRoster: dutyRosterData,
+        studentName: currentUser?.studentName || 'N/A',
+        studentId: currentUser?.studentId || 'N/A',
+        studentRollNo: currentUser?.studentRollNo || 'N/A'
     };
 
     const handleRequestCorrection = () => {
-        alert("Data correction request sent to Block Education Officer.");
+        alert("Data correction request sent to Admin.");
     };
 
     return (
@@ -81,6 +88,13 @@ const UserProfile = () => {
             <Header variant="dashboard" />
 
             <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+                <button
+                    onClick={() => isParent ? navigate('/parent-dashboard') : navigate(-1)}
+                    className="mb-4 flex items-center gap-2 text-gray-600 hover:text-blue-700 transition-colors font-medium"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                    Back to Dashboard
+                </button>
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                     {/* Cover Image */}
                     <div className="h-48 bg-gradient-to-r from-blue-900 to-blue-700 relative">
@@ -157,66 +171,89 @@ const UserProfile = () => {
                                     </div>
                                 </section>
 
-                                <section>
-                                    <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        <Briefcase className="w-5 h-5 text-blue-700" />
-                                        {t.dutyRoster}
-                                    </h2>
-                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
-                                        <div className="grid grid-cols-1 gap-4">
-                                            <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                                                <span className="text-gray-600 font-medium">{t.classTeacher}</span>
-                                                <span className="text-gray-900 font-bold">{user.dutyRoster.classTeacher}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                                                <span className="text-gray-600 font-medium">{t.subjects}</span>
-                                                <span className="text-gray-900 font-bold">{user.dutyRoster.subjects}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-600 font-medium">{t.additional}</span>
-                                                <span className="text-gray-900 font-bold">{user.dutyRoster.additional}</span>
+                                {isParent ? (
+                                    <section>
+                                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <GraduationCap className="w-5 h-5 text-blue-700" />
+                                            Student Details
+                                        </h2>
+                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                                    <span className="text-gray-600 font-medium">Student Name</span>
+                                                    <span className="text-gray-900 font-bold">{user.studentName}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-600 font-medium">Student Roll Number</span>
+                                                    <span className="text-gray-900 font-bold">{user.studentRollNo}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </section>
+                                    </section>
+                                ) : (
+                                    <section>
+                                        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Briefcase className="w-5 h-5 text-blue-700" />
+                                            {t.dutyRoster}
+                                        </h2>
+                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                                    <span className="text-gray-600 font-medium">{t.classTeacher}</span>
+                                                    <span className="text-gray-900 font-bold">{user.dutyRoster.classTeacher}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+                                                    <span className="text-gray-600 font-medium">{t.subjects}</span>
+                                                    <span className="text-gray-900 font-bold">{user.dutyRoster.subjects}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-600 font-medium">{t.additional}</span>
+                                                    <span className="text-gray-900 font-bold">{user.dutyRoster.additional}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                )}
                             </div>
 
                             {/* Right Column - Employment, Security, Digital ID */}
                             <div className="space-y-6">
-                                {/* Employment Details */}
-                                <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        <Briefcase className="w-5 h-5 text-blue-700" />
-                                        {t.employmentDetails}
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.employeeId}</div>
-                                            <div className="font-mono text-gray-900 bg-gray-50 px-2 py-1 rounded border border-gray-200 inline-block">
-                                                {user.id}
+                                {/* Employment Details (Only for Teachers) */}
+                                {!isParent && (
+                                    <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                            <Briefcase className="w-5 h-5 text-blue-700" />
+                                            {t.employmentDetails}
+                                        </h3>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.employeeId}</div>
+                                                <div className="font-mono text-gray-900 bg-gray-50 px-2 py-1 rounded border border-gray-200 inline-block">
+                                                    {user.id}
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.department}</div>
-                                            <div className="text-gray-900 font-medium">{user.department}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.joiningDate}</div>
-                                            <div className="flex items-center gap-2 text-gray-900">
-                                                <Calendar className="w-4 h-4 text-gray-400" />
-                                                {user.joiningDate}
+                                            <div>
+                                                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.department}</div>
+                                                <div className="text-gray-900 font-medium">{user.department}</div>
                                             </div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.udise}</div>
-                                            <div className="font-mono text-gray-900 font-medium">{user.udise}</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.block}</div>
-                                            <div className="text-gray-900 font-medium">{user.block}</div>
+                                            <div>
+                                                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.joiningDate}</div>
+                                                <div className="flex items-center gap-2 text-gray-900">
+                                                    <Calendar className="w-4 h-4 text-gray-400" />
+                                                    {user.joiningDate}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.udise}</div>
+                                                <div className="font-mono text-gray-900 font-medium">{user.udise}</div>
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{t.block}</div>
+                                                <div className="text-gray-900 font-medium">{user.block}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Account Status / Security */}
                                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">

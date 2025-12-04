@@ -37,6 +37,49 @@ export const getAttendanceByDate = async (classId, date) => {
     }
 };
 
+export const getStudentMonthlyAttendance = async (classId, studentId, month, year) => {
+    try {
+        // Construct start and end dates for the month
+        // Format in DB is YYYY-MM-DD
+        const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        // Simple way to get end of month:
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${lastDay}`;
+
+        const attendanceRef = collection(db, "attendance");
+        // We query by classId and range of dates (lexicographical comparison works for YYYY-MM-DD)
+        const q = query(
+            attendanceRef,
+            where("classId", "==", classId),
+            where("date", ">=", startDate),
+            where("date", "<=", endDate)
+        );
+
+        const querySnapshot = await getDocs(q);
+        const monthlyRecords = [];
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const date = data.date;
+            // Find student's record in the 'records' array
+            const studentRecord = data.records?.find(r => r.studentId === studentId);
+
+            if (studentRecord) {
+                monthlyRecords.push({
+                    date: date,
+                    status: studentRecord.present ? 'present' : 'absent',
+                    verificationMethod: studentRecord.verificationMethod
+                });
+            }
+        });
+
+        return monthlyRecords;
+    } catch (error) {
+        console.error("Error fetching monthly attendance:", error);
+        return [];
+    }
+};
+
 export const logRFIDScan = async (student, classId, status) => {
     try {
         const logRef = doc(collection(db, "rfid_logs"));
@@ -112,6 +155,7 @@ export const getRFIDLogsByDate = async (date) => {
 };
 
 export const processRFIDLogsToAttendance = async (dateStr) => {
+    console.log("[AttendanceService] processRFIDLogsToAttendance called for:", dateStr);
     try {
         const targetDate = dateStr || new Date().toISOString().split('T')[0];
 
@@ -121,6 +165,7 @@ export const processRFIDLogsToAttendance = async (dateStr) => {
         const logsRef = collection(db, "rfid_logs");
         const q = query(logsRef, where("date", "==", targetDate));
         const logsSnap = await getDocs(q);
+        console.log(`[Attendance] Processing ${logsSnap.size} logs for date ${targetDate}`);
 
         if (logsSnap.empty) {
             return { success: true, message: "No logs found for today." };
@@ -153,6 +198,9 @@ export const processRFIDLogsToAttendance = async (dateStr) => {
             const studentSnap = await getDoc(studentRef);
             if (studentSnap.exists()) {
                 studentMap[rfidId] = studentSnap.data();
+                console.log(`[Attendance] Found student for RFID ${rfidId}: ${studentSnap.data().name} (Class: ${studentSnap.data().classId})`);
+            } else {
+                console.warn(`[Attendance] Student not found for RFID ${rfidId}`);
             }
         }));
 
@@ -174,6 +222,7 @@ export const processRFIDLogsToAttendance = async (dateStr) => {
         let updatedClassesCount = 0;
 
         for (const [classId, presentStudentIds] of Object.entries(updatesByClass)) {
+            console.log(`[Attendance] Updating class ${classId} with ${presentStudentIds.size} present students:`, Array.from(presentStudentIds));
             // Fetch existing attendance record
             const recordId = `${classId}_${targetDate}`;
             const attendanceRef = doc(db, "attendance", recordId);
@@ -206,6 +255,8 @@ export const processRFIDLogsToAttendance = async (dateStr) => {
             let hasChanges = false;
             const updatedRecords = records.map(record => {
                 if (presentStudentIds.has(record.studentId)) {
+                    // Mark as processed for this ID
+                    presentStudentIds.delete(record.studentId);
                     if (!record.present || record.verificationMethod !== 'rfid') {
                         hasChanges = true;
                         return { ...record, present: true, verificationMethod: 'rfid' };
@@ -213,6 +264,29 @@ export const processRFIDLogsToAttendance = async (dateStr) => {
                 }
                 return record;
             });
+
+            // Handle any remaining presentStudentIds (students who scanned but weren't in the initial records list)
+            if (presentStudentIds.size > 0) {
+                hasChanges = true;
+                for (const studentId of presentStudentIds) {
+                    // We need student name. We can get it from studentMap (which we built earlier)
+                    // But studentMap keys are rfidIds. We need to find the entry where id matches studentId.
+                    // Actually, in step 4 we stored student.id in presentStudentIds.
+                    // And studentMap is keyed by rfidId.
+                    // Let's find the student object.
+                    const studentObj = Object.values(studentMap).find(s => s.id === studentId);
+
+                    if (studentObj) {
+                        updatedRecords.push({
+                            studentId: studentId,
+                            name: studentObj.name,
+                            present: true,
+                            verificationMethod: 'rfid'
+                        });
+                        console.log(`[Attendance] Added missing student ${studentObj.name} to records.`);
+                    }
+                }
+            }
 
             // If we created a new record, we might have missed students who are in the logs but not in the 'records' list 
             // (e.g. if student changed class but log is old? Unlikely case).
@@ -238,10 +312,12 @@ export const processRFIDLogsToAttendance = async (dateStr) => {
 };
 
 export const subscribeToRFIDLogs = (date, onUpdate) => {
+    console.log("[AttendanceService] subscribeToRFIDLogs called for:", date);
     const logsRef = collection(db, "rfid_logs");
     const q = query(logsRef, where("date", "==", date));
 
     return onSnapshot(q, async (snapshot) => {
+        console.log("[AttendanceService] Snapshot received. Docs:", snapshot.size);
         const logs = [];
         const studentLookups = [];
 
