@@ -9,20 +9,16 @@
 
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
+#include "secrets.h"
 
 /* 1. Define the WiFi credentials */
-// ⚠️⚠️⚠️ YOU MUST ENTER YOUR WIFI CREDENTIALS HERE ⚠️⚠️⚠️
-#define WIFI_SSID "YOUR_WIFI_SSID" 
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+// Defined in secrets.h
 
 /* 2. Define the Firebase config */
-// I have filled these in for you!
-#define API_KEY "YOUR_API_KEY"
-#define FIREBASE_PROJECT_ID "digital-hazri-strategiq"
+// Defined in secrets.h
 
 /* 3. Define the user Email and password for the device */
-#define USER_EMAIL "device@admin.com"
-#define USER_PASSWORD "device123456"
+// Defined in secrets.h
 
 // Define Firebase Data object
 FirebaseData fbdo;
