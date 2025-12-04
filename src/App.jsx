@@ -16,6 +16,7 @@ import UserProfile from './pages/UserProfile';
 import LeaveApplication from './pages/LeaveApplication';
 import LeaveManagement from './pages/LeaveManagement';
 import ParentDashboard from './pages/ParentDashboard';
+import FaceTest from './pages/FaceTest';
 
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
@@ -42,6 +43,7 @@ function App() {
             <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
             <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
             <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />
+            <Route path="/face-test" element={<FaceTest />} />
           </Routes>
         </Router>
       </AuthProvider>

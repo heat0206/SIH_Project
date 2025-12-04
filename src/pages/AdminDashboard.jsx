@@ -11,7 +11,8 @@ import { getRFIDLogsByDate, processRFIDLogsToAttendance, subscribeToRFIDLogs } f
 import { getAllClasses, assignTeacherToClass, createClass, addSubjectTeacher, removeSubjectTeacher } from '../services/classService';
 import { addStudent } from '../services/studentService';
 import { translations } from '../utils/translations';
-
+import { db } from '../firebase';
+import { collection, query, where, getDocs, doc, updateDoc, deleteDoc, addDoc, onSnapshot, limit } from 'firebase/firestore';
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const { language } = useLanguage();
@@ -21,6 +22,7 @@ const AdminDashboard = () => {
     const [teachers, setTeachers] = useState([]);
     const [classes, setClasses] = useState([]);
     const [rfidLogs, setRfidLogs] = useState([]);
+    const [faceLogs, setFaceLogs] = useState([]);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(true);
 
@@ -68,7 +70,7 @@ const AdminDashboard = () => {
             const today = new Date().toISOString().split('T')[0];
             if (selectedDate === today && logs.length > 0) {
                 try {
-                    await processRFIDLogsToAttendance();
+                    await processRFIDLogsToAttendance(selectedDate);
                     console.log("Auto-synced attendance from live logs");
                 } catch (e) {
                     console.error("Auto-sync failed", e);
@@ -76,7 +78,21 @@ const AdminDashboard = () => {
             }
         });
 
-        return () => unsubscribe();
+        // Subscribe to Face Logs (Simple fetch for now, can be realtime later)
+        const faceLogsRef = collection(db, "face_logs");
+        const qFace = query(faceLogsRef, limit(20)); // Get last 20
+        const unsubscribeFace = onSnapshot(qFace, (snapshot) => {
+            const logs = [];
+            snapshot.forEach(doc => logs.push({ id: doc.id, ...doc.data() }));
+            // Sort by timestamp (descending)
+            logs.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+            setFaceLogs(logs);
+        });
+
+        return () => {
+            unsubscribe();
+            unsubscribeFace();
+        };
     }, [selectedDate]);
 
     const fetchData = async () => {
@@ -367,13 +383,7 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                         <h2 className="text-xl font-bold text-gray-900">{t.classAssignments}</h2>
-                        <button
-                            onClick={() => setIsAddingClass(true)}
-                            className="text-blue-600 font-medium hover:text-blue-700 text-sm flex items-center gap-1"
-                        >
-                            <Plus size={18} />
-                            {t.addNew}
-                        </button>
+
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
@@ -419,13 +429,7 @@ const AdminDashboard = () => {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
                     <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                         <h2 className="text-xl font-bold text-gray-900">{t.registeredTeachers}</h2>
-                        <button
-                            onClick={() => setIsAddingTeacher(true)}
-                            className="text-blue-600 font-medium hover:text-blue-700 text-sm flex items-center gap-1"
-                        >
-                            <Plus size={18} />
-                            {t.addNew}
-                        </button>
+
                     </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
@@ -544,6 +548,44 @@ const AdminDashboard = () => {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                {/* Face Recognition Logs Section */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
+                    <div className="p-6 border-b border-gray-200">
+                        <h2 className="text-xl font-bold text-gray-900">Face Recognition Logs</h2>
+                        <span className="text-sm text-gray-500">Recent Captures</span>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {faceLogs.length === 0 ? (
+                            <p className="text-gray-500 col-span-full text-center py-4">No face logs detected yet.</p>
+                        ) : (
+                            faceLogs.map((log) => (
+                                <div key={log.id} className="border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="aspect-video bg-gray-100 relative">
+                                        {log.imageUrl ? (
+                                            <img
+                                                src={log.imageUrl}
+                                                alt="Face Capture"
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/300x200?text=Image+Error' }}
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center h-full text-gray-400">No Image</div>
+                                        )}
+                                    </div>
+                                    <div className="p-3">
+                                        <p className="text-xs text-gray-500">
+                                            {log.timestamp?.seconds ? new Date(log.timestamp.seconds * 1000).toLocaleString() : 'Just now'}
+                                        </p>
+                                        <p className="text-sm font-medium text-gray-800 mt-1">
+                                            {log.device || "Unknown Device"}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </main >

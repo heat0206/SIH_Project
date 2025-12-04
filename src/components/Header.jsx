@@ -47,7 +47,7 @@ const Header = ({ variant = 'landing' }) => {
                         </Link>
                         <div className="hidden md:flex flex-col justify-center border-l border-gray-300 pl-4 h-10">
                             <h1 className="text-xl font-bold text-[#1e3a8a] leading-none tracking-tight">
-                                Digital Hazri
+                                Digital-Hazri-StrategIQ
                             </h1>
                             <p className="text-xs text-gray-500 font-medium tracking-wide mt-1">
                                 Rural Education Initiative
