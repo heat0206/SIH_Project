@@ -17,7 +17,7 @@
 
 /* 2. Define the Firebase config */
 // I have filled these in for you!
-#define API_KEY "AIzaSyCJATvhP2FiJ26yvgxZn7ZDUgxqwwLDI0I"
+#define API_KEY "YOUR_API_KEY"
 #define FIREBASE_PROJECT_ID "digital-hazri-strategiq"
 
 /* 3. Define the user Email and password for the device */
