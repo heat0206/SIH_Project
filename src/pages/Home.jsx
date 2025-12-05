@@ -248,7 +248,7 @@ const Home = () => {
 
                                 <div className="pt-4 border-t border-gray-100 text-center space-y-2">
                                     <p className="text-sm text-gray-500">
-                                        {t.troubleLoggingIn} <a href="#" className="text-blue-600 font-medium hover:underline">{t.contactSupport}</a>
+                                        {t.troubleLoggingIn} <Link to="/help" className="text-blue-600 font-medium hover:underline">{t.contactSupport}</Link>
                                     </p>
                                     <div className="flex justify-center gap-4 text-xs font-medium">
                                         {/* Govt Link moved to main login options */}
