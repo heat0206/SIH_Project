@@ -32,6 +32,7 @@ import {
     getGhostSchools,
     getAIInsight
 } from '../services/governmentService';
+import SchoolAuditPanel from '../components/SchoolAuditPanel';
 
 ChartJS.register(
     CategoryScale,
@@ -51,6 +52,7 @@ const GovernmentDashboard = () => {
     const [ghostSchools, setGhostSchools] = useState([]);
     const [aiInsight, setAiInsight] = useState(null);
     const [districts, setDistricts] = useState([]);
+    const [selectedAuditSchool, setSelectedAuditSchool] = useState(null);
 
     useEffect(() => {
         setDistricts(getDistricts());
@@ -246,7 +248,10 @@ const GovernmentDashboard = () => {
                                             <div className="text-xs text-gray-600 mt-1 flex items-center gap-1">
                                                 <Users size={10} /> Principal: {school.principal}
                                             </div>
-                                            <button className="mt-2 w-full py-1 bg-white border border-red-200 text-red-600 text-xs font-medium rounded hover:bg-red-50 transition-colors">
+                                            <button
+                                                onClick={() => setSelectedAuditSchool(school)}
+                                                className="mt-2 w-full py-1 bg-white border border-red-200 text-red-600 text-xs font-medium rounded hover:bg-red-50 transition-colors"
+                                            >
                                                 Initiate Audit
                                             </button>
                                         </div>
@@ -258,6 +263,13 @@ const GovernmentDashboard = () => {
                 </div>
             </main>
             <Footer />
+            <Footer />
+
+            <SchoolAuditPanel
+                isOpen={!!selectedAuditSchool}
+                onClose={() => setSelectedAuditSchool(null)}
+                school={selectedAuditSchool}
+            />
         </div>
     );
 };

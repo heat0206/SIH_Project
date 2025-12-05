@@ -43,21 +43,33 @@ export const getSchoolTrends = (district) => {
     return { labels, data };
 };
 
-export const getGhostSchools = (district) => {
-    // Generate 3-5 "Ghost Schools" with low attendance
-    const count = Math.floor(Math.random() * 3) + 1;
-    const schools = [];
+const GHOST_SCHOOLS_DATA = {
+    'Varanasi': [
+        { id: 'SCH-VAR-001', name: 'Govt Primary School, Shivpur', attendance: '12.5', principal: 'Mr. R.K. Gupta', status: 'Critical' },
+        { id: 'SCH-VAR-089', name: 'Upper Primary School, Sarnath', attendance: '28.3', principal: 'Mrs. S. Singh', status: 'Critical' },
+        { id: 'SCH-VAR-112', name: 'Kanya Vidyalaya, Lanka', attendance: '41.0', principal: 'Mr. A. Pandey', status: 'Warning' }
+    ],
+    'Lucknow': [
+        { id: 'SCH-LKO-202', name: 'Nagar Nigam School, Alambagh', attendance: '15.2', principal: 'Mr. V. Verma', status: 'Critical' },
+        { id: 'SCH-LKO-331', name: 'Primary School, Gomti Nagar', attendance: '35.6', principal: 'Mrs. P. Sharma', status: 'Warning' }
+    ],
+    'Kanpur': [
+        { id: 'SCH-KNP-554', name: 'Govt High School, Kalyanpur', attendance: '9.8', principal: 'Mr. S. Yadav', status: 'Critical' },
+        { id: 'SCH-KNP-101', name: 'Balika Vidyalaya, Civil Lines', attendance: '45.2', principal: 'Mrs. K. Dixit', status: 'Warning' },
+        { id: 'SCH-KNP-772', name: 'Primary Pathshala, Govind Nagar', attendance: '22.1', principal: 'Mr. M. Khan', status: 'Critical' },
+        { id: 'SCH-KNP-883', name: 'Adarsh Vidyalaya, Panki', attendance: '31.4', principal: 'Mr. J. Singh', status: 'Warning' }
+    ],
+    'Prayagraj': [
+        { id: 'SCH-PRY-005', name: 'Sangam Primary School', attendance: '18.5', principal: 'Mr. T. Tripathi', status: 'Critical' }
+    ],
+    'Gorakhpur': [
+        { id: 'SCH-GKP-991', name: 'Railway Colony School', attendance: '25.0', principal: 'Mr. B. Lal', status: 'Critical' },
+        { id: 'SCH-GKP-442', name: 'City Montessori (Govt Wing)', attendance: '38.9', principal: 'Mrs. R. Devi', status: 'Warning' }
+    ]
+};
 
-    for (let i = 0; i < count; i++) {
-        schools.push({
-            id: `SCH-${Math.floor(Math.random() * 10000)}`,
-            name: `Govt Primary School ${String.fromCharCode(65 + i)} - ${district}`,
-            attendance: (Math.random() * 40 + 10).toFixed(1), // 10-50%
-            principal: "Mr. " + (Math.random() > 0.5 ? "Sharma" : "Verma"),
-            status: "Critical"
-        });
-    }
-    return schools;
+export const getGhostSchools = (district) => {
+    return GHOST_SCHOOLS_DATA[district] || [];
 };
 
 export const getAIInsight = (district) => {
