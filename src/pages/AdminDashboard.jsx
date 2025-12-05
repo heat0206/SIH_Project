@@ -181,7 +181,7 @@ const AdminDashboard = () => {
         if (searchStudentQuery.trim()) {
             const query = searchStudentQuery.toLowerCase();
             filtered = filtered.filter(student =>
-                student.name.toLowerCase().includes(query) ||
+                (student.name || "").toLowerCase().includes(query) ||
                 (student.rfidId && student.rfidId.toLowerCase().includes(query)) ||
                 (student.rollNo && student.rollNo.toLowerCase().includes(query))
             );
@@ -316,17 +316,24 @@ const AdminDashboard = () => {
 
     const handleAddTeacher = async (e) => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        const newTeacher = {
-            name: formData.get('name'),
-            email: formData.get('email'),
-            subject: formData.get('subject'),
+        const teacherData = {
+            name: newTeacher.name,
+            email: newTeacher.email,
+            subject: newTeacher.subject,
             role: 'teacher',
+            password: newTeacher.password, // Include password if needed for profile creation service? 
+            // Note: In a real app, we'd create an Auth user here. For now, just storing in 'users' collection as per existing logic.
+            // But wait, the existing logic (snapshot) just added to collection. 
+            // The original code:
+            // const newTeacher = { name: formData.get('name'), ... }
+            // await addDoc(collection(db, 'users'), newTeacher);
+
             createdAt: serverTimestamp()
         };
 
         try {
-            await addDoc(collection(db, 'users'), newTeacher);
+            await addDoc(collection(db, 'users'), teacherData);
+            setNewTeacher({ name: '', email: '', subject: '', password: '' }); // Reset state
             setIsAddingTeacher(false);
             fetchData();
             alert("Teacher added successfully!");
@@ -537,8 +544,8 @@ const AdminDashboard = () => {
 
     // Filtered Lists
     const filteredTeachers = teachers.filter(t =>
-        t.name.toLowerCase().includes(searchTeacherQuery.toLowerCase()) ||
-        (t.email && t.email.toLowerCase().includes(searchTeacherQuery.toLowerCase()))
+        (t.name || "").toLowerCase().includes(searchTeacherQuery.toLowerCase()) ||
+        (t.email && (t.email || "").toLowerCase().includes(searchTeacherQuery.toLowerCase()))
     );
 
     const filteredClasses = classes.filter(c =>

@@ -202,21 +202,34 @@ const Home = () => {
                                         </div>
                                     </div>
 
-                                    {role === 'student' && (
-                                        <div className="flex items-center">
-                                            <input
-                                                id="remember-me"
-                                                name="remember-me"
-                                                type="checkbox"
-                                                checked={rememberMe}
-                                                onChange={(e) => setRememberMe(e.target.checked)}
-                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                            />
-                                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                                                {t.rememberMe || "Remember me"}
-                                            </label>
+                                    <div className="flex items-center justify-between">
+                                        {role === 'student' ? (
+                                            <div className="flex items-center">
+                                                <input
+                                                    id="remember-me"
+                                                    name="remember-me"
+                                                    type="checkbox"
+                                                    checked={rememberMe}
+                                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                />
+                                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                                                    {t.rememberMe || "Remember me"}
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <div></div>
+                                        )}
+
+                                        <div className="text-sm">
+                                            <Link
+                                                to="/forgot-password"
+                                                className="font-medium text-blue-600 hover:text-blue-500"
+                                            >
+                                                {t.forgotPassword || "Forgot password?"}
+                                            </Link>
                                         </div>
-                                    )}
+                                    </div>
 
                                     {error && (
                                         <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm font-medium text-center animate-pulse">

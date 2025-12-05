@@ -28,6 +28,7 @@ export const translations = {
             passwordLabel: "Password",
             passwordPlaceholder: "Enter your password",
             loginButton: "Login",
+            forgotPassword: "Forgot Password?",
             loggingIn: "Logging in...",
             troubleLoggingIn: "Trouble logging in?",
             contactSupport: "Contact Support",
@@ -265,6 +266,20 @@ export const translations = {
             applyLeave: "Apply Leave",
             message: "Message",
             timetable: "Timetable"
+        },
+        forgotPassword: {
+            title: "Forgot your password?",
+            subtitle: "No worries, we'll send you reset instructions.",
+            emailLabel: "Email address",
+            emailPlaceholder: "Enter your email",
+            submitButton: "Reset Password",
+            sending: "Sending...",
+            successTitle: "Check your email",
+            successMessage: "We sent a password reset link to",
+            resendPrompt: "Didn't receive the email?",
+            resendButton: "Click to resend",
+            rememberPassword: "Remember your password?",
+            backToLogin: "Back to Login"
         }
     },
     hi: {
@@ -296,6 +311,7 @@ export const translations = {
             passwordLabel: "पासवर्ड",
             passwordPlaceholder: "अपना पासवर्ड दर्ज करें",
             loginButton: "लॉगिन",
+            forgotPassword: "पासवर्ड भूल गए?",
             loggingIn: "लॉगिन हो रहा है...",
             troubleLoggingIn: "लॉगिन में समस्या?",
             contactSupport: "समर्थन से संपर्क करें",
@@ -533,6 +549,20 @@ export const translations = {
             applyLeave: "छुट्टी के लिए आवेदन करें",
             message: "संदेश",
             timetable: "समय सारिणी"
+        },
+        forgotPassword: {
+            title: "अपना पासवर्ड भूल गए?",
+            subtitle: "कोई चिंता नहीं, हम आपको रीसेट निर्देश भेजेंगे।",
+            emailLabel: "ईमेल पता",
+            emailPlaceholder: "अपना ईमेल दर्ज करें",
+            submitButton: "पासवर्ड रीसेट करें",
+            sending: "भेजा जा रहा है...",
+            successTitle: "अपना ईमेल चेक करें",
+            successMessage: "हमने पासवर्ड रीसेट लिंक भेजा है",
+            resendPrompt: "ईमेल प्राप्त नहीं हुआ?",
+            resendButton: "फिर से भेजने के लिए क्लिक करें",
+            rememberPassword: "अपना पासवर्ड याद है?",
+            backToLogin: "लॉगिन पर वापस जाएं"
         }
     }
 };
