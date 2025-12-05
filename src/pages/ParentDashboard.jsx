@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { ShieldCheck, Utensils, Calendar, MessageCircle, Clock, ChevronDown, CalendarDays } from 'lucide-react';
+import { ShieldCheck, Utensils, Calendar, MessageCircle, Clock, ChevronDown, CalendarDays, Trash2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 import { useAuth } from '../context/AuthContext';
 import { getStudentById, getStudentByParentEmail } from '../services/studentService';
 
 import { getStudentMonthlyAttendance } from '../services/attendanceService';
+import { collection, query, where, orderBy, limit, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { updateUserProfile } from '../services/userService';
 
 const ParentDashboard = () => {
@@ -19,6 +21,7 @@ const ParentDashboard = () => {
     const { currentUser, refreshProfile } = useAuth();
     const [studentData, setStudentData] = useState(null);
     const [attendanceData, setAttendanceData] = useState([]);
+    const [latestLeave, setLatestLeave] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -74,6 +77,22 @@ const ParentDashboard = () => {
                     }
                 }
 
+                // 4. Fetch Latest Leave Request
+                const leavesQuery = query(
+                    collection(db, 'leave_requests'),
+                    where('studentId', '==', student.id)
+                );
+                const leavesSnapshot = await getDocs(leavesQuery);
+                if (!leavesSnapshot.empty) {
+                    const leaves = leavesSnapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                    if (leaves.length > 0) {
+                        setLatestLeave(leaves[0]);
+                    }
+                }
+
             } catch (error) {
                 console.error("Error fetching parent dashboard data:", error);
             } finally {
@@ -83,6 +102,17 @@ const ParentDashboard = () => {
 
         fetchDashboardData();
     }, [currentUser]);
+
+    const handleDeleteLeave = async (leaveId) => {
+        if (!window.confirm("Are you sure you want to delete this leave application?")) return;
+        try {
+            await deleteDoc(doc(db, 'leave_requests', leaveId));
+            setLatestLeave(null); // Clear from view
+        } catch (error) {
+            console.error("Error deleting leave:", error);
+            alert("Failed to delete leave application.");
+        }
+    };
 
     // Generate Calendar Days for Current Month
     const today = new Date();
@@ -181,6 +211,41 @@ const ParentDashboard = () => {
                             </div>
                         </div>
 
+                        {/* Leave Status Card */}
+                        {latestLeave && (
+                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6 relative overflow-hidden">
+                                <div className="absolute right-0 top-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 z-0"></div>
+                                <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <p className="text-gray-500 text-sm font-medium mb-1">Latest Leave Request</p>
+                                            <h3 className={`text-lg font-bold ${latestLeave.status === 'Approved' ? 'text-green-600' : latestLeave.status === 'Rejected' ? 'text-red-600' : 'text-yellow-600'}`}>
+                                                {latestLeave.status}
+                                            </h3>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {latestLeave.status === 'Pending' && (
+                                                <button
+                                                    onClick={() => handleDeleteLeave(latestLeave.id)}
+                                                    className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
+                                                    title="Cancel Leave Request"
+                                                >
+                                                    <Trash2 size={24} />
+                                                </button>
+                                            )}
+                                            <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
+                                                <MessageCircle size={24} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        <p>{latestLeave.type} • {latestLeave.days} Days</p>
+                                        <p className="text-xs text-gray-400 mt-1">{latestLeave.from}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Attendance Calendar Widget */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-24">
                             <div className="flex justify-between items-center mb-4">
@@ -230,13 +295,10 @@ const ParentDashboard = () => {
                                     </div>
                                     <span className="font-medium">{t.applyLeave || 'Apply Leave'}</span>
                                 </button>
-                                <button className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-all group">
-                                    <div className="bg-blue-50 text-blue-600 p-2 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
-                                        <MessageCircle size={20} />
-                                    </div>
-                                    <span className="font-medium">{t.message || 'Message'}</span>
-                                </button>
-                                <button className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-all group">
+                                <button
+                                    onClick={() => navigate('/student/timetable')}
+                                    className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-all group"
+                                >
                                     <div className="bg-blue-50 text-blue-600 p-2 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
                                         <Clock size={20} />
                                     </div>
@@ -276,13 +338,10 @@ const ParentDashboard = () => {
                         </div>
                         <span className="text-xs font-medium">{t.applyLeave || 'Apply Leave'}</span>
                     </button>
-                    <button className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 active:scale-95 transition-all">
-                        <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
-                            <MessageCircle size={24} />
-                        </div>
-                        <span className="text-xs font-medium">{t.message || 'Message'}</span>
-                    </button>
-                    <button className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 active:scale-95 transition-all">
+                    <button
+                        onClick={() => navigate('/student/timetable')}
+                        className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 active:scale-95 transition-all"
+                    >
                         <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
                             <Clock size={24} />
                         </div>

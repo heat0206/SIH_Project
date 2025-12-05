@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, Users, ShieldCheck, Building2 } from 'lucide-react';
+import { GraduationCap, Users, ShieldCheck, Building2, Eye, EyeOff } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
@@ -20,6 +20,7 @@ const Home = () => {
         password: ''
     });
     const [rememberMe, setRememberMe] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -190,36 +191,41 @@ const Home = () => {
 
                                         <div className="space-y-1.5">
                                             <label className="text-sm font-medium text-gray-700 ml-1">{t.passwordLabel}</label>
-                                            <input
-                                                type="password"
-                                                name="password"
-                                                value={credentials.password}
-                                                onChange={handleInputChange}
-                                                placeholder={t.passwordPlaceholder}
-                                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                                required
-                                            />
+                                            <div className="relative">
+                                                <input
+                                                    type={showPassword ? "text" : "password"}
+                                                    name="password"
+                                                    value={credentials.password}
+                                                    onChange={handleInputChange}
+                                                    placeholder={t.passwordPlaceholder}
+                                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pr-12"
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
+                                                >
+                                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div className="flex items-center justify-between">
-                                        {role === 'student' ? (
-                                            <div className="flex items-center">
-                                                <input
-                                                    id="remember-me"
-                                                    name="remember-me"
-                                                    type="checkbox"
-                                                    checked={rememberMe}
-                                                    onChange={(e) => setRememberMe(e.target.checked)}
-                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                                />
-                                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                                                    {t.rememberMe || "Remember me"}
-                                                </label>
-                                            </div>
-                                        ) : (
-                                            <div></div>
-                                        )}
+                                        <div className="flex items-center">
+                                            <input
+                                                id="remember-me"
+                                                name="remember-me"
+                                                type="checkbox"
+                                                checked={rememberMe}
+                                                onChange={(e) => setRememberMe(e.target.checked)}
+                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                            />
+                                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                                                {t.rememberMe || "Remember me"}
+                                            </label>
+                                        </div>
 
                                         <div className="text-sm">
                                             <Link

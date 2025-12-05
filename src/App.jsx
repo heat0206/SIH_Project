@@ -20,6 +20,7 @@ import GovernmentDashboard from './pages/GovernmentDashboard';
 import FaceTest from './pages/FaceTest';
 import HelpSupport from './pages/HelpSupport';
 import ForgotPassword from './pages/ForgotPassword';
+import Timetable from './pages/Timetable';
 
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
@@ -42,6 +43,7 @@ function App() {
             <Route path="/student/login" element={<StudentLogin />} />
             <Route path="/student-dashboard" element={<StudentDashboard />} />
             <Route path="/student/leave" element={<LeaveApplication />} />
+            <Route path="/student/timetable" element={<Timetable />} />
             <Route path="/leave-management" element={<LeaveManagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/parent-dashboard" element={<ParentDashboard />} />

@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../firebase';
+import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { getStudentById, getStudentByParentEmail } from '../services/studentService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History } from 'lucide-react';
+import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History, Trash2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 
@@ -9,43 +13,117 @@ const LeaveApplication = () => {
     const { language } = useLanguage();
     const t = translations[language].leaveApplication;
 
+    const { currentUser } = useAuth();
     const [leaveType, setLeaveType] = useState('sick');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [leaveHistory, setLeaveHistory] = useState([]);
+    const [studentData, setStudentData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Mock history data
-    const [leaveHistory, setLeaveHistory] = useState([
-        { id: 1, type: 'Sick Leave', from: '2023-11-10', to: '2023-11-12', status: 'Approved', days: 3 },
-        { id: 2, type: 'Casual Leave', from: '2023-10-05', to: '2023-10-05', status: 'Rejected', days: 1 },
-    ]);
+    // Fetch Student & Leave History
+    useEffect(() => {
+        const fetchData = async () => {
+            if (!currentUser) return;
 
-    const handleSubmit = (e) => {
+            try {
+                // 1. Resolve Student
+                let student = null;
+                if (currentUser.studentId) {
+                    student = await getStudentById(currentUser.studentId);
+                }
+
+                if (!student && currentUser.email) {
+                    student = await getStudentByParentEmail(currentUser.email);
+                }
+
+                if (!student) {
+                    console.error("No student linked to this parent.");
+                    setLoading(false);
+                    return;
+                }
+
+                setStudentData(student);
+
+                // 2. Fetch Leave History using resolved student ID
+                const q = query(
+                    collection(db, 'leave_requests'),
+                    where('studentId', '==', student.id)
+                );
+                const snapshot = await getDocs(q);
+                const history = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); // Sort in memory
+
+                setLeaveHistory(history);
+
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [currentUser]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!studentData) {
+            alert("Student profile not linked. Cannot apply.");
+            return;
+        }
+
         setIsSubmitting(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const days = calculateDays(startDate, endDate);
             const newLeave = {
-                id: leaveHistory.length + 1,
+                studentId: studentData.id,
+                studentName: studentData.name,
+                classId: studentData.className || studentData.classId || '', // Ensure class info
                 type: leaveType === 'sick' ? 'Sick Leave' : leaveType === 'casual' ? 'Casual Leave' : leaveType === 'family' ? 'Family Function' : 'Emergency',
                 from: startDate,
                 to: endDate,
+                reason: reason,
                 status: 'Pending',
-                days: calculateDays(startDate, endDate)
+                days: days,
+                createdAt: serverTimestamp()
             };
-            setLeaveHistory([newLeave, ...leaveHistory]);
+
+            const docRef = await addDoc(collection(db, 'leave_requests'), newLeave);
+
+            // Optimistic update or refetch
+            setLeaveHistory([{ id: docRef.id, ...newLeave, createdAt: new Date() }, ...leaveHistory]);
+
             setIsSubmitting(false);
             setShowSuccess(true);
-            // Reset form
             setReason('');
             setStartDate('');
             setEndDate('');
 
             setTimeout(() => setShowSuccess(false), 3000);
-        }, 1500);
+        } catch (error) {
+            console.error("Error submitting leave:", error);
+            alert("Failed to submit leave application.");
+            setIsSubmitting(false);
+        }
+    };
+
+
+    const handleDeleteLeave = async (leaveId) => {
+        if (!window.confirm("Are you sure you want to delete this leave application?")) return;
+        try {
+            await deleteDoc(doc(db, 'leave_requests', leaveId));
+            setLeaveHistory(prev => prev.filter(l => l.id !== leaveId));
+            alert("Leave application deleted.");
+        } catch (error) {
+            console.error("Error deleting leave:", error);
+            alert("Failed to delete leave application.");
+        }
     };
 
     const calculateDays = (start, end) => {
@@ -104,8 +182,8 @@ const LeaveApplication = () => {
                                                     type="button"
                                                     onClick={() => setLeaveType(type)}
                                                     className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all ${leaveType === type
-                                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                                                         }`}
                                                 >
                                                     {t[type]}
@@ -211,13 +289,24 @@ const LeaveApplication = () => {
                                     </div>
                                 ) : (
                                     leaveHistory.map((leave) => (
-                                        <div key={leave.id} className="p-4 hover:bg-gray-50 transition-colors">
+                                        <div key={leave.id} className="p-4 hover:bg-gray-50 transition-colors group">
                                             <div className="flex justify-between items-start mb-2">
                                                 <span className="font-semibold text-gray-800 text-sm">{leave.type}</span>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 font-medium ${getStatusColor(leave.status)}`}>
-                                                    {getStatusIcon(leave.status)}
-                                                    {leave.status === 'Approved' ? t.approved : leave.status === 'Rejected' ? t.rejected : t.pending}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 font-medium ${getStatusColor(leave.status)}`}>
+                                                        {getStatusIcon(leave.status)}
+                                                        {leave.status === 'Approved' ? t.approved : leave.status === 'Rejected' ? t.rejected : t.pending}
+                                                    </span>
+                                                    {leave.status === 'Pending' && (
+                                                        <button
+                                                            onClick={() => handleDeleteLeave(leave.id)}
+                                                            className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50"
+                                                            title="Delete Leave Request"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="text-xs text-gray-500 mb-1">
                                                 {leave.from} - {leave.to}

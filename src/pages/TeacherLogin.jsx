@@ -11,6 +11,7 @@ const TeacherLogin = () => {
         userid: '',
         password: ''
     });
+    const [rememberMe, setRememberMe] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -72,7 +73,17 @@ const TeacherLogin = () => {
                             />
                         </div>
 
-                        <div className="form-actions">
+                        <div className="form-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    id="rememberMe"
+                                    checked={rememberMe}
+                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                    style={{ marginRight: '0.5rem', width: 'auto' }}
+                                />
+                                <label htmlFor="rememberMe" style={{ fontSize: '0.9rem', color: 'var(--text-light)' }}>{t.rememberMe}</label>
+                            </div>
                             <Link to="/forgot-password" id="forgotLink">{t.forgotPassword}</Link>
                         </div>
 
