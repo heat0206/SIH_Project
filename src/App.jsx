@@ -18,6 +18,7 @@ import LeaveManagement from './pages/LeaveManagement';
 import ParentDashboard from './pages/ParentDashboard';
 import GovernmentDashboard from './pages/GovernmentDashboard';
 import FaceTest from './pages/FaceTest';
+import HelpSupport from './pages/HelpSupport';
 
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
@@ -45,7 +46,7 @@ function App() {
             <Route path="/parent-dashboard" element={<ParentDashboard />} />
             <Route path="/government-dashboard" element={<GovernmentDashboard />} />
             <Route path="/profile" element={<UserProfile />} />
-            <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
+            <Route path="/help" element={<HelpSupport />} />
             <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
             <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />
             <Route path="/face-test" element={<FaceTest />} />
