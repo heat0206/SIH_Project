@@ -230,7 +230,12 @@ const ParentDashboard = () => {
                                     </div>
                                     <span className="font-medium">{t.applyLeave || 'Apply Leave'}</span>
                                 </button>
-                                {/* Removed Message and Timetable buttons as per request */}
+                                <button className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-all group">
+                                    <div className="bg-blue-50 text-blue-600 p-2 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
+                                        <Clock size={20} />
+                                    </div>
+                                    <span className="font-medium">{t.timetable || 'Timetable'}</span>
+                                </button>
                             </div>
                         </div>
 
@@ -265,7 +270,12 @@ const ParentDashboard = () => {
                         </div>
                         <span className="text-xs font-medium">{t.applyLeave || 'Apply Leave'}</span>
                     </button>
-                    {/* Removed Message and Timetable buttons */}
+                    <button className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 active:scale-95 transition-all">
+                        <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
+                            <Clock size={24} />
+                        </div>
+                        <span className="text-xs font-medium">{t.timetable || 'Timetable'}</span>
+                    </button>
                 </div>
             </div>
         </div>
