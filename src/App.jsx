@@ -27,6 +27,8 @@ import { AuthProvider } from './context/AuthContext';
 
 import AttendanceProcessor from './components/AttendanceProcessor';
 
+import LearnMore from './pages/LearnMore';
+
 function App() {
   return (
     <LanguageProvider>
@@ -35,6 +37,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/learn-more" element={<LearnMore />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<TeacherLogin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
