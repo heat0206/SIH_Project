@@ -19,6 +19,7 @@ import ParentDashboard from './pages/ParentDashboard';
 import GovernmentDashboard from './pages/GovernmentDashboard';
 import FaceTest from './pages/FaceTest';
 import HelpSupport from './pages/HelpSupport';
+import ForgotPassword from './pages/ForgotPassword';
 
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
@@ -50,6 +51,7 @@ function App() {
             <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
             <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />
             <Route path="/face-test" element={<FaceTest />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
           </Routes>
         </Router>
       </AuthProvider>
