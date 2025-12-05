@@ -283,6 +283,34 @@ export const translations = {
             resendButton: "Click to resend",
             rememberPassword: "Remember your password?",
             backToLogin: "Back to Login"
+        },
+        timetable: {
+            title: "Class Timetable",
+            subtitle: "Weekly Schedule for your child",
+            days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            time: "Time",
+            subject: "Subject",
+            teacher: "Teacher",
+            room: "Room",
+            break: "Break",
+            recess: "Recess",
+            weekA: "Week A",
+            noClasses: "No classes scheduled for this day.",
+            subjects: {
+                Mathematics: "Mathematics",
+                Science: "Science",
+                English: "English",
+                History: "History",
+                Hindi: "Hindi",
+                Geography: "Geography",
+                Sports: "Sports",
+                Computer: "Computer",
+                Art: "Art",
+                Activity: "Activity",
+                Library: "Library",
+                "Early Dismissal": "Early Dismissal",
+                Break: "Break"
+            }
         }
     },
     hi: {
@@ -570,6 +598,34 @@ export const translations = {
             resendButton: "फिर से भेजने के लिए क्लिक करें",
             rememberPassword: "अपना पासवर्ड याद है?",
             backToLogin: "लॉगिन पर वापस जाएं"
+        },
+        timetable: {
+            title: "कक्षा समय सारिणी",
+            subtitle: "आपके बच्चे के लिए साप्ताहिक कार्यक्रम",
+            days: ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"],
+            time: "समय",
+            subject: "विषय",
+            teacher: "शिक्षक",
+            room: "कमरा",
+            break: "विराम",
+            recess: "मध्यांतर",
+            weekA: "सप्ताह ए",
+            noClasses: "इस दिन के लिए कोई कक्षाएं निर्धारित नहीं हैं।",
+            subjects: {
+                Mathematics: "गणित",
+                Science: "विज्ञान",
+                English: "अंग्रेजी",
+                History: "इतिहास",
+                Hindi: "हिंदी",
+                Geography: "भूगोल",
+                Sports: "खेल",
+                Computer: "कंप्यूटर",
+                Art: "कला",
+                Activity: "क्रियाकलाप",
+                Library: "पुस्तकालय",
+                "Early Dismissal": "जल्दी छुट्टी",
+                Break: "विराम"
+            }
         }
     }
 };

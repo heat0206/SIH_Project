@@ -109,7 +109,7 @@ const Timetable = () => {
                             {t.days ? t.days[["mon", "tue", "wed", "thu", "fri", "sat"].indexOf(activeDay)] : timetableData.days.find(d => d.id === activeDay)?.name}
                         </h2>
                         <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-                            Week A
+                            {t.weekA || "Week A"}
                         </span>
                     </div>
 
@@ -127,8 +127,8 @@ const Timetable = () => {
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                         <div>
                                             <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-                                                {slot.subject}
-                                                {slot.subject === 'Break' && <span className="text-xs font-normal text-gray-500 ml-2">(Recess)</span>}
+                                                {t.subjects?.[slot.subject] || slot.subject}
+                                                {slot.subject === 'Break' && <span className="text-xs font-normal text-gray-500 ml-2">({t.recess || "Recess"})</span>}
                                             </h3>
                                             {slot.teacher && (
                                                 <div className="flex items-center text-sm text-gray-600 mt-1">
@@ -140,7 +140,7 @@ const Timetable = () => {
 
                                         {/* Status Badge */}
                                         <div className={`px-4 py-2 rounded-lg text-sm font-medium ${slot.color}`}>
-                                            {slot.room ? `${t.room || "Room"} ${slot.room}` : slot.subject}
+                                            {slot.room ? `${t.room || "Room"} ${slot.room}` : (t.subjects?.[slot.subject] || slot.subject)}
                                         </div>
                                     </div>
                                 </div>
@@ -149,7 +149,7 @@ const Timetable = () => {
 
                         {(!timetableData.schedule[activeDay] || timetableData.schedule[activeDay].length === 0) && (
                             <div className="p-12 text-center text-gray-500 italic">
-                                No classes scheduled for this day.
+                                {t.noClasses || "No classes scheduled for this day."}
                             </div>
                         )}
                     </div>
