@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, Users, ShieldCheck } from 'lucide-react';
+import { GraduationCap, Users, ShieldCheck, Building2 } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
@@ -38,6 +38,13 @@ const Home = () => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
+        if (role === 'government') {
+            // Bypass authentication for Government Monitor
+            navigate('/government-dashboard');
+            setLoading(false);
+            return;
+        }
 
         try {
             const userCredential = await login(credentials.userid, credentials.password, rememberMe);
@@ -156,10 +163,11 @@ const Home = () => {
                                     <p className="text-gray-500">{t.selectRole}</p>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-3 mb-6">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                                     <RoleCard id="teacher" icon={GraduationCap} label={t.teacher} />
                                     <RoleCard id="student" icon={Users} label={t.parent} />
                                     <RoleCard id="admin" icon={ShieldCheck} label={t.admin} />
+                                    <RoleCard id="government" icon={Building2} label="Govt." />
                                 </div>
 
                                 <form onSubmit={handleLogin} className="space-y-5">
@@ -243,9 +251,7 @@ const Home = () => {
                                         {t.troubleLoggingIn} <a href="#" className="text-blue-600 font-medium hover:underline">{t.contactSupport}</a>
                                     </p>
                                     <div className="flex justify-center gap-4 text-xs font-medium">
-                                        <Link to="/government-dashboard" className="text-indigo-600 hover:underline">
-                                            Govt. Monitor
-                                        </Link>
+                                        {/* Govt Link moved to main login options */}
                                     </div>
                                 </div>
                             </div>
