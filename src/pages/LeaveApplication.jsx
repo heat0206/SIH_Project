@@ -51,11 +51,13 @@ const LeaveApplication = () => {
                 // 2. Fetch Leave History using resolved student ID
                 const q = query(
                     collection(db, 'leave_requests'),
-                    where('studentId', '==', student.id),
-                    orderBy('createdAt', 'desc')
+                    where('studentId', '==', student.id)
                 );
                 const snapshot = await getDocs(q);
-                const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const history = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds); // Sort in memory
+
                 setLeaveHistory(history);
 
             } catch (error) {

@@ -80,13 +80,17 @@ const ParentDashboard = () => {
                 // 4. Fetch Latest Leave Request
                 const leavesQuery = query(
                     collection(db, 'leave_requests'),
-                    where('studentId', '==', student.id),
-                    orderBy('createdAt', 'desc'),
-                    limit(1)
+                    where('studentId', '==', student.id)
                 );
                 const leavesSnapshot = await getDocs(leavesQuery);
                 if (!leavesSnapshot.empty) {
-                    setLatestLeave({ id: leavesSnapshot.docs[0].id, ...leavesSnapshot.docs[0].data() });
+                    const leaves = leavesSnapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                    if (leaves.length > 0) {
+                        setLatestLeave(leaves[0]);
+                    }
                 }
 
             } catch (error) {
