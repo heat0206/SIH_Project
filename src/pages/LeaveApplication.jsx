@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { getStudentById, getStudentByParentEmail } from '../services/studentService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History } from 'lucide-react';
+import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History, Trash2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 
@@ -110,6 +110,19 @@ const LeaveApplication = () => {
             console.error("Error submitting leave:", error);
             alert("Failed to submit leave application.");
             setIsSubmitting(false);
+        }
+    };
+
+
+    const handleDeleteLeave = async (leaveId) => {
+        if (!window.confirm("Are you sure you want to delete this leave application?")) return;
+        try {
+            await deleteDoc(doc(db, 'leave_requests', leaveId));
+            setLeaveHistory(prev => prev.filter(l => l.id !== leaveId));
+            alert("Leave application deleted.");
+        } catch (error) {
+            console.error("Error deleting leave:", error);
+            alert("Failed to delete leave application.");
         }
     };
 
@@ -276,13 +289,24 @@ const LeaveApplication = () => {
                                     </div>
                                 ) : (
                                     leaveHistory.map((leave) => (
-                                        <div key={leave.id} className="p-4 hover:bg-gray-50 transition-colors">
+                                        <div key={leave.id} className="p-4 hover:bg-gray-50 transition-colors group">
                                             <div className="flex justify-between items-start mb-2">
                                                 <span className="font-semibold text-gray-800 text-sm">{leave.type}</span>
-                                                <span className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 font-medium ${getStatusColor(leave.status)}`}>
-                                                    {getStatusIcon(leave.status)}
-                                                    {leave.status === 'Approved' ? t.approved : leave.status === 'Rejected' ? t.rejected : t.pending}
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 font-medium ${getStatusColor(leave.status)}`}>
+                                                        {getStatusIcon(leave.status)}
+                                                        {leave.status === 'Approved' ? t.approved : leave.status === 'Rejected' ? t.rejected : t.pending}
+                                                    </span>
+                                                    {leave.status === 'Pending' && (
+                                                        <button
+                                                            onClick={() => handleDeleteLeave(leave.id)}
+                                                            className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50"
+                                                            title="Delete Leave Request"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="text-xs text-gray-500 mb-1">
                                                 {leave.from} - {leave.to}

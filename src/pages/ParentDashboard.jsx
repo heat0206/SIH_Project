@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { ShieldCheck, Utensils, Calendar, MessageCircle, Clock, ChevronDown, CalendarDays } from 'lucide-react';
+import { ShieldCheck, Utensils, Calendar, MessageCircle, Clock, ChevronDown, CalendarDays, Trash2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 import { useAuth } from '../context/AuthContext';
 import { getStudentById, getStudentByParentEmail } from '../services/studentService';
 
 import { getStudentMonthlyAttendance } from '../services/attendanceService';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { updateUserProfile } from '../services/userService';
 
@@ -102,6 +102,17 @@ const ParentDashboard = () => {
 
         fetchDashboardData();
     }, [currentUser]);
+
+    const handleDeleteLeave = async (leaveId) => {
+        if (!window.confirm("Are you sure you want to delete this leave application?")) return;
+        try {
+            await deleteDoc(doc(db, 'leave_requests', leaveId));
+            setLatestLeave(null); // Clear from view
+        } catch (error) {
+            console.error("Error deleting leave:", error);
+            alert("Failed to delete leave application.");
+        }
+    };
 
     // Generate Calendar Days for Current Month
     const today = new Date();
@@ -212,8 +223,19 @@ const ParentDashboard = () => {
                                                 {latestLeave.status}
                                             </h3>
                                         </div>
-                                        <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
-                                            <MessageCircle size={24} />
+                                        <div className="flex gap-2">
+                                            {latestLeave.status === 'Pending' && (
+                                                <button
+                                                    onClick={() => handleDeleteLeave(latestLeave.id)}
+                                                    className="p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
+                                                    title="Cancel Leave Request"
+                                                >
+                                                    <Trash2 size={24} />
+                                                </button>
+                                            )}
+                                            <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
+                                                <MessageCircle size={24} />
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="text-sm text-gray-600">
