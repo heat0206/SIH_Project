@@ -28,6 +28,7 @@ export const translations = {
             passwordLabel: "Password",
             passwordPlaceholder: "Enter your password",
             loginButton: "Login",
+            rememberMe: "Remember me",
             forgotPassword: "Forgot Password?",
             loggingIn: "Logging in...",
             troubleLoggingIn: "Trouble logging in?",
@@ -61,6 +62,7 @@ export const translations = {
             passwordPlaceholder: "Enter your password",
             forgotPassword: "Forgot Password?",
             loginButton: "Login",
+            rememberMe: "Remember me",
             orDivider: "OR",
             otpButton: "Login with OTP",
             noAccount: "Don't have an account?",
@@ -206,6 +208,7 @@ export const translations = {
             passwordLabel: "Password",
             passwordPlaceholder: "Enter your password",
             loginButton: "Access Dashboard",
+            rememberMe: "Remember me",
             notAdmin: "Not an admin? Go to Teacher Login"
         },
         leaveApplication: {
@@ -310,7 +313,9 @@ export const translations = {
             emailPlaceholder: "admin@school.com",
             passwordLabel: "पासवर्ड",
             passwordPlaceholder: "अपना पासवर्ड दर्ज करें",
+
             loginButton: "लॉगिन",
+            rememberMe: "मुझे याद रखें",
             forgotPassword: "पासवर्ड भूल गए?",
             loggingIn: "लॉगिन हो रहा है...",
             troubleLoggingIn: "लॉगिन में समस्या?",
@@ -344,6 +349,7 @@ export const translations = {
             passwordPlaceholder: "अपना पासवर्ड दर्ज करें",
             forgotPassword: "पासवर्ड भूल गए?",
             loginButton: "लॉगिन",
+            rememberMe: "मुझे याद रखें",
             orDivider: "या",
             otpButton: "ओटीपी के साथ लॉगिन करें",
             noAccount: "खाता नहीं है?",
@@ -489,6 +495,7 @@ export const translations = {
             passwordLabel: "पासवर्ड",
             passwordPlaceholder: "अपना पासवर्ड दर्ज करें",
             loginButton: "डैशबोर्ड तक पहुंचें",
+            rememberMe: "मुझे याद रखें",
             notAdmin: "एडमिन नहीं हैं? शिक्षक लॉगिन पर जाएं"
         },
         leaveApplication: {
