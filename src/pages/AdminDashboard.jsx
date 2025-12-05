@@ -17,7 +17,10 @@ import {
     Phone,
     UserCheck,
     Utensils,
-    Wifi
+    Wifi,
+    FileText,
+    CheckCircle,
+    XCircle
 } from 'lucide-react';
 import {
     collection,
@@ -59,9 +62,11 @@ const AdminDashboard = () => {
     const [classes, setClasses] = useState([]);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+
     const [faceLogs, setFaceLogs] = useState([]);
     const [totalPresent, setTotalPresent] = useState(0);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [leaveRequests, setLeaveRequests] = useState([]);
 
     // Modal States
     const [isAddingStudent, setIsAddingStudent] = useState(false);
@@ -114,6 +119,12 @@ const AdminDashboard = () => {
 
             // Fetch Logs (Mock or Real)
             // Removed manual fetch to use real-time subscription below
+
+            // Fetch Leave Requests
+            const leavesQuery = query(collection(db, 'leave_requests'), orderBy('createdAt', 'desc'));
+            const leavesSnapshot = await getDocs(leavesQuery);
+            const leavesList = leavesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setLeaveRequests(leavesList);
 
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -542,6 +553,31 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleApproveLeave = async (leaveId) => {
+        try {
+            const leaveRef = doc(db, 'leave_requests', leaveId);
+            await updateDoc(leaveRef, { status: 'Approved' });
+            fetchData();
+            alert("Leave approved successfully.");
+        } catch (error) {
+            console.error("Error approving leave:", error);
+            alert("Failed to approve leave.");
+        }
+    };
+
+    const handleRejectLeave = async (leaveId) => {
+        if (!window.confirm("Are you sure you want to reject this leave?")) return;
+        try {
+            const leaveRef = doc(db, 'leave_requests', leaveId);
+            await updateDoc(leaveRef, { status: 'Rejected' });
+            fetchData();
+            alert("Leave rejected.");
+        } catch (error) {
+            console.error("Error rejecting leave:", error);
+            alert("Failed to reject leave.");
+        }
+    };
+
     // Filtered Lists
     const filteredTeachers = teachers.filter(t =>
         (t.name || "").toLowerCase().includes(searchTeacherQuery.toLowerCase()) ||
@@ -587,6 +623,9 @@ const AdminDashboard = () => {
                         </button>
                         <button onClick={() => setActiveTab('classes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'classes' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <School size={20} /> {t.classes}
+                        </button>
+                        <button onClick={() => setActiveTab('leaves')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leaves' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <FileText size={20} /> Leaves
                         </button>
                     </nav>
                 </div>
@@ -1089,6 +1128,81 @@ const AdminDashboard = () => {
                                                             </tr>
                                                         );
                                                     })
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {activeTab === 'leaves' && (
+                            <>
+                                <h2 className="text-xl font-bold text-gray-900 mb-6">Leave Requests</h2>
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left">
+                                            <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
+                                                <tr>
+                                                    <th className="px-6 py-4">Student</th>
+                                                    <th className="px-6 py-4">Type & Reason</th>
+                                                    <th className="px-6 py-4">Dates</th>
+                                                    <th className="px-6 py-4">Status</th>
+                                                    <th className="px-6 py-4 text-right">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200">
+                                                {leaveRequests.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500 italic">
+                                                            No leave notices found.
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    leaveRequests.map((leave) => (
+                                                        <tr key={leave.id} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-4">
+                                                                <div className="font-bold text-gray-900">{leave.studentName}</div>
+                                                                <div className="text-xs text-gray-500">{leave.classId}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <div className="text-sm font-medium text-gray-900">{leave.type}</div>
+                                                                <div className="text-xs text-gray-500 max-w-xs">{leave.reason}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                                <div>{leave.from} to {leave.to}</div>
+                                                                <div className="text-xs text-gray-500">({leave.days} days)</div>
+                                                            </td>
+                                                            <td className="px-6 py-4">
+                                                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${leave.status === 'Approved' ? 'bg-green-100 text-green-800' :
+                                                                        leave.status === 'Rejected' ? 'bg-red-100 text-red-800' :
+                                                                            'bg-yellow-100 text-yellow-800'
+                                                                    }`}>
+                                                                    {leave.status === 'Approved' && <CheckCircle size={12} />}
+                                                                    {leave.status === 'Rejected' && <XCircle size={12} />}
+                                                                    {leave.status}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-right">
+                                                                {leave.status === 'Pending' && (
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        <button
+                                                                            onClick={() => handleApproveLeave(leave.id)}
+                                                                            className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1 text-xs font-medium"
+                                                                        >
+                                                                            <CheckCircle size={14} /> Approve
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleRejectLeave(leave.id)}
+                                                                            className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1 text-xs font-medium"
+                                                                        >
+                                                                            <XCircle size={14} /> Reject
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ))
                                                 )}
                                             </tbody>
                                         </table>

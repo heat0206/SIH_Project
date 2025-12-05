@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../firebase';
+import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp } from 'firebase/firestore';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History } from 'lucide-react';
@@ -9,43 +12,78 @@ const LeaveApplication = () => {
     const { language } = useLanguage();
     const t = translations[language].leaveApplication;
 
+    const { currentUser } = useAuth();
     const [leaveType, setLeaveType] = useState('sick');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [leaveHistory, setLeaveHistory] = useState([]);
 
-    // Mock history data
-    const [leaveHistory, setLeaveHistory] = useState([
-        { id: 1, type: 'Sick Leave', from: '2023-11-10', to: '2023-11-12', status: 'Approved', days: 3 },
-        { id: 2, type: 'Casual Leave', from: '2023-10-05', to: '2023-10-05', status: 'Rejected', days: 1 },
-    ]);
+    // Fetch Leave History
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (!currentUser?.studentId) return;
 
-    const handleSubmit = (e) => {
+            try {
+                const q = query(
+                    collection(db, 'leave_requests'),
+                    where('studentId', '==', currentUser.studentId),
+                    orderBy('createdAt', 'desc')
+                );
+                const snapshot = await getDocs(q);
+                const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setLeaveHistory(history);
+            } catch (error) {
+                console.error("Error fetching leave history:", error);
+            }
+        };
+
+        fetchHistory();
+    }, [currentUser]);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!currentUser?.studentId) {
+            alert("Student profile not found. Cannot apply.");
+            return;
+        }
+
         setIsSubmitting(true);
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            const days = calculateDays(startDate, endDate);
             const newLeave = {
-                id: leaveHistory.length + 1,
+                studentId: currentUser.studentId,
+                studentName: currentUser.name || currentUser.studentName || 'Student', // Fallback
+                classId: currentUser.classId || currentUser.className || '', // Ensure class info is there if possible
                 type: leaveType === 'sick' ? 'Sick Leave' : leaveType === 'casual' ? 'Casual Leave' : leaveType === 'family' ? 'Family Function' : 'Emergency',
                 from: startDate,
                 to: endDate,
+                reason: reason,
                 status: 'Pending',
-                days: calculateDays(startDate, endDate)
+                days: days,
+                createdAt: serverTimestamp()
             };
-            setLeaveHistory([newLeave, ...leaveHistory]);
+
+            const docRef = await addDoc(collection(db, 'leave_requests'), newLeave);
+
+            // Optimistic update or refetch
+            setLeaveHistory([{ id: docRef.id, ...newLeave, createdAt: new Date() }, ...leaveHistory]);
+
             setIsSubmitting(false);
             setShowSuccess(true);
-            // Reset form
             setReason('');
             setStartDate('');
             setEndDate('');
 
             setTimeout(() => setShowSuccess(false), 3000);
-        }, 1500);
+        } catch (error) {
+            console.error("Error submitting leave:", error);
+            alert("Failed to submit leave application.");
+            setIsSubmitting(false);
+        }
     };
 
     const calculateDays = (start, end) => {
@@ -104,8 +142,8 @@ const LeaveApplication = () => {
                                                     type="button"
                                                     onClick={() => setLeaveType(type)}
                                                     className={`py-2 px-3 rounded-lg border text-sm font-medium transition-all ${leaveType === type
-                                                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                                                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                                                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                                                         }`}
                                                 >
                                                     {t[type]}
