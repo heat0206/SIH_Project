@@ -16,15 +16,19 @@ import UserProfile from './pages/UserProfile';
 import LeaveApplication from './pages/LeaveApplication';
 import LeaveManagement from './pages/LeaveManagement';
 import ParentDashboard from './pages/ParentDashboard';
+import GovernmentDashboard from './pages/GovernmentDashboard';
 import FaceTest from './pages/FaceTest';
 
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 
+import AttendanceProcessor from './components/AttendanceProcessor';
+
 function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
+        <AttendanceProcessor />
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -39,6 +43,7 @@ function App() {
             <Route path="/leave-management" element={<LeaveManagement />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/parent-dashboard" element={<ParentDashboard />} />
+            <Route path="/government-dashboard" element={<GovernmentDashboard />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
             <Route path="/logout" element={<PlaceholderPage title="Logout" />} />

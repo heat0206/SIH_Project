@@ -41,7 +41,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGenerator';
 import { deleteStudent } from '../services/studentService';
 import { createParentProfile } from '../services/userService';
-import { subscribeToRFIDLogs, processRFIDLogsToAttendance } from '../services/attendanceService';
+import { subscribeToRFIDLogs } from '../services/attendanceService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -132,9 +132,6 @@ const AdminDashboard = () => {
         const unsubscribeLogs = subscribeToRFIDLogs(today, (newLogs) => {
             console.log("[Dashboard] Received logs update:", newLogs.length);
             setLogs(newLogs);
-            // Auto-process attendance whenever new logs arrive
-            console.log("[Dashboard] Triggering auto-process...");
-            processRFIDLogsToAttendance(today).catch(err => console.error("Auto-process failed", err));
         });
 
         const unsubscribeFace = onSnapshot(
@@ -250,15 +247,15 @@ const AdminDashboard = () => {
         e.preventDefault();
         if (!editingStudent) return;
 
-        const formData = new FormData(e.target);
+        // Use state directly as inputs might miss name attributes
         const updatedStudent = {
-            name: formData.get('name'),
-            rollNo: formData.get('rollNo'),
-            classId: formData.get('classId'),
-            className: classes.find(c => c.id === formData.get('classId'))?.name || '',
-            rfidId: formData.get('rfidId'),
-            parentName: formData.get('parentName'),
-            parentPhone: formData.get('parentPhone'),
+            name: editingStudent.name,
+            rollNo: editingStudent.rollNo,
+            classId: editingStudent.classId,
+            className: classes.find(c => c.id === editingStudent.classId)?.name || '',
+            rfidId: editingStudent.rfidId,
+            parentName: editingStudent.parentName,
+            parentPhone: editingStudent.parentPhone,
         };
 
         try {
@@ -283,6 +280,37 @@ const AdminDashboard = () => {
                 console.error("Failed to delete student:", error);
                 alert("Failed to delete student. Please try again.");
             }
+        }
+    };
+
+    const handleCleanupInvalidStudents = async () => {
+        if (!window.confirm("This will delete all students with missing or invalid names (likely caused by the previous bug). Are you sure?")) return;
+
+        setLoading(true);
+        try {
+            const studentsSnapshot = await getDocs(collection(db, 'students'));
+            const invalidStudents = studentsSnapshot.docs.filter(doc => {
+                const data = doc.data();
+                // Check for null, undefined, empty string, or string "null"
+                return !data.name || data.name === 'null' || data.name.trim() === '';
+            });
+
+            if (invalidStudents.length === 0) {
+                alert("No invalid students found.");
+                setLoading(false);
+                return;
+            }
+
+            // Delete in parallel
+            await Promise.all(invalidStudents.map(d => deleteDoc(doc(db, 'students', d.id))));
+
+            alert(`Successfully removed ${invalidStudents.length} invalid student records.`);
+            fetchData();
+        } catch (error) {
+            console.error("Error cleaning up:", error);
+            alert("Failed to cleanup students.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -312,11 +340,11 @@ const AdminDashboard = () => {
         e.preventDefault();
         if (!editingTeacher) return;
 
-        const formData = new FormData(e.target);
+        // Use state directly as inputs might miss name attributes
         const updatedTeacher = {
-            name: formData.get('name'),
-            email: formData.get('email'),
-            subject: formData.get('subject')
+            name: editingTeacher.name,
+            email: editingTeacher.email,
+            subject: editingTeacher.subject
         };
 
         try {
@@ -1000,7 +1028,7 @@ const AdminDashboard = () => {
                                                             <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                                                                 <td className="px-6 py-4">
                                                                     <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
-                                                                        {student.name.charAt(0)}
+                                                                        {student.name ? student.name.charAt(0) : '?'}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4">

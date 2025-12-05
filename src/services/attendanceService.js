@@ -1,5 +1,5 @@
 import { db } from '../firebase';
-import { collection, doc, setDoc, getDoc, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, getDoc, query, where, getDocs, onSnapshot, runTransaction, updateDoc } from 'firebase/firestore';
 
 export const markAttendance = async (attendanceData) => {
     try {
@@ -35,6 +35,21 @@ export const getAttendanceByDate = async (classId, date) => {
         console.error("Error fetching attendance:", error);
         throw error;
     }
+};
+
+export const subscribeToAttendance = (classId, date, onUpdate) => {
+    const recordId = `${classId}_${date}`;
+    const attendanceRef = doc(db, "attendance", recordId);
+
+    return onSnapshot(attendanceRef, (docSnap) => {
+        if (docSnap.exists()) {
+            onUpdate({ id: docSnap.id, ...docSnap.data() });
+        } else {
+            onUpdate(null);
+        }
+    }, (error) => {
+        console.error("Error subscribing to attendance:", error);
+    });
 };
 
 export const getStudentMonthlyAttendance = async (classId, studentId, month, year) => {
@@ -154,162 +169,138 @@ export const getRFIDLogsByDate = async (date) => {
     }
 };
 
-export const processRFIDLogsToAttendance = async (dateStr) => {
-    console.log("[AttendanceService] processRFIDLogsToAttendance called for:", dateStr);
+export const processRFIDLogTransaction = async (logId, logData) => {
+    // 1. Check if already processed (optimization before transaction)
+    if (logData.processed) return;
+
     try {
-        const targetDate = dateStr || new Date().toISOString().split('T')[0];
+        await runTransaction(db, async (transaction) => {
+            // 2. Re-read log inside transaction to ensure lock
+            const logRef = doc(db, "rfid_logs", logId);
+            const logSnap = await transaction.get(logRef);
 
-        // 1. Fetch all RFID logs for today
-        // We need to query by date this time to ensure we only process today's logs
-        // If the date field in logs is reliable (which we fixed in hardware), this works.
-        const logsRef = collection(db, "rfid_logs");
-        const q = query(logsRef, where("date", "==", targetDate));
-        const logsSnap = await getDocs(q);
-        console.log(`[Attendance] Processing ${logsSnap.size} logs for date ${targetDate}`);
+            if (!logSnap.exists()) throw "Log does not exist!";
+            if (logSnap.data().processed) return; // Already processed by someone else
 
-        if (logsSnap.empty) {
-            return { success: true, message: "No logs found for today." };
+            const { rfidId, timestamp, date } = logSnap.data();
+
+            // 3. Get Student Data
+            // We need to find student by rfidId. Since rfidId is the document ID for students (usually), we try that first.
+            // If rfidId is a field, we'd need a query, but queries in transactions require index.
+            // Let's assume rfidId IS the student doc ID based on previous code analysis, 
+            // OR we query student outside transaction? No, must be inside for consistency? 
+            // Actually, reading student data doesn't strictly need to be in the SAME transaction if student data rarely changes.
+            // But to be safe, let's read it.
+
+            // Assumption: rfidId passed from hardware IS the student document ID (or we can look it up).
+            // Based on `studentService.js`, it seems `rfidId` field exists.
+            // If `rfidId` is NOT the doc ID, we can't easily query inside transaction without knowing the doc ID.
+            // Let's try to treat `rfidId` as the doc ID first (as per hardware code `rfidId` is UID).
+            // Wait, hardware sends UID. Student doc ID might be auto-generated or manual.
+            // Let's check `studentService.js` or `AdminDashboard`... 
+            // In `AdminDashboard`, `addDoc` is used, so Student ID is auto-generated. `rfidId` is a field.
+            // This makes transaction hard because we can't `query` inside transaction easily without knowing the doc ID.
+
+            // WORKAROUND: Read student OUTSIDE transaction (or use a separate lookup).
+            // Since student class assignment doesn't change every second, it's safe to read student data non-atomically.
+
+            // Let's do the student lookup BEFORE the transaction.
+        });
+    } catch (e) {
+        console.error("Transaction failed: ", e);
+    }
+};
+
+// Helper to find student by RFID (Non-transactional read)
+export const getStudentByRFID = async (rfidId) => {
+    const q = query(collection(db, "students"), where("rfidId", "==", rfidId));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+};
+
+export const processSingleLog = async (logId, logData) => {
+    if (logData.processed) return;
+
+    try {
+        // 1. Find Student
+        const student = await getStudentByRFID(logData.rfidId);
+        if (!student) {
+            console.warn(`Student not found for RFID ${logData.rfidId}`);
+            // Mark as processed (but failed) so we don't retry forever? 
+            // Or leave it? Let's mark as processed with error.
+            await updateDoc(doc(db, "rfid_logs", logId), { processed: true, error: "Student not found" });
+            return;
         }
 
-        // 2. Group present students by class
-        const classAttendanceMap = {}; // { classId: Set(studentId) }
+        // 2. Run Transaction to update Attendance
+        await runTransaction(db, async (transaction) => {
+            const logRef = doc(db, "rfid_logs", logId);
+            const logSnap = await transaction.get(logRef);
+            if (!logSnap.exists() || logSnap.data().processed) return;
 
-        logsSnap.forEach(doc => {
-            const data = doc.data();
-            // Only process if we have a valid classId (enriched logs or looked up)
-            // Note: The logs in DB might not have classId if hardware sent only ID.
-            // We need to look up classId for each unique RFID if missing.
-            // However, for efficiency, let's assume we need to look up student details for all unique RFIDs found.
-        });
-
-        // Let's gather all unique RFID IDs first
-        const uniqueRfids = new Set();
-        logsSnap.forEach(doc => uniqueRfids.add(doc.data().rfidId));
-
-        // 3. Fetch student details for these RFIDs to know their Class ID
-        const studentMap = {}; // { rfidId: { id, classId, name } }
-
-        // We can't do a "where in" query for > 10 items easily without batching.
-        // So we'll fetch them individually or fetch all students (if dataset small).
-        // Let's fetch individually for now as it's safer for large datasets than fetching ALL students.
-        await Promise.all(Array.from(uniqueRfids).map(async (rfidId) => {
-            if (!rfidId) return;
-            const studentRef = doc(db, "students", rfidId);
-            const studentSnap = await getDoc(studentRef);
-            if (studentSnap.exists()) {
-                studentMap[rfidId] = studentSnap.data();
-                console.log(`[Attendance] Found student for RFID ${rfidId}: ${studentSnap.data().name} (Class: ${studentSnap.data().classId})`);
-            } else {
-                console.warn(`[Attendance] Student not found for RFID ${rfidId}`);
-            }
-        }));
-
-        // 4. Organize into Class Buckets
-        const updatesByClass = {}; // { classId: [studentId1, studentId2] }
-
-        logsSnap.forEach(doc => {
-            const rfidId = doc.data().rfidId;
-            const student = studentMap[rfidId];
-            if (student && student.classId) {
-                if (!updatesByClass[student.classId]) {
-                    updatesByClass[student.classId] = new Set();
-                }
-                updatesByClass[student.classId].add(student.id); // Use student document ID (which is rfidId usually)
-            }
-        });
-
-        // 5. Update Attendance Records for each Class
-        let updatedClassesCount = 0;
-
-        for (const [classId, presentStudentIds] of Object.entries(updatesByClass)) {
-            console.log(`[Attendance] Updating class ${classId} with ${presentStudentIds.size} present students:`, Array.from(presentStudentIds));
-            // Fetch existing attendance record
-            const recordId = `${classId}_${targetDate}`;
+            const targetDate = logData.date || new Date().toISOString().split('T')[0];
+            const recordId = `${student.classId}_${targetDate}`;
             const attendanceRef = doc(db, "attendance", recordId);
-            const attendanceSnap = await getDoc(attendanceRef);
+            const attendanceSnap = await transaction.get(attendanceRef);
 
             let records = [];
-
             if (attendanceSnap.exists()) {
                 records = attendanceSnap.data().records || [];
             } else {
-                // If no record exists, we need to fetch ALL students for this class to create the roster
-                // This avoids creating a record with ONLY present students (marking everyone else implicitly absent? or missing?)
-                // Usually better to have the full roster.
-                const studentsRef = collection(db, "students");
-                const qStudents = query(studentsRef, where("classId", "==", classId));
-                const studentsSnap = await getDocs(qStudents);
+                // Need to initialize records? 
+                // Inside a transaction, we can't query all students to build the roster efficiently.
+                // If the record doesn't exist, we might just create a partial record 
+                // OR we accept that the first person to scan creates the doc.
+                // Let's create a partial record with just this student for now, 
+                // or rely on the `AdminDashboard` / `AttendanceView` to fill in the rest later?
+                // Better: Just add this student to the list.
+            }
 
-                studentsSnap.forEach(sDoc => {
-                    const sData = sDoc.data();
-                    records.push({
-                        studentId: sDoc.id,
-                        name: sData.name,
-                        present: false,
-                        verificationMethod: null
-                    });
+            // Check if student already in records
+            const existingRecordIndex = records.findIndex(r => r.studentId === student.id);
+
+            if (existingRecordIndex >= 0) {
+                // Update existing
+                if (!records[existingRecordIndex].present) {
+                    records[existingRecordIndex].present = true;
+                    records[existingRecordIndex].verificationMethod = 'rfid';
+                    records[existingRecordIndex].timestamp = logData.timestamp;
+                }
+            } else {
+                // Add new
+                records.push({
+                    studentId: student.id,
+                    name: student.name,
+                    present: true,
+                    verificationMethod: 'rfid',
+                    timestamp: logData.timestamp
                 });
             }
 
-            // Update the records
-            let hasChanges = false;
-            const updatedRecords = records.map(record => {
-                if (presentStudentIds.has(record.studentId)) {
-                    // Mark as processed for this ID
-                    presentStudentIds.delete(record.studentId);
-                    if (!record.present || record.verificationMethod !== 'rfid') {
-                        hasChanges = true;
-                        return { ...record, present: true, verificationMethod: 'rfid' };
-                    }
-                }
-                return record;
-            });
+            transaction.set(attendanceRef, {
+                classId: student.classId,
+                date: targetDate,
+                records: records,
+                updatedAt: new Date()
+            }, { merge: true });
 
-            // Handle any remaining presentStudentIds (students who scanned but weren't in the initial records list)
-            if (presentStudentIds.size > 0) {
-                hasChanges = true;
-                for (const studentId of presentStudentIds) {
-                    // We need student name. We can get it from studentMap (which we built earlier)
-                    // But studentMap keys are rfidIds. We need to find the entry where id matches studentId.
-                    // Actually, in step 4 we stored student.id in presentStudentIds.
-                    // And studentMap is keyed by rfidId.
-                    // Let's find the student object.
-                    const studentObj = Object.values(studentMap).find(s => s.id === studentId);
-
-                    if (studentObj) {
-                        updatedRecords.push({
-                            studentId: studentId,
-                            name: studentObj.name,
-                            present: true,
-                            verificationMethod: 'rfid'
-                        });
-                        console.log(`[Attendance] Added missing student ${studentObj.name} to records.`);
-                    }
-                }
-            }
-
-            // If we created a new record, we might have missed students who are in the logs but not in the 'records' list 
-            // (e.g. if student changed class but log is old? Unlikely case).
-            // But if we just fetched the roster, we are good.
-
-            if (hasChanges || !attendanceSnap.exists()) {
-                await setDoc(attendanceRef, {
-                    classId,
-                    date: targetDate,
-                    records: updatedRecords,
-                    updatedAt: new Date()
-                }, { merge: true });
-                updatedClassesCount++;
-            }
-        }
-
-        return { success: true, message: `Synced attendance for ${updatedClassesCount} classes.` };
+            // Mark log as processed
+            transaction.update(logRef, { processed: true, processedAt: new Date() });
+        });
+        console.log(`Processed log for ${student.name}`);
 
     } catch (error) {
-        console.error("Error processing RFID logs:", error);
-        throw error;
+        console.error("Error processing single log:", error);
     }
 };
+
+// DEPRECATED: Old batch processing
+/*
+export const processRFIDLogsToAttendance = async (dateStr) => {
+    // ... (Old code commented out)
+};
+*/
 
 export const subscribeToRFIDLogs = (date, onUpdate) => {
     console.log("[AttendanceService] subscribeToRFIDLogs called for:", date);

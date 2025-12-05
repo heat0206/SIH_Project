@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Users, ShieldCheck } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -238,10 +238,15 @@ const Home = () => {
                                     </button>
                                 </form>
 
-                                <div className="pt-4 border-t border-gray-100 text-center">
+                                <div className="pt-4 border-t border-gray-100 text-center space-y-2">
                                     <p className="text-sm text-gray-500">
                                         {t.troubleLoggingIn} <a href="#" className="text-blue-600 font-medium hover:underline">{t.contactSupport}</a>
                                     </p>
+                                    <div className="flex justify-center gap-4 text-xs font-medium">
+                                        <Link to="/government-dashboard" className="text-indigo-600 hover:underline">
+                                            Govt. Monitor
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         </div>

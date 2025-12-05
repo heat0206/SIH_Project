@@ -11,7 +11,7 @@ import { translations } from '../utils/translations';
 import { downloadCSV, generateClassRegisterReport } from '../utils/reportGenerator';
 import { getClassById } from '../services/classService';
 import { getStudentsByClass as getStudentsByClassService } from '../services/studentService';
-import { markAttendance, getAttendanceByDate, logRFIDScan } from '../services/attendanceService';
+import { markAttendance, getAttendanceByDate, logRFIDScan, subscribeToAttendance } from '../services/attendanceService';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -32,7 +32,9 @@ const AttendanceView = () => {
     const { currentUser } = useAuth();
 
     useEffect(() => {
-        const fetchStudents = async () => {
+        let unsubscribe;
+
+        const fetchStudentsAndSubscribe = async () => {
             if (classId === 'default') return;
 
             try {
@@ -45,29 +47,36 @@ const AttendanceView = () => {
                         setCanEdit(classDetails.teacherId === currentUser.uid);
                     }
                 }
-                const date = new Date().toISOString().split('T')[0];
-                const existingAttendance = await getAttendanceByDate(classId, date);
 
-                const formattedStudents = studentsData.map(s => {
-                    const record = existingAttendance?.records?.find(r => r.studentId === s.id);
-                    return {
-                        ...s,
-                        present: record ? record.present : false,
-                        verificationMethod: record ? record.verificationMethod : null,
-                        photo: null
-                    };
+                const date = new Date().toISOString().split('T')[0];
+
+                // Subscribe to real-time updates
+                unsubscribe = subscribeToAttendance(classId, date, (attendanceData) => {
+                    const formattedStudents = studentsData.map(s => {
+                        const record = attendanceData?.records?.find(r => r.studentId === s.id);
+                        return {
+                            ...s,
+                            present: record ? record.present : false,
+                            verificationMethod: record ? record.verificationMethod : null,
+                            photo: null
+                        };
+                    });
+                    setStudents(formattedStudents);
+                    setLoading(false);
                 });
 
-                setStudents(formattedStudents);
             } catch (error) {
                 console.error("Failed to fetch students:", error);
-            } finally {
                 setLoading(false);
             }
         };
 
-        fetchStudents();
-    }, [classId]);
+        fetchStudentsAndSubscribe();
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [classId, currentUser]);
 
     // RFID Scanning Logic (Mock)
     useEffect(() => {
