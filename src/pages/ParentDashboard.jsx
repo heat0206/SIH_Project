@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { getStudentById, getStudentByParentEmail } from '../services/studentService';
 
 import { getStudentMonthlyAttendance } from '../services/attendanceService';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 import { updateUserProfile } from '../services/userService';
 
 const ParentDashboard = () => {
@@ -19,6 +21,7 @@ const ParentDashboard = () => {
     const { currentUser, refreshProfile } = useAuth();
     const [studentData, setStudentData] = useState(null);
     const [attendanceData, setAttendanceData] = useState([]);
+    const [latestLeave, setLatestLeave] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -72,6 +75,18 @@ const ParentDashboard = () => {
                         await updateUserProfile(currentUser.uid, updateData);
                         await refreshProfile(); // Refresh context to update Header immediately
                     }
+                }
+
+                // 4. Fetch Latest Leave Request
+                const leavesQuery = query(
+                    collection(db, 'leave_requests'),
+                    where('studentId', '==', student.id),
+                    orderBy('createdAt', 'desc'),
+                    limit(1)
+                );
+                const leavesSnapshot = await getDocs(leavesQuery);
+                if (!leavesSnapshot.empty) {
+                    setLatestLeave({ id: leavesSnapshot.docs[0].id, ...leavesSnapshot.docs[0].data() });
                 }
 
             } catch (error) {
@@ -180,6 +195,30 @@ const ParentDashboard = () => {
                                 <Utensils size={24} className="text-orange-500" />
                             </div>
                         </div>
+
+                        {/* Leave Status Card */}
+                        {latestLeave && (
+                            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6 relative overflow-hidden">
+                                <div className="absolute right-0 top-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 z-0"></div>
+                                <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div>
+                                            <p className="text-gray-500 text-sm font-medium mb-1">Latest Leave Request</p>
+                                            <h3 className={`text-lg font-bold ${latestLeave.status === 'Approved' ? 'text-green-600' : latestLeave.status === 'Rejected' ? 'text-red-600' : 'text-yellow-600'}`}>
+                                                {latestLeave.status}
+                                            </h3>
+                                        </div>
+                                        <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
+                                            <MessageCircle size={24} />
+                                        </div>
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        <p>{latestLeave.type} • {latestLeave.days} Days</p>
+                                        <p className="text-xs text-gray-400 mt-1">{latestLeave.from}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Attendance Calendar Widget */}
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-24">

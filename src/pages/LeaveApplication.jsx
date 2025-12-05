@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp } from 'firebase/firestore';
+import { getStudentById, getStudentByParentEmail } from '../services/studentService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History } from 'lucide-react';
@@ -20,33 +21,57 @@ const LeaveApplication = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [leaveHistory, setLeaveHistory] = useState([]);
+    const [studentData, setStudentData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    // Fetch Leave History
+    // Fetch Student & Leave History
     useEffect(() => {
-        const fetchHistory = async () => {
-            if (!currentUser?.studentId) return;
+        const fetchData = async () => {
+            if (!currentUser) return;
 
             try {
+                // 1. Resolve Student
+                let student = null;
+                if (currentUser.studentId) {
+                    student = await getStudentById(currentUser.studentId);
+                }
+
+                if (!student && currentUser.email) {
+                    student = await getStudentByParentEmail(currentUser.email);
+                }
+
+                if (!student) {
+                    console.error("No student linked to this parent.");
+                    setLoading(false);
+                    return;
+                }
+
+                setStudentData(student);
+
+                // 2. Fetch Leave History using resolved student ID
                 const q = query(
                     collection(db, 'leave_requests'),
-                    where('studentId', '==', currentUser.studentId),
+                    where('studentId', '==', student.id),
                     orderBy('createdAt', 'desc')
                 );
                 const snapshot = await getDocs(q);
                 const history = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setLeaveHistory(history);
+
             } catch (error) {
-                console.error("Error fetching leave history:", error);
+                console.error("Error fetching data:", error);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchHistory();
+        fetchData();
     }, [currentUser]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!currentUser?.studentId) {
-            alert("Student profile not found. Cannot apply.");
+        if (!studentData) {
+            alert("Student profile not linked. Cannot apply.");
             return;
         }
 
@@ -55,9 +80,9 @@ const LeaveApplication = () => {
         try {
             const days = calculateDays(startDate, endDate);
             const newLeave = {
-                studentId: currentUser.studentId,
-                studentName: currentUser.name || currentUser.studentName || 'Student', // Fallback
-                classId: currentUser.classId || currentUser.className || '', // Ensure class info is there if possible
+                studentId: studentData.id,
+                studentName: studentData.name,
+                classId: studentData.className || studentData.classId || '', // Ensure class info
                 type: leaveType === 'sick' ? 'Sick Leave' : leaveType === 'casual' ? 'Casual Leave' : leaveType === 'family' ? 'Family Function' : 'Emergency',
                 from: startDate,
                 to: endDate,
