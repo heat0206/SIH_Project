@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { GraduationCap, Users, ShieldCheck } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { GraduationCap, Users, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
@@ -22,6 +22,7 @@ const Home = () => {
     const [rememberMe, setRememberMe] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -182,15 +183,36 @@ const Home = () => {
 
                                         <div className="space-y-1.5">
                                             <label className="text-sm font-medium text-gray-700 ml-1">{t.passwordLabel}</label>
-                                            <input
-                                                type="password"
-                                                name="password"
-                                                value={credentials.password}
-                                                onChange={handleInputChange}
-                                                placeholder={t.passwordPlaceholder}
-                                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                                required
-                                            />
+                                            <div style={{ position: 'relative' }}>
+                                                <input
+                                                    type={showPassword ? "text" : "password"}
+                                                    name="password"
+                                                    value={credentials.password}
+                                                    onChange={handleInputChange}
+                                                    placeholder={t.passwordPlaceholder}
+                                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                                    required
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassword(!showPassword)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        right: '12px',
+                                                        top: '50%',
+                                                        transform: 'translateY(-50%)',
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        color: '#6b7280',
+                                                        padding: '4px',
+                                                        display: 'flex',
+                                                        alignItems: 'center'
+                                                    }}
+                                                >
+                                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -236,11 +258,17 @@ const Home = () => {
                                             t.loginButton
                                         )}
                                     </button>
+
+                                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                                        <Link to="/forgot-password" style={{ color: '#4f46e5', fontSize: '0.9rem', textDecoration: 'none' }}>
+                                            {t.forgotPasswordLink}
+                                        </Link>
+                                    </div>
                                 </form>
 
                                 <div className="pt-4 border-t border-gray-100 text-center">
                                     <p className="text-sm text-gray-500">
-                                        {t.troubleLoggingIn} <a href="#" className="text-blue-600 font-medium hover:underline">{t.contactSupport}</a>
+                                        {t.troubleLoggingIn} <Link to="/help" className="text-blue-600 font-medium hover:underline">{t.contactSupport}</Link>
                                     </p>
                                 </div>
                             </div>

@@ -49,7 +49,36 @@ export const translations = {
             step4: "Attendance marked!",
             ctaTitle: "Ready to modernize your school?",
             ctaDesc: "Join hundreds of schools using our smart attendance system.",
-            ctaButton: "Start Free Trial"
+            ctaButton: "Start Free Trial",
+            rememberMe: "Remember me",
+            forgotPasswordLink: "Forgot Password?"
+        },
+        helpSupport: {
+            title: "Help & Support",
+            faqTitle: "Frequently Asked Questions",
+            faq1Question: "How do I mark attendance?",
+            faq1Answer: "Go to the Dashboard, select a class, and click on the \"Mark Attendance\" button.",
+            faq2Question: "How do I reset my password?",
+            faq2Answer: "Click on \"Forgot Password?\" on the login page, enter your email, and you'll receive a password reset link.",
+            faq3Question: "Can I view past attendance records?",
+            faq3Answer: "Yes, navigate to the \"Reports\" section to view detailed attendance history for your classes.",
+            contactTitle: "Contact Support",
+            contactDesc: "Need further assistance? Reach out to our support team.",
+            emailLabel: "Email:",
+            phoneLabel: "Phone:"
+        },
+        forgotPassword: {
+            title: "Forgot Password?",
+            subtitle: "Enter your email address and we'll send you a link to reset your password.",
+            emailLabel: "Email Address",
+            emailPlaceholder: "Enter your email",
+            sendButton: "Send Reset Link",
+            sending: "Sending...",
+            successMessage: "Password reset email sent! Please check your inbox.",
+            backToLogin: "← Back to Login",
+            errorNotFound: "No account found with this email address.",
+            errorInvalid: "Please enter a valid email address.",
+            errorGeneric: "Failed to send reset email. Please try again."
         },
         login: {
             title: "Teacher Login",
@@ -317,7 +346,36 @@ export const translations = {
             step4: "उपस्थिति दर्ज!",
             ctaTitle: "अपने स्कूल को आधुनिक बनाने के लिए तैयार हैं?",
             ctaDesc: "सैकड़ों स्कूलों से जुड़ें जो हमारे स्मार्ट उपस्थिति प्रणाली का उपयोग कर रहे हैं।",
-            ctaButton: "निःशुल्क परीक्षण शुरू करें"
+            ctaButton: "निःशुल्क परीक्षण शुरू करें",
+            rememberMe: "मुझे याद रखें",
+            forgotPasswordLink: "पासवर्ड भूल गए?"
+        },
+        helpSupport: {
+            title: "सहायता और समर्थन",
+            faqTitle: "अक्सर पूछे जाने वाले प्रश्न",
+            faq1Question: "मैं उपस्थिति कैसे दर्ज करूं?",
+            faq1Answer: "डैशबोर्ड पर जाएं, एक कक्षा चुनें, और \"उपस्थिति दर्ज करें\" बटन पर क्लिक करें।",
+            faq2Question: "मैं अपना पासवर्ड कैसे रीसेट करूं?",
+            faq2Answer: "लॉगिन पेज पर \"पासवर्ड भूल गए?\" पर क्लिक करें, अपना ईमेल दर्ज करें, और आपको एक पासवर्ड रीसेट लिंक प्राप्त होगा।",
+            faq3Question: "क्या मैं पिछली उपस्थिति रिकॉर्ड देख सकता हूं?",
+            faq3Answer: "हां, अपनी कक्षाओं के लिए विस्तृत उपस्थिति इतिहास देखने के लिए \"रिपोर्ट्स\" अनुभाग पर जाएं।",
+            contactTitle: "समर्थन से संपर्क करें",
+            contactDesc: "और सहायता चाहिए? हमारी सहायता टीम से संपर्क करें।",
+            emailLabel: "ईमेल:",
+            phoneLabel: "फ़ोन:"
+        },
+        forgotPassword: {
+            title: "पासवर्ड भूल गए?",
+            subtitle: "अपना ईमेल पता दर्ज करें और हम आपको अपना पासवर्ड रीसेट करने के लिए एक लिंक भेजेंगे।",
+            emailLabel: "ईमेल पता",
+            emailPlaceholder: "अपना ईमेल दर्ज करें",
+            sendButton: "रीसेट लिंक भेजें",
+            sending: "भेजा जा रहा है...",
+            successMessage: "पासवर्ड रीसेट ईमेल भेजा गया! कृपया अपना इनबॉक्स जांचें।",
+            backToLogin: "← लॉगिन पर वापस जाएं",
+            errorNotFound: "इस ईमेल पते के साथ कोई खाता नहीं मिला।",
+            errorInvalid: "कृपया एक वैध ईमेल पता दर्ज करें।",
+            errorGeneric: "रीसेट ईमेल भेजने में विफल। कृपया पुनः प्रयास करें।"
         },
         login: {
             title: "शिक्षक लॉगिन",

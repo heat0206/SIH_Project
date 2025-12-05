@@ -17,6 +17,8 @@ import LeaveApplication from './pages/LeaveApplication';
 import LeaveManagement from './pages/LeaveManagement';
 import ParentDashboard from './pages/ParentDashboard';
 import FaceTest from './pages/FaceTest';
+import HelpandSupport from './pages/HelpandSupport';
+import ForgotPassword from './pages/ForgotPassword';
 
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
@@ -40,7 +42,8 @@ function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/parent-dashboard" element={<ParentDashboard />} />
             <Route path="/profile" element={<UserProfile />} />
-            <Route path="/help" element={<PlaceholderPage title="Help & Support" />} />
+            <Route path="/help" element={<HelpandSupport />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/logout" element={<PlaceholderPage title="Logout" />} />
             <Route path="/contact" element={<PlaceholderPage title="Contact Teacher" />} />
             <Route path="/face-test" element={<FaceTest />} />
