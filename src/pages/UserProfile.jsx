@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getTeacherClasses } from '../services/classService';
+import { getLastCorrectionRequest, submitCorrectionRequest } from '../services/correctionRequestService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { User, Mail, Phone, Briefcase, Calendar, MapPin, Edit2, Save, X, QrCode, Fingerprint, Smartphone, RefreshCw, ShieldCheck, AlertCircle, GraduationCap, ArrowLeft } from 'lucide-react';
+import { User, Mail, Phone, Briefcase, Calendar, MapPin, Edit2, Save, X, QrCode, Fingerprint, Smartphone, RefreshCw, ShieldCheck, AlertCircle, GraduationCap, ArrowLeft, Clock, CheckCircle2, XCircle, FileText } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 
@@ -19,6 +20,15 @@ const UserProfile = () => {
         subjects: 'N/A',
         additional: 'N/A'
     });
+    const [lastRequest, setLastRequest] = useState(null);
+    const [showRequestModal, setShowRequestModal] = useState(false);
+    const [requestForm, setRequestForm] = useState({
+        fieldName: '',
+        currentValue: '',
+        requestedValue: '',
+        reason: ''
+    });
+    const [submitting, setSubmitting] = useState(false);
 
     const isParent = currentUser?.role === 'parent';
 
@@ -61,6 +71,17 @@ const UserProfile = () => {
         fetchDutyRoster();
     }, [currentUser]);
 
+    // Fetch last correction request
+    useEffect(() => {
+        const fetchLastRequest = async () => {
+            if (currentUser?.uid) {
+                const request = await getLastCorrectionRequest(currentUser.uid);
+                setLastRequest(request);
+            }
+        };
+        fetchLastRequest();
+    }, [currentUser]);
+
     // Default values in case data is missing
     const user = {
         name: currentUser?.name || 'N/A',
@@ -80,7 +101,64 @@ const UserProfile = () => {
     };
 
     const handleRequestCorrection = () => {
-        alert("Data correction request sent to Admin.");
+        setShowRequestModal(true);
+    };
+
+    const handleSubmitRequest = async () => {
+        if (!requestForm.fieldName || !requestForm.requestedValue) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await submitCorrectionRequest(
+                currentUser.uid,
+                currentUser.role,
+                requestForm.fieldName,
+                requestForm.currentValue,
+                requestForm.requestedValue,
+                requestForm.reason
+            );
+
+            // Refresh the last request
+            const request = await getLastCorrectionRequest(currentUser.uid);
+            setLastRequest(request);
+
+            setShowRequestModal(false);
+            setRequestForm({ fieldName: '', currentValue: '', requestedValue: '', reason: '' });
+            alert('Data correction request submitted successfully!');
+        } catch (error) {
+            alert('Failed to submit request. Please try again.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'approved':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                        <CheckCircle2 size={12} />
+                        {t.approved || 'Approved'}
+                    </span>
+                );
+            case 'rejected':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        <XCircle size={12} />
+                        {t.rejected || 'Rejected'}
+                    </span>
+                );
+            default:
+                return (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">
+                        <Clock size={12} />
+                        {t.pendingApproval || 'Pending Admin Approval'}
+                    </span>
+                );
+        }
     };
 
     return (
@@ -307,10 +385,140 @@ const UserProfile = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Last Request Widget */}
+                    {lastRequest && (
+                        <div className="mx-4 md:mx-8 mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-100 p-2 rounded-lg">
+                                        <FileText className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-medium text-gray-600">
+                                            {t.lastRequest || 'Last Request'}: <span className="font-bold text-gray-900">{t.updated || 'Updated'} {lastRequest.fieldName}</span>
+                                        </div>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            {lastRequest.createdAt?.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                    <div className="text-xs text-gray-500">{t.status || 'Status'}:</div>
+                                    {getStatusBadge(lastRequest.status)}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </main>
 
             <Footer />
+
+            {/* Request Correction Modal */}
+            {showRequestModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-100">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-xl font-bold text-gray-900">
+                                    {t.requestCorrection || 'Request Data Correction'}
+                                </h3>
+                                <button
+                                    onClick={() => setShowRequestModal(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                >
+                                    <X size={20} className="text-gray-500" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    {t.fieldToUpdate || 'Field to Update'} *
+                                </label>
+                                <select
+                                    value={requestForm.fieldName}
+                                    onChange={(e) => setRequestForm({ ...requestForm, fieldName: e.target.value })}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                >
+                                    <option value="">{t.selectField || 'Select a field'}</option>
+                                    <option value="Name">{t.fullName || 'Full Name'}</option>
+                                    <option value="Phone">{t.phone || 'Phone Number'}</option>
+                                    <option value="Address">{t.address || 'Address'}</option>
+                                    <option value="Email">{t.email || 'Email'}</option>
+                                    {!isParent && (
+                                        <>
+                                            <option value="Department">{t.department || 'Department'}</option>
+                                            <option value="Employee ID">{t.employeeId || 'Employee ID'}</option>
+                                        </>
+                                    )}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    {t.currentValue || 'Current Value'}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={requestForm.currentValue}
+                                    onChange={(e) => setRequestForm({ ...requestForm, currentValue: e.target.value })}
+                                    placeholder={t.enterCurrentValue || 'Enter current value'}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    {t.requestedValue || 'New/Correct Value'} *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={requestForm.requestedValue}
+                                    onChange={(e) => setRequestForm({ ...requestForm, requestedValue: e.target.value })}
+                                    placeholder={t.enterNewValue || 'Enter the correct value'}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    {t.reason || 'Reason'} ({t.optional || 'optional'})
+                                </label>
+                                <textarea
+                                    value={requestForm.reason}
+                                    onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })}
+                                    placeholder={t.enterReason || 'Why is this correction needed?'}
+                                    rows={3}
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="p-6 border-t border-gray-100 flex gap-3">
+                            <button
+                                onClick={() => setShowRequestModal(false)}
+                                className="flex-1 px-4 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                            >
+                                {t.cancel || 'Cancel'}
+                            </button>
+                            <button
+                                onClick={handleSubmitRequest}
+                                disabled={submitting}
+                                className="flex-1 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {submitting ? (t.submitting || 'Submitting...') : (t.submitRequest || 'Submit Request')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

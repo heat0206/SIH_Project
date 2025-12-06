@@ -203,7 +203,27 @@ export const translations = {
             lastSync: "Last Sync",
             digitalId: "Digital Identity",
             govtId: "Official Government Education ID",
-            scanVerify: "Scan to verify credentials"
+            scanVerify: "Scan to verify credentials",
+            // Last Request Widget
+            lastRequest: "Last Request",
+            updated: "Updated",
+            status: "Status",
+            approved: "Approved",
+            rejected: "Rejected",
+            pendingApproval: "Pending Admin Approval",
+            // Modal
+            fieldToUpdate: "Field to Update",
+            selectField: "Select a field",
+            currentValue: "Current Value",
+            enterCurrentValue: "Enter current value",
+            requestedValue: "New/Correct Value",
+            enterNewValue: "Enter the correct value",
+            reason: "Reason",
+            optional: "optional",
+            enterReason: "Why is this correction needed?",
+            cancel: "Cancel",
+            submitting: "Submitting...",
+            submitRequest: "Submit Request"
         },
         adminDashboard: {
             title: "Admin Dashboard",
@@ -550,7 +570,27 @@ export const translations = {
             lastSync: "अंतिम सिंक",
             digitalId: "डिजिटल पहचान",
             govtId: "आधिकारिक सरकारी शिक्षा आईडी",
-            scanVerify: "क्रेडेंशियल्स सत्यापित करने के लिए स्कैन करें"
+            scanVerify: "क्रेडेंशियल्स सत्यापित करने के लिए स्कैन करें",
+            // Last Request Widget
+            lastRequest: "अंतिम अनुरोध",
+            updated: "अपडेट किया",
+            status: "स्थिति",
+            approved: "स्वीकृत",
+            rejected: "अस्वीकृत",
+            pendingApproval: "एडमिन स्वीकृति की प्रतीक्षा में",
+            // Modal
+            fieldToUpdate: "अपडेट करने का क्षेत्र",
+            selectField: "एक क्षेत्र चुनें",
+            currentValue: "वर्तमान मूल्य",
+            enterCurrentValue: "वर्तमान मूल्य दर्ज करें",
+            requestedValue: "नया/सही मूल्य",
+            enterNewValue: "सही मूल्य दर्ज करें",
+            reason: "कारण",
+            optional: "वैकल्पिक",
+            enterReason: "यह सुधार क्यों आवश्यक है?",
+            cancel: "रद्द करें",
+            submitting: "जमा हो रहा है...",
+            submitRequest: "अनुरोध जमा करें"
         },
         adminDashboard: {
             title: "एडमिन डैशबोर्ड",
