@@ -20,7 +20,9 @@ import {
     Wifi,
     FileText,
     CheckCircle,
-    XCircle
+    XCircle,
+    Play,
+    Square
 } from 'lucide-react';
 import {
     collection,
@@ -71,6 +73,8 @@ const AdminDashboard = () => {
     const [totalPresent, setTotalPresent] = useState(0);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [leaveRequests, setLeaveRequests] = useState([]);
+    const [isStreaming, setIsStreaming] = useState(false);
+    const streamUrl = "http://10.182.229.153:81/stream";
 
     // Modal States
     const [isAddingStudent, setIsAddingStudent] = useState(false);
@@ -620,10 +624,10 @@ const AdminDashboard = () => {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-gray-50 font-sans">
+        <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
             <Header variant="dashboard" />
 
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1">
                 {/* Sidebar */}
                 <div className="w-64 bg-white border-r border-gray-200 flex flex-col z-10">
                     <nav className="flex-1 p-4 space-y-2 mt-4">
@@ -646,7 +650,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 flex flex-col">
                     <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10">
                         <h1 className="text-2xl font-bold text-gray-900 capitalize">{t[activeTab]}</h1>
                         <div className="flex items-center gap-4">
@@ -664,7 +668,7 @@ const AdminDashboard = () => {
                         </div>
                     </header>
 
-                    <main className="flex-1 overflow-y-auto p-8">
+                    <main className="w-full p-8">
                         {activeTab === 'dashboard' && (
                             <>
                                 {/* KPI Cards Row */}
@@ -774,18 +778,60 @@ const AdminDashboard = () => {
                                             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                                                 <Video size={18} /> Live Camera Feed
                                             </h2>
-                                            <span className="text-xs font-mono bg-red-100 text-red-800 px-2 py-1 rounded animate-pulse">REC</span>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => setIsStreaming(!isStreaming)}
+                                                    className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${isStreaming
+                                                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                        }`}
+                                                >
+                                                    {isStreaming ? (
+                                                        <>
+                                                            <Square size={12} fill="currentColor" /> Stop Feed
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Play size={12} fill="currentColor" /> Start Feed
+                                                        </>
+                                                    )}
+                                                </button>
+                                                {isStreaming && (
+                                                    <span className="text-xs font-mono bg-red-100 text-red-800 px-2 py-1 rounded animate-pulse">REC</span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex-grow bg-gray-900 flex flex-col items-center justify-center text-gray-500 relative">
-                                            {/* Placeholder for Stream */}
-                                            <div className="text-center p-6">
-                                                <div className="w-16 h-16 border-4 border-gray-700 border-t-gray-500 rounded-full animate-spin mb-4 mx-auto"></div>
-                                                <p className="text-gray-400 font-mono text-sm">Awaiting ESP32 Stream...</p>
-                                                <p className="text-gray-600 text-xs mt-2">Device ID: ESP32-CAM-01</p>
-                                            </div>
+                                            {isStreaming ? (
+                                                <div className="w-full h-full relative">
+                                                    <img
+                                                        src={streamUrl}
+                                                        alt="Live Feed"
+                                                        className="w-full h-full object-contain"
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            setIsStreaming(false);
+                                                            alert("Failed to load stream. Ensure text ESP32-CAM is online and reachable.");
+                                                        }}
+                                                    />
+                                                    <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">
+                                                        Live: {streamUrl}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                /* Placeholder for Stream */
+                                                <div className="text-center p-6">
+                                                    <div className="w-16 h-16 border-4 border-gray-700 border-t-gray-500 rounded-full animate-spin mb-4 mx-auto"></div>
+                                                    <p className="text-gray-400 font-mono text-sm">Feed Paused</p>
+                                                    <p className="text-gray-600 text-xs mt-2">Click 'Start Feed' to connect</p>
+                                                    <p className="text-gray-700 text-[10px] mt-1 font-mono">{streamUrl}</p>
+                                                </div>
+                                            )}
 
-                                            {/* Overlay latest face log if available */}
-                                            {faceLogs.length > 0 && (
+                                            {/* Overlay latest face log if available (only when NOT streaming to avoid clutter, or maybe always?) 
+                                                Let's keep it always but semi-transparent if streaming 
+                                            */}
+                                            {faceLogs.length > 0 && !isStreaming && (
                                                 <div className="absolute bottom-4 right-4 w-32 h-24 bg-black border border-gray-700 rounded overflow-hidden shadow-lg">
                                                     <img
                                                         src={faceLogs[0].imageUrl}
@@ -1226,10 +1272,10 @@ const AdminDashboard = () => {
                             </>
                         )}
 
-                        <Footer />
                     </main >
                 </div>
             </div>
+            <Footer />
 
             {/* Assign Teacher Modal */}
             {
