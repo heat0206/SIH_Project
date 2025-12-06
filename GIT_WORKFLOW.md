@@ -79,3 +79,54 @@ Upload your branch to the remote repository (GitHub).
 -   `git log`: See commit history.
 -   `git checkout main`: Switch back to the main branch.
 -   `git branch`: See all local branches.
+
+## 7. Keeping Your Branch Updated
+If your friend merged code into `main` while you were working, you need to update your branch before you can push.
+
+1.  Switch to your branch (if not already there):
+    ```bash
+    git checkout <your-branch-name>
+    ```
+
+2.  Fetch the latest changes from GitHub:
+    ```bash
+    git fetch origin
+    ```
+
+3.  Merge the `main` branch into your branch:
+    ```bash
+    git merge origin/main
+    ```
+    *This brings your friend's changes into your working branch.*
+
+## 8. Resolving Conflicts
+If you and your friend changed the **same lines** in the **same file**, Git will pause and tell you there is a **CONFLICT**.
+
+1.  Run `git status` to see which files have conflicts (they will be listed under "Unmerged paths").
+2.  Open those files in VS Code. You will see markers like this:
+    ```text
+    <<<<<<< HEAD
+    Your changes
+    =======
+    Incoming changes from main
+    >>>>>>> origin/main
+    ```
+3.  **Decide what to keep:**
+    -   Keep your changes?
+    -   Keep the incoming changes?
+    -   Combine both?
+    -   Delete the markers (`<<<<<<<`, `=======`, `>>>>>>>`) and save the file.
+4.  After saving all conflicted files, stage them:
+    ```bash
+    git add .
+    ```
+5.  Commit the resolution:
+    ```bash
+    git commit -m "Resolved merge conflicts"
+    ```
+    *Now you can push your branch again.*
+
+## 9. Best Practices
+-   **Pull often:** Run `git pull origin main` (or the fetch/merge steps) every morning to get the latest code.
+-   **Communicate:** If you are working on a shared file (like `Header.jsx`), tell your team so they know.
+-   **Small PRs:** Make small changes and merge them often to avoid huge conflicts.

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     School,
@@ -30,9 +31,12 @@ import {
     getDistrictStats,
     getSchoolTrends,
     getGhostSchools,
-    getAIInsight
+    getAIInsight,
+    getTeacherStats,
+    seedDatabase
 } from '../services/governmentService';
 import SchoolAuditPanel from '../components/SchoolAuditPanel';
+import SchoolManagementModal from '../components/SchoolManagementModal';
 
 ChartJS.register(
     CategoryScale,
@@ -46,32 +50,72 @@ ChartJS.register(
 );
 
 const GovernmentDashboard = () => {
-    const [selectedDistrict, setSelectedDistrict] = useState('Varanasi');
+    const navigate = useNavigate();
+    const [selectedDistrict, setSelectedDistrict] = useState('Amritsar');
     const [stats, setStats] = useState(null);
     const [trendData, setTrendData] = useState(null);
     const [ghostSchools, setGhostSchools] = useState([]);
     const [aiInsight, setAiInsight] = useState(null);
+    const [teacherStats, setTeacherStats] = useState(null);
     const [districts, setDistricts] = useState([]);
     const [selectedAuditSchool, setSelectedAuditSchool] = useState(null);
+    const [isSeeding, setIsSeeding] = useState(false);
+    const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
     useEffect(() => {
         setDistricts(getDistricts());
     }, []);
 
     useEffect(() => {
-        // Fetch data when district changes
-        const districtStats = getDistrictStats(selectedDistrict);
-        const trends = getSchoolTrends(selectedDistrict);
-        const ghosts = getGhostSchools(selectedDistrict);
-        const insight = getAIInsight(selectedDistrict);
+        const fetchData = async () => {
+            // Reset states to loading if needed, or handle gracefully
+            const districtStats = await getDistrictStats(selectedDistrict);
+            const trends = await getSchoolTrends(selectedDistrict);
+            const ghosts = await getGhostSchools(selectedDistrict);
+            const insight = getAIInsight(selectedDistrict); // Still synchronous mock
+            const teachers = await getTeacherStats(selectedDistrict);
 
-        setStats(districtStats);
-        setTrendData(trends);
-        setGhostSchools(ghosts);
-        setAiInsight(insight);
+            setStats(districtStats);
+            setTrendData(trends);
+            setGhostSchools(ghosts);
+            setAiInsight(insight);
+            setTeacherStats(teachers);
+        };
+
+        fetchData();
     }, [selectedDistrict]);
 
-    if (!stats || !trendData) return <div className="p-8 text-center">Loading Ministry Data...</div>;
+    const handleSeedData = async () => {
+        if (window.confirm("This will seed the database with official ASER Report Data. Continue?")) {
+            setIsSeeding(true);
+            await seedDatabase();
+            setIsSeeding(false);
+            // Refresh data
+            const event = { target: { value: selectedDistrict } }; // Hacky re-trigger
+            window.location.reload();
+        }
+    };
+
+    const handleDataUpdate = () => {
+        // Refresh data when a new school is added
+        // Trigger a re-fetch by updating a dummy state or just calling fetchData ideally
+        // For now, simpler to reload or re-set district to trigger useEffect
+        window.location.reload();
+    };
+
+    if (!stats || !trendData) return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8 text-center text-gray-500">
+            <p className="mb-4">Loading Ministry Data...</p>
+            <p className="text-sm">If this takes too long, the database might be empty.</p>
+            <button
+                onClick={handleSeedData}
+                disabled={isSeeding}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+                {isSeeding ? 'Seeding Database...' : 'Seed Test Data'}
+            </button>
+        </div>
+    );
 
     const chartData = {
         labels: trendData.labels,
@@ -130,38 +174,51 @@ const GovernmentDashboard = () => {
                         <p className="text-gray-500 text-sm mt-1">Real-time audit & resource tracking across districts</p>
                     </div>
 
-                    <div className="flex items-center gap-4 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                        <MapPin size={18} className="text-gray-400 ml-2" />
-                        <select
-                            value={selectedDistrict}
-                            onChange={(e) => setSelectedDistrict(e.target.value)}
-                            className="bg-transparent border-none text-gray-700 font-medium focus:ring-0 cursor-pointer min-w-[150px]"
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => setIsManageModalOpen(true)}
+                            className="text-xs bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-3 rounded-lg transition-colors border border-gray-300 shadow-sm flex items-center gap-2"
                         >
-                            {districts.map(d => (
-                                <option key={d} value={d}>{d} District</option>
-                            ))}
-                        </select>
+                            <School size={14} />
+                            Manage Data
+                        </button>
+
+                        <div className="flex items-center gap-4 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
+                            <MapPin size={18} className="text-gray-400 ml-2" />
+                            <select
+                                value={selectedDistrict}
+                                onChange={(e) => setSelectedDistrict(e.target.value)}
+                                className="bg-transparent border-none text-gray-700 font-medium focus:ring-0 cursor-pointer min-w-[150px]"
+                            >
+                                {districts.map(d => (
+                                    <option key={d} value={d}>{d} District</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
+
                 {/* AI Insight Badge */}
-                {aiInsight && (
-                    <div className="mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-4 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <BrainCircuit size={64} className="text-indigo-600" />
+                {
+                    aiInsight && (
+                        <div className="mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-4 shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <BrainCircuit size={64} className="text-indigo-600" />
+                            </div>
+                            <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600 z-10">
+                                <BrainCircuit size={24} />
+                            </div>
+                            <div className="z-10">
+                                <h3 className="text-indigo-900 font-bold text-sm uppercase tracking-wider mb-1 flex items-center gap-2">
+                                    AI Insight Detected
+                                    <span className="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full">BETA</span>
+                                </h3>
+                                <p className="text-indigo-800 font-medium">{aiInsight.message}</p>
+                            </div>
                         </div>
-                        <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600 z-10">
-                            <BrainCircuit size={24} />
-                        </div>
-                        <div className="z-10">
-                            <h3 className="text-indigo-900 font-bold text-sm uppercase tracking-wider mb-1 flex items-center gap-2">
-                                AI Insight Detected
-                                <span className="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full">BETA</span>
-                            </h3>
-                            <p className="text-indigo-800 font-medium">{aiInsight.message}</p>
-                        </div>
-                    </div>
-                )}
+                    )
+                }
 
                 {/* KPI Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -210,13 +267,35 @@ const GovernmentDashboard = () => {
                     </div>
                 </div>
 
+                {/* Teacher Stats Section */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-8">
+                    <div className="flex items-center gap-2 mb-6">
+                        <Users className="text-blue-600" size={24} />
+                        <h3 className="text-lg font-bold text-gray-900">Teacher Distribution by Subject</h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                        {teacherStats && Object.entries(teacherStats).map(([subject, count]) => (
+                            <div key={subject} className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex flex-col items-center text-center hover:bg-blue-50 transition-colors">
+                                <div className="text-2xl font-bold text-blue-900 mb-1">{count}</div>
+                                <div className="text-xs font-medium text-gray-600">{subject}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Charts & Tables */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Trend Graph */}
                     <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                         <div className="flex justify-between items-center mb-6">
                             <h3 className="text-lg font-bold text-gray-900">Attendance Trend (7 Days)</h3>
-                            <button className="text-sm text-blue-600 hover:underline">View Full Report</button>
+                            <button
+                                onClick={() => navigate('/government/reports')}
+                                className="text-sm text-blue-600 hover:underline"
+                            >
+                                View Full Report
+                            </button>
                         </div>
                         <div className="h-[300px]">
                             <Line data={chartData} options={chartOptions} />
@@ -261,16 +340,23 @@ const GovernmentDashboard = () => {
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
             <Footer />
-            <Footer />
+
 
             <SchoolAuditPanel
                 isOpen={!!selectedAuditSchool}
                 onClose={() => setSelectedAuditSchool(null)}
                 school={selectedAuditSchool}
             />
-        </div>
+
+            <SchoolManagementModal
+                isOpen={isManageModalOpen}
+                onClose={() => setIsManageModalOpen(false)}
+                districts={getDistricts()}
+                onSave={handleDataUpdate}
+            />
+        </div >
     );
 };
 
