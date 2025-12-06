@@ -50,7 +50,7 @@ const Home = () => {
                 sessionStorage.setItem('isGovtAuthenticated', 'true');
                 navigate('/government-dashboard');
             } else {
-                setError('Invalid Government Credentials');
+                setError(t.invalidGovtCredentials || 'Invalid Government Credentials');
                 console.error("Login failed. Expected env vars to be set.");
             }
             setLoading(false);
@@ -178,7 +178,7 @@ const Home = () => {
                                     <RoleCard id="teacher" icon={GraduationCap} label={t.teacher} />
                                     <RoleCard id="student" icon={Users} label={t.parent} />
                                     <RoleCard id="admin" icon={ShieldCheck} label={t.admin} />
-                                    <RoleCard id="government" icon={Building2} label="Govt." />
+                                    <RoleCard id="government" icon={Building2} label={t.government || "Govt."} />
                                 </div>
 
                                 <form onSubmit={handleLogin} className="space-y-5">

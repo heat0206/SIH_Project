@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
 import { X, BookOpen, Activity, Users, School, Download, Calendar } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
+import { downloadCSV, generateDistrictAuditReport } from '../utils/reportGenerator';
 
 const DetailedReportModal = ({ isOpen, onClose, district, stats }) => {
     const [activeTab, setActiveTab] = useState('aser');
-
-
 
     if (!isOpen || !stats) return null;
 
     // Use blocks from stats, or fallback to empty array
     const blocks = stats.blocks || [];
+
+    const handleDownload = () => {
+        const csvData = generateDistrictAuditReport(district, stats);
+        downloadCSV(csvData, `District_Audit_Report_${district}_${new Date().toISOString().split('T')[0]}.csv`);
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -210,8 +214,11 @@ const DetailedReportModal = ({ isOpen, onClose, district, stats }) => {
                         <div className="text-center py-12 text-gray-500">
                             <School size={48} className="mx-auto mb-4 text-gray-300" />
                             <p>Resource Audit Data includes detailed breakdown of Mid-Day meal distribution efficiency and infrastructure utility.</p>
-                            <button className="mt-4 text-indigo-600 font-medium hover:underline flex items-center justify-center gap-2 mx-auto">
-                                <Download size={16} /> Download Full Audit PDF
+                            <button
+                                onClick={handleDownload}
+                                className="mt-4 text-indigo-600 font-medium hover:underline flex items-center justify-center gap-2 mx-auto"
+                            >
+                                <Download size={16} /> Download Full Audit Report
                             </button>
                         </div>
                     )}
@@ -222,7 +229,10 @@ const DetailedReportModal = ({ isOpen, onClose, district, stats }) => {
                     <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors">
                         Close
                     </button>
-                    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm">
+                    <button
+                        onClick={handleDownload}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium flex items-center gap-2 transition-colors shadow-sm"
+                    >
                         <Download size={18} />
                         Export Report
                     </button>
