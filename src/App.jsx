@@ -21,11 +21,14 @@ import FaceTest from './pages/FaceTest';
 import HelpSupport from './pages/HelpSupport';
 import ForgotPassword from './pages/ForgotPassword';
 import Timetable from './pages/Timetable';
+import GovernmentReports from './pages/GovernmentReports';
 
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 
 import AttendanceProcessor from './components/AttendanceProcessor';
+
+import LearnMore from './pages/LearnMore';
 
 function App() {
   return (
@@ -35,6 +38,7 @@ function App() {
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/learn-more" element={<LearnMore />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/login" element={<TeacherLogin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -48,6 +52,7 @@ function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/parent-dashboard" element={<ParentDashboard />} />
             <Route path="/government-dashboard" element={<GovernmentDashboard />} />
+            <Route path="/government/reports" element={<GovernmentReports />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/help" element={<HelpSupport />} />
             <Route path="/logout" element={<PlaceholderPage title="Logout" />} />

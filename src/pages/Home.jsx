@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { GraduationCap, Users, ShieldCheck, Building2, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, Users, ShieldCheck, Building2, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
@@ -279,8 +279,11 @@ const Home = () => {
                                     <p className="text-sm text-gray-500">
                                         {t.troubleLoggingIn} <Link to="/help" className="text-blue-600 font-medium hover:underline">{t.contactSupport}</Link>
                                     </p>
-                                    <div className="flex justify-center gap-4 text-xs font-medium">
-                                        {/* Govt Link moved to main login options */}
+                                    <div className="flex justify-center gap-4 text-xs font-medium pt-2">
+                                        <Link to="/learn-more" className="flex items-center gap-1 text-gray-500 hover:text-blue-600 transition-colors group">
+                                            <span>{t.learnMoreLink || "Learn what we do"}</span>
+                                            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

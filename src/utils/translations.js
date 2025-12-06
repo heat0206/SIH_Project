@@ -51,7 +51,39 @@ export const translations = {
             step4: "Attendance marked!",
             ctaTitle: "Ready to modernize your school?",
             ctaDesc: "Join hundreds of schools using our smart attendance system.",
-            ctaButton: "Start Free Trial"
+            ctaButton: "Start Free Trial",
+            learnMoreLink: "Learn what Digital Hazri can do for you",
+            learnMore: {
+                heroTitle: "Why Choose Digital Hazri?",
+                heroSubtitle: "Discover how our smart attendance system empowers schools, protects students, and simplifies administration.",
+                teacherTitle: "Teacher View",
+                teacherDesc: "View real-time class attendance and reduce admin time.",
+                parentTitle: "Parent View",
+                parentDesc: "Track your child’s safety & attendance instantly.",
+                adminTitle: "Admin View",
+                teacherDesc: "View real-time class attendance and reduce admin time.",
+                teacherBenefits: [
+                    "Mark attendance with Face ID",
+                    "Generate instant daily reports",
+                    "Track student regularity"
+                ],
+                parentTitle: "Parent View",
+                parentDesc: "Track your child’s safety & attendance instantly.",
+                parentBenefits: [
+                    "Receive instant absence alerts",
+                    "Apply for leave digitally",
+                    "View monthly attendance logs"
+                ],
+                adminTitle: "Admin View",
+                adminDesc: "Generate compliance reports for the Education Board effortlessly.",
+                adminBenefits: [
+                    "Monitor all classes in real-time",
+                    "Manage teacher rosters",
+                    "Export government compliant reports"
+                ],
+                ctaTitle: "Ready to transform your school?",
+                ctaButton: "Get Started Now"
+            }
         },
         login: {
             title: "Teacher Login",
@@ -283,6 +315,34 @@ export const translations = {
             resendButton: "Click to resend",
             rememberPassword: "Remember your password?",
             backToLogin: "Back to Login"
+        },
+        timetable: {
+            title: "Class Timetable",
+            subtitle: "Weekly Schedule for your child",
+            days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            time: "Time",
+            subject: "Subject",
+            teacher: "Teacher",
+            room: "Room",
+            break: "Break",
+            recess: "Recess",
+            weekA: "Week A",
+            noClasses: "No classes scheduled for this day.",
+            subjects: {
+                Mathematics: "Mathematics",
+                Science: "Science",
+                English: "English",
+                History: "History",
+                Hindi: "Hindi",
+                Geography: "Geography",
+                Sports: "Sports",
+                Computer: "Computer",
+                Art: "Art",
+                Activity: "Activity",
+                Library: "Library",
+                "Early Dismissal": "Early Dismissal",
+                Break: "Break"
+            }
         }
     },
     hi: {
@@ -338,7 +398,39 @@ export const translations = {
             step4: "उपस्थिति दर्ज!",
             ctaTitle: "अपने स्कूल को आधुनिक बनाने के लिए तैयार हैं?",
             ctaDesc: "सैकड़ों स्कूलों से जुड़ें जो हमारे स्मार्ट उपस्थिति प्रणाली का उपयोग कर रहे हैं।",
-            ctaButton: "निःशुल्क परीक्षण शुरू करें"
+            ctaButton: "निःशुल्क परीक्षण शुरू करें",
+            learnMoreLink: "जानें डिजिटल हाज़िरी आपके लिए क्या कर सकता है",
+            learnMore: {
+                heroTitle: "डिजिटल हाज़िरी क्यों चुनें?",
+                heroSubtitle: "जानें कि हमारी स्मार्ट उपस्थिति प्रणाली स्कूलों को कैसे सशक्त बनाती है, छात्रों की सुरक्षा करती है, और प्रशासन को सरल बनाती है।",
+                teacherTitle: "शिक्षक दृश्य",
+                teacherDesc: "वास्तविक समय की कक्षा उपस्थिति देखें और प्रशासन का समय कम करें।",
+                parentTitle: "अभिभावक दृश्य",
+                parentDesc: "तुरंत अपने बच्चे की सुरक्षा और उपस्थिति को ट्रैक करें।",
+                adminTitle: "एडमिन दृश्य",
+                teacherDesc: "वास्तविक समय की कक्षा उपस्थिति देखें और प्रशासन का समय कम करें।",
+                teacherBenefits: [
+                    "फेस आईडी से उपस्थिति दर्ज करें",
+                    "तुरंत दैनिक रिपोर्ट तैयार करें",
+                    "छात्र नियमितता को ट्रैक करें"
+                ],
+                parentTitle: "अभिभावक दृश्य",
+                parentDesc: "तुरंत अपने बच्चे की सुरक्षा और उपस्थिति को ट्रैक करें।",
+                parentBenefits: [
+                    "तुरंत अनुपस्थिति अलर्ट प्राप्त करें",
+                    "डिजिटल रूप से छुट्टी के लिए आवेदन करें",
+                    "मासिक उपस्थिति लॉग देखें"
+                ],
+                adminTitle: "एडमिन दृश्य",
+                adminDesc: "शिक्षा बोर्ड के लिए आसानी से अनुपालन रिपोर्ट तैयार करें।",
+                adminBenefits: [
+                    "वास्तविक समय में सभी कक्षाओं की निगरानी करें",
+                    "शिक्षक रोस्टर प्रबंधित करें",
+                    "सरकारी अनुपालन रिपोर्ट निर्यात करें"
+                ],
+                ctaTitle: "अपने स्कूल को बदलने के लिए तैयार हैं?",
+                ctaButton: "अभी शुरू करें"
+            }
         },
         login: {
             title: "शिक्षक लॉगिन",
@@ -570,6 +662,34 @@ export const translations = {
             resendButton: "फिर से भेजने के लिए क्लिक करें",
             rememberPassword: "अपना पासवर्ड याद है?",
             backToLogin: "लॉगिन पर वापस जाएं"
+        },
+        timetable: {
+            title: "कक्षा समय सारिणी",
+            subtitle: "आपके बच्चे के लिए साप्ताहिक कार्यक्रम",
+            days: ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"],
+            time: "समय",
+            subject: "विषय",
+            teacher: "शिक्षक",
+            room: "कमरा",
+            break: "विराम",
+            recess: "मध्यांतर",
+            weekA: "सप्ताह ए",
+            noClasses: "इस दिन के लिए कोई कक्षाएं निर्धारित नहीं हैं।",
+            subjects: {
+                Mathematics: "गणित",
+                Science: "विज्ञान",
+                English: "अंग्रेजी",
+                History: "इतिहास",
+                Hindi: "हिंदी",
+                Geography: "भूगोल",
+                Sports: "खेल",
+                Computer: "कंप्यूटर",
+                Art: "कला",
+                Activity: "क्रियाकलाप",
+                Library: "पुस्तकालय",
+                "Early Dismissal": "जल्दी छुट्टी",
+                Break: "विराम"
+            }
         }
     }
 };

@@ -1,4 +1,7 @@
-// Mock Data Service for Government Dashboard with ASER Report Integration
+import { db } from '../firebase';
+import { collection, query, where, getDocs, addDoc, writeBatch, doc, setDoc } from 'firebase/firestore';
+// We import ASER_DATA from utils for seeding, but use local REAL_ASER_DATA for dashboard aggregates
+import { ASER_DATA } from '../utils/aserData';
 
 const DISTRICTS = [
     'Amritsar',
@@ -15,8 +18,7 @@ const DISTRICTS = [
 
 export const getDistricts = () => DISTRICTS;
 
-
-
+// --- STATIC ASER 2024 REPORT DATA (Source of Truth for Dashboard Dashboard) ---
 const REAL_ASER_DATA = {
     "Punjab": {
         "learningLevels": {
@@ -403,18 +405,187 @@ export const ASER_VITAL_STATS = {
 
 // Return the appropriate ASER data (Mapping districts to State if needed)
 const getASERStatsForDistrict = (district) => {
-    // Since we only have State-level data, we map the Punjab districts to 'Punjab'
-    // In a real app with more districts, we'd have a mapping object
-    return REAL_ASER_DATA['Punjab'] || REAL_ASER_DATA['Uttar Pradesh'];
+    // In a real app with more districts, we'd have a mapping object/function
+    // Defaulting to Punjab/Uttar Pradesh based on common districts
+    // For now, simple direct access if state matches, else default
+    return REAL_ASER_DATA[district] || REAL_ASER_DATA['Punjab'];
 };
 
 export const getDistrictStats = (district) => {
+    // We prioritize the Static ASER 2024 Data for the Dashboard Report
     const aserData = getASERStatsForDistrict(district);
-    const vitalStats = ASER_VITAL_STATS['Punjab'] || ASER_VITAL_STATS['Uttar Pradesh']; // Default mapping
+    const vitalStats = ASER_VITAL_STATS[district] || ASER_VITAL_STATS['Punjab']; // Default mapping
 
     return {
         ...vitalStats,
         aserData: aserData,
         lastUpdated: new Date().toISOString()
+    };
+};
+
+// --- NEW BACKEND FEATURES (From Main Branch) ---
+// These are kept to support the 'Manage Data', 'Seeding', and 'Teacher Stats' features
+// without disrupting the main ASER Dashboard view.
+
+export const seedDatabase = async () => {
+    try {
+        const batch = writeBatch(db);
+        const schoolsCollection = collection(db, 'schools');
+        const schoolsData = ASER_DATA.schools || [];
+
+        console.log(`Seeding ${schoolsData.length} schools from ASER data...`);
+
+        for (const school of schoolsData) {
+            const schoolRef = doc(schoolsCollection); // Auto-ID
+            const attendanceLog = {};
+            const today = new Date();
+            for (let d = 0; d < 7; d++) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - d);
+                const dateStr = date.toISOString().split('T')[0];
+                const dailyVariance = (Math.random() * 10 - 5);
+                const dailyVal = Math.min(100, Math.max(0, school.avgAttendance + dailyVariance)).toFixed(1);
+                attendanceLog[dateStr] = dailyVal;
+            }
+
+            batch.set(schoolRef, {
+                name: school.name,
+                district: school.district,
+                totalEnrolled: school.totalEnrolled,
+                avgAttendance: school.avgAttendance,
+                principal: school.principal,
+                teachers: school.teachers,
+                infrastructure: school.infrastructure,
+                attendanceLog: attendanceLog,
+                lastUpdated: new Date()
+            });
+        }
+        await batch.commit();
+        console.log("Database seeded successfully!");
+    } catch (e) {
+        console.error("Seeding failed", e);
+    }
+};
+
+export const getTeacherStats = async (district) => {
+    try {
+        const q = query(collection(db, 'schools'), where('district', '==', district));
+        const snapshot = await getDocs(q);
+        const stats = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.teachers) {
+                Object.entries(data.teachers).forEach(([subj, count]) => {
+                    stats[subj] = (stats[subj] || 0) + count;
+                });
+            }
+        });
+        // If DB is empty, return simple mocks so UI doesn't look broken
+        if (Object.keys(stats).length === 0) {
+            return { "Math": 12, "Science": 10, "English": 15, "Hindi": 14 };
+        }
+        return stats;
+    } catch (error) {
+        console.error("Error fetching teacher stats:", error);
+        return { "Math": 10, "Science": 8, "English": 12, "Hindi": 10 }; // Fallback
+    }
+};
+
+export const addSchool = async (schoolData) => {
+    try {
+        const schoolsCollection = collection(db, 'schools');
+        await addDoc(schoolsCollection, {
+            ...schoolData,
+            lastUpdated: new Date()
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error adding school:", error);
+        return { success: false, error };
+    }
+};
+
+export const updateSchool = async (schoolId, updateData) => {
+    try {
+        const schoolRef = doc(db, 'schools', schoolId);
+        await setDoc(schoolRef, {
+            ...updateData,
+            lastUpdated: new Date()
+        }, { merge: true });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating school:", error);
+        return { success: false, error };
+    }
+};
+
+export const getSchoolTrends = async (district) => {
+    try {
+        const q = query(collection(db, 'schools'), where('district', '==', district));
+        const snapshot = await getDocs(q);
+
+        const dailyTotals = {}; // date -> {sum: 0, count: 0}
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.attendanceLog) {
+                Object.entries(data.attendanceLog).forEach(([date, val]) => {
+                    if (!dailyTotals[date]) dailyTotals[date] = { sum: 0, count: 0 };
+                    dailyTotals[date].sum += parseFloat(val);
+                    dailyTotals[date].count++;
+                });
+            }
+        });
+
+        const labels = [];
+        const data = [];
+        // Sort dates
+        const sortedDates = Object.keys(dailyTotals).sort();
+
+        sortedDates.forEach(date => {
+            const dayData = dailyTotals[date];
+            labels.push(new Date(date).toLocaleDateString('en-IN', { weekday: 'short' }));
+            data.push((dayData.sum / dayData.count).toFixed(1));
+        });
+
+        return { labels, data };
+    } catch (error) {
+        console.error("Error fetching trends:", error);
+        return { labels: [], data: [] };
+    }
+};
+
+export const getGhostSchools = async (district) => {
+    try {
+        // Define ghost school as attendance < 50%
+        const q = query(collection(db, 'schools'), where('district', '==', district));
+        const snapshot = await getDocs(q);
+
+        const ghosts = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.avgAttendance < 50) {
+                ghosts.push({
+                    id: doc.id,
+                    name: data.name,
+                    attendance: data.avgAttendance,
+                    principal: data.principal,
+                    status: data.avgAttendance < 30 ? 'Critical' : 'Warning'
+                });
+            }
+        });
+        return ghosts;
+    } catch (error) {
+        console.error("Error fetching ghost schools:", error);
+        return [];
+    }
+};
+
+export const getAIInsight = (district) => {
+    // Keep mock for now or simple heuristic
+    const drop = (Math.random() * 15 + 5).toFixed(1);
+    return {
+        type: 'warning',
+        message: `Attendance in ${district} dropped ${drop}% compared to yesterday. Potential cause: Local Festival/Weather.`
     };
 };
