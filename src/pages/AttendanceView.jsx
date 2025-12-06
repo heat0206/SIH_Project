@@ -48,7 +48,7 @@ const AttendanceView = () => {
                     }
                 }
 
-                const date = new Date().toISOString().split('T')[0];
+                const date = new Date().toLocaleDateString('en-CA');
 
                 // Subscribe to real-time updates
                 unsubscribe = subscribeToAttendance(classId, date, (attendanceData) => {
@@ -139,7 +139,7 @@ const AttendanceView = () => {
 
     const saveAttendance = async () => {
         try {
-            const date = new Date().toISOString().split('T')[0];
+            const date = new Date().toLocaleDateString('en-CA');
             const attendanceData = {
                 classId,
                 date,
