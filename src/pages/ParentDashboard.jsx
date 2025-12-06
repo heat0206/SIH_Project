@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { ShieldCheck, Utensils, Calendar, Clock, ChevronDown, CalendarDays } from 'lucide-react';
+import { ShieldCheck, Utensils, Calendar, Clock, ChevronDown, CalendarDays, FileText, CheckCircle2, XCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ import { getStudentById, getStudentByParentEmail } from '../services/studentServ
 import { getStudentMonthlyAttendance } from '../services/attendanceService';
 
 import { updateUserProfile } from '../services/userService';
+import { getLastCorrectionRequest } from '../services/correctionRequestService';
 
 const ParentDashboard = () => {
     const navigate = useNavigate();
@@ -20,8 +21,19 @@ const ParentDashboard = () => {
     const { currentUser, refreshProfile } = useAuth();
     const [studentData, setStudentData] = useState(null);
     const [attendanceData, setAttendanceData] = useState([]);
+    const [lastRequest, setLastRequest] = useState(null);
 
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchLastRequest = async () => {
+            if (currentUser?.uid) {
+                const request = await getLastCorrectionRequest(currentUser.uid);
+                setLastRequest(request);
+            }
+        };
+        fetchLastRequest();
+    }, [currentUser]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -137,6 +149,8 @@ const ParentDashboard = () => {
                 <div className="flex flex-col lg:flex-row lg:gap-8">
                     {/* Main Content Column */}
                     <div className="flex-1">
+
+
                         {/* Parent Header */}
                         <div className="flex justify-between items-center mb-6">
                             <div>
@@ -186,6 +200,46 @@ const ParentDashboard = () => {
                                 <Utensils size={24} className="text-orange-500" />
                             </div>
                         </div>
+
+                        {/* Last Request Widget */}
+                        {lastRequest && (
+                            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-blue-100 p-2 rounded-lg">
+                                            <FileText className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-600">
+                                                Correction Request: <span className="font-bold text-gray-900">{lastRequest.fieldName}</span>
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                <span className="font-medium text-gray-700">{lastRequest.requestedValue}</span>
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {lastRequest.createdAt?.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', {
+                                                    day: 'numeric',
+                                                    month: 'short',
+                                                    year: 'numeric'
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                        <div className="text-xs text-gray-500">Status:</div>
+                                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${lastRequest.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                            lastRequest.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                'bg-yellow-100 text-yellow-700'
+                                            }`}>
+                                            {lastRequest.status === 'approved' && <CheckCircle2 size={12} />}
+                                            {lastRequest.status === 'rejected' && <XCircle size={12} />}
+                                            {lastRequest.status === 'pending' && <Clock size={12} />}
+                                            {lastRequest.status === 'approved' ? 'Approved' : lastRequest.status === 'rejected' ? 'Rejected' : 'Pending'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
 
 

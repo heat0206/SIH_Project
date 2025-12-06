@@ -4,10 +4,9 @@ import {
     addDoc,
     query,
     where,
-    orderBy,
-    limit,
     getDocs,
     updateDoc,
+    deleteDoc,
     doc,
     serverTimestamp
 } from 'firebase/firestore';
@@ -48,17 +47,34 @@ export const submitCorrectionRequest = async (userId, userRole, fieldName, curre
 };
 
 /**
+ * Helper to sort requests by date descending (newest first)
+ */
+const sortNewestFirst = (a, b) => {
+    const timeA = a.createdAt?.getTime() || 0;
+    const timeB = b.createdAt?.getTime() || 0;
+    return timeB - timeA;
+};
+
+/**
+ * Helper to sort requests by date ascending (oldest first)
+ */
+const sortOldestFirst = (a, b) => {
+    const timeA = a.createdAt?.getTime() || 0;
+    const timeB = b.createdAt?.getTime() || 0;
+    return timeA - timeB;
+};
+
+/**
  * Get the last correction request for a user
  * @param {string} userId - The user's UID
  * @returns {Promise<Object|null>} - The last request or null
  */
 export const getLastCorrectionRequest = async (userId) => {
     try {
+        // Removed orderBy/limit to avoid index issues
         const q = query(
             collection(db, COLLECTION_NAME),
-            where('userId', '==', userId),
-            orderBy('createdAt', 'desc'),
-            limit(1)
+            where('userId', '==', userId)
         );
 
         const querySnapshot = await getDocs(q);
@@ -67,12 +83,15 @@ export const getLastCorrectionRequest = async (userId) => {
             return null;
         }
 
-        const doc = querySnapshot.docs[0];
-        return {
+        const requests = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate() || new Date()
-        };
+        }));
+
+        // Client-side sort and pick first
+        requests.sort(sortNewestFirst);
+        return requests[0];
     } catch (error) {
         console.error('Error fetching last correction request:', error);
         return null;
@@ -88,17 +107,18 @@ export const getAllCorrectionRequests = async (userId) => {
     try {
         const q = query(
             collection(db, COLLECTION_NAME),
-            where('userId', '==', userId),
-            orderBy('createdAt', 'desc')
+            where('userId', '==', userId)
         );
 
         const querySnapshot = await getDocs(q);
 
-        return querySnapshot.docs.map(doc => ({
+        const requests = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate() || new Date()
         }));
+
+        return requests.sort(sortNewestFirst);
     } catch (error) {
         console.error('Error fetching correction requests:', error);
         return [];
@@ -129,6 +149,19 @@ export const updateCorrectionRequestStatus = async (requestId, status, adminId, 
 };
 
 /**
+ * Delete a correction request
+ * @param {string} requestId - The request document ID
+ */
+export const deleteCorrectionRequest = async (requestId) => {
+    try {
+        await deleteDoc(doc(db, COLLECTION_NAME, requestId));
+    } catch (error) {
+        console.error('Error deleting correction request:', error);
+        throw error;
+    }
+};
+
+/**
  * Get all pending correction requests (Admin only)
  * @returns {Promise<Array>} - List of pending requests
  */
@@ -136,17 +169,18 @@ export const getPendingCorrectionRequests = async () => {
     try {
         const q = query(
             collection(db, COLLECTION_NAME),
-            where('status', '==', 'pending'),
-            orderBy('createdAt', 'asc')
+            where('status', '==', 'pending')
         );
 
         const querySnapshot = await getDocs(q);
 
-        return querySnapshot.docs.map(doc => ({
+        const requests = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate() || new Date()
         }));
+
+        return requests.sort(sortOldestFirst);
     } catch (error) {
         console.error('Error fetching pending requests:', error);
         return [];
@@ -166,24 +200,24 @@ export const getRequestsByUserRole = async (roles, status = null) => {
             q = query(
                 collection(db, COLLECTION_NAME),
                 where('userRole', 'in', roles),
-                where('status', '==', status),
-                orderBy('createdAt', 'desc')
+                where('status', '==', status)
             );
         } else {
             q = query(
                 collection(db, COLLECTION_NAME),
-                where('userRole', 'in', roles),
-                orderBy('createdAt', 'desc')
+                where('userRole', 'in', roles)
             );
         }
 
         const querySnapshot = await getDocs(q);
 
-        return querySnapshot.docs.map(doc => ({
+        const requests = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate() || new Date()
         }));
+
+        return requests.sort(sortNewestFirst);
     } catch (error) {
         console.error('Error fetching requests by role:', error);
         return [];
@@ -201,23 +235,23 @@ export const getAllCorrectionRequestsAdmin = async (status = null) => {
         if (status) {
             q = query(
                 collection(db, COLLECTION_NAME),
-                where('status', '==', status),
-                orderBy('createdAt', 'desc')
+                where('status', '==', status)
             );
         } else {
             q = query(
-                collection(db, COLLECTION_NAME),
-                orderBy('createdAt', 'desc')
+                collection(db, COLLECTION_NAME)
             );
         }
 
         const querySnapshot = await getDocs(q);
 
-        return querySnapshot.docs.map(doc => ({
+        const requests = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate() || new Date()
         }));
+
+        return requests.sort(sortNewestFirst);
     } catch (error) {
         console.error('Error fetching all requests:', error);
         return [];
