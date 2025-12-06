@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { ShieldCheck, Utensils, Calendar, Clock, ChevronDown, CalendarDays, FileText, CheckCircle2, XCircle, Flame, Trophy } from 'lucide-react';
+import { ShieldCheck, Utensils, Calendar, Clock, ChevronDown, CalendarDays, FileText, CheckCircle2, XCircle, Flame, Trophy, X, User, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 import { useAuth } from '../context/AuthContext';
 import { getStudentById, getStudentByParentEmail } from '../services/studentService';
-
 import { getStudentMonthlyAttendance, getStudentTodayStatus } from '../services/attendanceService';
-
 import { updateUserProfile } from '../services/userService';
 import { getLastCorrectionRequest } from '../services/correctionRequestService';
+import { db } from '../firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 const ParentDashboard = () => {
     const navigate = useNavigate();
@@ -22,8 +22,66 @@ const ParentDashboard = () => {
     const [studentData, setStudentData] = useState(null);
     const [attendanceData, setAttendanceData] = useState([]);
     const [lastRequest, setLastRequest] = useState(null);
+    const [leaveCount, setLeaveCount] = useState(0);
+    const [showTimetable, setShowTimetable] = useState(false);
 
     const [loading, setLoading] = useState(true);
+
+    // Mock Timetable Data (Same as Timetable.jsx)
+    const timetableData = {
+        schedule: {
+            mon: [
+                { time: '09:00 - 10:00', subject: 'Mathematics', teacher: 'Mrs. Sharma', room: '101', color: 'bg-blue-100 text-blue-700' },
+                { time: '10:00 - 11:00', subject: 'Science', teacher: 'Mr. Verma', room: 'Lab 2', color: 'bg-green-100 text-green-700' },
+                { time: '11:00 - 11:30', subject: 'Break', teacher: '', room: '', color: 'bg-gray-100 text-gray-500' },
+                { time: '11:30 - 12:30', subject: 'English', teacher: 'Ms. Rita', room: '101', color: 'bg-yellow-100 text-yellow-700' },
+                { time: '12:30 - 01:30', subject: 'History', teacher: 'Mr. Khan', room: '101', color: 'bg-red-100 text-red-700' },
+            ],
+            tue: [
+                { time: '09:00 - 10:00', subject: 'Science', teacher: 'Mr. Verma', room: '101', color: 'bg-green-100 text-green-700' },
+                { time: '10:00 - 11:00', subject: 'Mathematics', teacher: 'Mrs. Sharma', room: '101', color: 'bg-blue-100 text-blue-700' },
+                { time: '11:00 - 11:30', subject: 'Break', teacher: '', room: '', color: 'bg-gray-100 text-gray-500' },
+                { time: '11:30 - 12:30', subject: 'Hindi', teacher: 'Mrs. Gupta', room: '101', color: 'bg-orange-100 text-orange-700' },
+                { time: '12:30 - 01:30', subject: 'Geography', teacher: 'Mr. Khan', room: '101', color: 'bg-red-100 text-red-700' },
+            ],
+            wed: [
+                { time: '09:00 - 10:00', subject: 'English', teacher: 'Ms. Rita', room: '101', color: 'bg-yellow-100 text-yellow-700' },
+                { time: '10:00 - 11:00', subject: 'Hindi', teacher: 'Mrs. Gupta', room: '101', color: 'bg-orange-100 text-orange-700' },
+                { time: '11:00 - 11:30', subject: 'Break', teacher: '', room: '', color: 'bg-gray-100 text-gray-500' },
+                { time: '11:30 - 12:30', subject: 'Mathematics', teacher: 'Mrs. Sharma', room: '101', color: 'bg-blue-100 text-blue-700' },
+                { time: '12:30 - 01:30', subject: 'Sports', teacher: 'Coach Singh', room: 'Ground', color: 'bg-purple-100 text-purple-700' },
+            ],
+            thu: [
+                { time: '09:00 - 10:00', subject: 'Mathematics', teacher: 'Mrs. Sharma', room: '101', color: 'bg-blue-100 text-blue-700' },
+                { time: '10:00 - 11:00', subject: 'Computer', teacher: 'Ms. Das', room: 'Comp Lab', color: 'bg-indigo-100 text-indigo-700' },
+                { time: '11:00 - 11:30', subject: 'Break', teacher: '', room: '', color: 'bg-gray-100 text-gray-500' },
+                { time: '11:30 - 12:30', subject: 'Science', teacher: 'Mr. Verma', room: 'Lab 2', color: 'bg-green-100 text-green-700' },
+                { time: '12:30 - 01:30', subject: 'English', teacher: 'Ms. Rita', room: '101', color: 'bg-yellow-100 text-yellow-700' },
+            ],
+            fri: [
+                { time: '09:00 - 10:00', subject: 'History', teacher: 'Mr. Khan', room: '101', color: 'bg-red-100 text-red-700' },
+                { time: '10:00 - 11:00', subject: 'Geography', teacher: 'Mr. Khan', room: '101', color: 'bg-red-100 text-red-700' },
+                { time: '11:00 - 11:30', subject: 'Break', teacher: '', room: '', color: 'bg-gray-100 text-gray-500' },
+                { time: '11:30 - 12:30', subject: 'Mathematics', teacher: 'Mrs. Sharma', room: '101', color: 'bg-blue-100 text-blue-700' },
+                { time: '12:30 - 01:30', subject: 'Art', teacher: 'Ms. Roy', room: 'Art Room', color: 'bg-pink-100 text-pink-700' },
+            ],
+            sat: [
+                { time: '09:00 - 10:00', subject: 'Activity', teacher: 'All Teachers', room: 'Hall', color: 'bg-teal-100 text-teal-700' },
+                { time: '10:00 - 11:00', subject: 'Library', teacher: 'Mrs. Rao', room: 'Library', color: 'bg-amber-100 text-amber-700' },
+                { time: '11:00 - 11:30', subject: 'Early Dismissal', teacher: '', room: '', color: 'bg-gray-100 text-gray-500' },
+            ]
+        }
+    };
+
+    const getTodaySchedule = () => {
+        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const todayKey = days[new Date().getDay()];
+        return {
+            key: todayKey,
+            name: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+            classes: timetableData.schedule[todayKey] || []
+        };
+    };
 
     useEffect(() => {
         const fetchLastRequest = async () => {
@@ -101,7 +159,6 @@ const ParentDashboard = () => {
 
                 // 3. Sync Parent Name, Phone, and Student Roll No to Profile if missing
                 if (currentUser && (!currentUser.name || !currentUser.phone || !currentUser.studentRollNo) && student) {
-                    console.log("Syncing parent details to profile");
                     const updateData = {};
                     if (!currentUser.name && student.parentName) updateData.name = student.parentName;
                     if (!currentUser.phone && student.parentPhone) updateData.phone = student.parentPhone;
@@ -109,9 +166,14 @@ const ParentDashboard = () => {
 
                     if (Object.keys(updateData).length > 0) {
                         await updateUserProfile(currentUser.uid, updateData);
-                        await refreshProfile(); // Refresh context to update Header immediately
+                        await refreshProfile();
                     }
                 }
+
+                // 4. Fetch Leave Count
+                const leavesQ = query(collection(db, 'leave_requests'), where('studentId', '==', student.id));
+                const leavesSnap = await getDocs(leavesQ);
+                setLeaveCount(leavesSnap.size);
 
             } catch (error) {
                 console.error("Error fetching parent dashboard data:", error);
@@ -158,7 +220,19 @@ const ParentDashboard = () => {
 
     // Calculate Stats
     const presentCount = attendanceData.filter(r => r.status === 'present').length;
-    const totalDays = Math.max(1, today.getDate()); // Approximate working days so far
+    const absCount = attendanceData.filter(r => r.status === 'absent').length || 0;
+    const lateCount = attendanceData.filter(r => r.status === 'late').length || 0;
+
+    // We might need to count absences based on the calendar logic if 'absent' isn't explicitly stored in DB for past days
+    // But for the "Breakdown" widget, simple DB count is safer, or explicit calculation:
+    // Actually, attendanceData only contains records that EXIST. If a student was absent and it wasn't marked, it might not be there?
+    // Admin dashboard marks 'absent' explicitly usually.
+    // Let's rely on filter. However, standard absence often isn't a record if just missing.
+    // But our calendar logic infers absence.
+    // Let's refine `totalAbsent` to match the calendar visual.
+    const totalAbsent = calendarDays.filter(d => d.day <= today.getDate() && d.status === 'absent').length;
+
+    const totalDays = Math.max(1, today.getDate());
     const attendancePercentage = Math.round((presentCount / totalDays) * 100);
 
     // Determine Today's Status
@@ -169,22 +243,16 @@ const ParentDashboard = () => {
     // Calculate Streak
     const calculateStreak = () => {
         if (!attendanceData.length) return 0;
-
-        // Sort records by date descending
         const sortedRecords = [...attendanceData].sort((a, b) => new Date(b.date) - new Date(a.date));
-
         let streak = 0;
         const now = new Date();
         now.setHours(0, 0, 0, 0);
-
-        // Filter out future dates just in case
         const pastRecords = sortedRecords.filter(r => new Date(r.date) <= now);
 
         for (const record of pastRecords) {
             if (record.status === 'present') {
                 streak++;
             } else if (record.status === 'holiday' || record.date === todayDateStr) {
-                // Determine if we should break streak on today if it's not present
                 if (record.date === todayDateStr && record.status !== 'present') {
                     if (record.status === 'absent') break;
                     continue;
@@ -202,16 +270,16 @@ const ParentDashboard = () => {
     if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
     if (!studentData) return <div className="min-h-screen flex items-center justify-center">No student linked to this account.</div>;
 
+    const todaySchedule = getTodaySchedule();
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
             <Header variant="dashboard" />
 
-            <main className="flex-grow container mx-auto px-4 py-6 lg:max-w-7xl">
+            <main className="flex-grow container mx-auto px-4 py-6 lg:max-w-7xl relative">
                 <div className="flex flex-col lg:flex-row lg:gap-8">
                     {/* Main Content Column */}
                     <div className="flex-1">
-
-
                         {/* Parent Header */}
                         <div className="flex justify-between items-center mb-6">
                             <div>
@@ -220,8 +288,6 @@ const ParentDashboard = () => {
                                 </h1>
                                 <p className="text-sm text-gray-500">{t.welcomeMessage || 'Welcome to Parent Portal'}</p>
                             </div>
-
-                            {/* Child Switcher */}
                             <div className="relative">
                                 <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200 text-sm font-medium text-gray-700">
                                     {studentData.name} ({studentData.className || studentData.classId})
@@ -234,15 +300,11 @@ const ParentDashboard = () => {
                             <div className="absolute top-0 right-0 p-4 opacity-10 transition-transform group-hover:scale-110 duration-500">
                                 <ShieldCheck size={140} />
                             </div>
-
-                            {/* Streak Badge - Floating at top right */}
                             <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/30 shadow-sm flex items-center gap-2 animate-fade-in-up">
                                 {currentStreak > 0 ? (
                                     <>
                                         <Flame className="text-yellow-300 fill-yellow-300 animate-pulse" size={18} />
-                                        <span className="font-bold text-sm tracking-wide">
-                                            {currentStreak} Day Streak!
-                                        </span>
+                                        <span className="font-bold text-sm tracking-wide">{currentStreak} Day Streak!</span>
                                     </>
                                 ) : (
                                     <>
@@ -251,7 +313,6 @@ const ParentDashboard = () => {
                                     </>
                                 )}
                             </div>
-
                             <div className="relative z-10 pt-2">
                                 <div className="bg-white/20 w-fit p-3 rounded-2xl mb-4 backdrop-blur-sm border border-white/10">
                                     <ShieldCheck size={32} className="text-white" />
@@ -264,8 +325,6 @@ const ParentDashboard = () => {
                                     {isPresentToday ? (t.clockedIn || 'Clocked in via Face ID') : 'No entry recorded today'}
                                 </p>
                             </div>
-
-                            {/* Decorative bottom gradient */}
                             <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/10 to-transparent pointer-events-none"></div>
                         </div>
 
@@ -313,17 +372,9 @@ const ParentDashboard = () => {
                                             <div className="text-xs text-gray-500 mt-1">
                                                 <span className="font-medium text-gray-700">{lastRequest.requestedValue}</span>
                                             </div>
-                                            <div className="text-xs text-gray-500 mt-1">
-                                                {lastRequest.createdAt?.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    year: 'numeric'
-                                                })}
-                                            </div>
                                         </div>
                                     </div>
                                     <div className="flex flex-col items-end gap-1">
-                                        <div className="text-xs text-gray-500">{t.status || 'Status'}:</div>
                                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold ${lastRequest.status === 'approved' ? 'bg-green-100 text-green-700' :
                                             lastRequest.status === 'rejected' ? 'bg-red-100 text-red-700' :
                                                 'bg-yellow-100 text-yellow-700'
@@ -363,9 +414,7 @@ const ParentDashboard = () => {
                                         </span>
                                     </div>
                                 </div>
-
                                 <div className="relative pt-4">
-                                    {/* Student Bar */}
                                     <div className="mb-3">
                                         <div className="flex justify-between text-xs mb-1">
                                             <span className="font-medium text-gray-700">{t.yourChild || 'Your Child'}</span>
@@ -378,8 +427,6 @@ const ParentDashboard = () => {
                                             ></div>
                                         </div>
                                     </div>
-
-                                    {/* Class Average Bar */}
                                     <div>
                                         <div className="flex justify-between text-xs mb-1">
                                             <span className="font-medium text-gray-500">{t.classAverage || 'Class Average'}</span>
@@ -404,40 +451,12 @@ const ParentDashboard = () => {
                                 {calendarDays.map((day) => (
                                     <div key={day.day} className="flex flex-col items-center gap-1">
                                         <span className="text-xs font-medium text-gray-700">{day.day}</span>
-
-                                        {/* Status Indicators */}
-                                        {day.status === 'present' && (
-                                            <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm" title="Present"></div>
-                                        )}
-                                        {day.status === 'absent' && (
-                                            <div className="w-3 h-3 rounded-sm bg-red-500 shadow-sm" title="Absent"></div>
-                                        )}
-                                        {day.status === 'late' && (
-                                            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" title="Late"></div>
-                                        )}
-                                        {(day.status === 'holiday' || day.status === 'weekend') && (
-                                            <div className="w-3 h-3 bg-gray-300 rounded-[2px]" title="Holiday/Weekend"></div>
-                                        )}
+                                        {day.status === 'present' && <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm" title="Present"></div>}
+                                        {day.status === 'absent' && <div className="w-3 h-3 rounded-sm bg-red-500 shadow-sm" title="Absent"></div>}
+                                        {day.status === 'late' && <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" title="Late"></div>}
+                                        {(day.status === 'holiday' || day.status === 'weekend') && <div className="w-3 h-3 bg-gray-300 rounded-[2px]" title="Holiday/Weekend"></div>}
                                     </div>
                                 ))}
-                            </div>
-                            <div className="flex justify-center flex-wrap gap-4 mt-6 text-xs text-gray-600 font-medium">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                    <span>{t.present || 'Present'}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded-sm bg-red-500"></div>
-                                    <span>{t.absent || 'Absent'}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[8px] border-b-yellow-400"></div>
-                                    <span>Late</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 bg-gray-300 rounded-[2px]"></div>
-                                    <span>{t.holiday || 'Holiday'}</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -457,7 +476,7 @@ const ParentDashboard = () => {
                                     <span className="font-medium">{t.applyLeave || 'Apply Leave'}</span>
                                 </button>
                                 <button
-                                    onClick={() => navigate('/student/timetable')}
+                                    onClick={() => setShowTimetable(true)}
                                     className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-all group"
                                 >
                                     <div className="bg-blue-50 text-blue-600 p-2 rounded-lg group-hover:bg-white group-hover:shadow-sm transition-all">
@@ -468,20 +487,49 @@ const ParentDashboard = () => {
                             </div>
                         </div>
 
-                        {/* Additional Desktop Widget */}
+                        {/* Upcoming Events */}
                         <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-300">
-                            <h3 className="font-bold text-lg mb-2">Upcoming Events</h3>
+                            <h3 className="font-bold text-lg mb-2">{t.upcomingEvents || "Upcoming Events"}</h3>
                             <div className="space-y-3">
                                 <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm">
                                     <div className="text-xs opacity-80 mb-1">Dec 15, 2025</div>
-                                    <div className="font-medium text-sm">Annual Sports Day</div>
+                                    <div className="font-medium text-sm">{t.annualSportsDay || "Annual Sports Day"}</div>
                                 </div>
                                 <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm">
                                     <div className="text-xs opacity-80 mb-1">Dec 22, 2025</div>
-                                    <div className="font-medium text-sm">Parent-Teacher Meeting</div>
+                                    <div className="font-medium text-sm">{t.parentTeacherMeeting || "Parent-Teacher Meeting"}</div>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Attendance Breakdown Widget */}
+                        <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100">
+                            <h3 className="font-bold text-lg mb-4 text-gray-900">{t.attendanceBreakdown || "Attendance Breakdown"} <span className="text-xs font-normal text-gray-500">({t.thisMonth || "This Month"})</span></h3>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-white p-2 rounded-lg text-red-500 shadow-sm"><XCircle size={18} /></div>
+                                        <span className="text-sm font-medium text-gray-700">{t.daysAbsent || "Days Absent"}</span>
+                                    </div>
+                                    <span className="text-lg font-bold text-red-600">{totalAbsent}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-xl border border-yellow-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-white p-2 rounded-lg text-yellow-600 shadow-sm"><Clock size={18} /></div>
+                                        <span className="text-sm font-medium text-gray-700">{t.timesLate || "Times Late"}</span>
+                                    </div>
+                                    <span className="text-lg font-bold text-yellow-700">{lateCount}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-white p-2 rounded-lg text-purple-600 shadow-sm"><FileText size={18} /></div>
+                                        <span className="text-sm font-medium text-gray-700">{t.leaveApplied || "Leave Applied"}</span>
+                                    </div>
+                                    <span className="text-lg font-bold text-purple-700">{leaveCount}</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </main>
@@ -499,7 +547,7 @@ const ParentDashboard = () => {
                         <span className="text-xs font-medium">{t.applyLeave || 'Apply Leave'}</span>
                     </button>
                     <button
-                        onClick={() => navigate('/student/timetable')}
+                        onClick={() => setShowTimetable(true)}
                         className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 active:scale-95 transition-all"
                     >
                         <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
@@ -510,10 +558,62 @@ const ParentDashboard = () => {
                 </div>
             </div>
 
-            {/* Footer - visible on desktop, hidden on mobile due to bottom nav */}
+            {/* Footer */}
             <div className="hidden lg:block">
                 <Footer />
             </div>
+
+            {/* Timetable Modal (Drawer/Popup) */}
+            {showTimetable && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-slide-up">
+                        <div className="p-4 bg-blue-600 text-white flex justify-between items-center">
+                            <div>
+                                <h3 className="text-lg font-bold">{t.timetable || 'Timetable'}</h3>
+                                <p className="text-blue-100 text-xs">
+                                    {translations[language]?.timetable?.days ? translations[language].timetable.days[['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].indexOf(todaySchedule.key)] : todaySchedule.name}
+                                    - {todaySchedule.key === 'sun' || todaySchedule.key === 'sat' ? (t.holiday || 'Weekend') : (t.regularClass || 'Regular Class')}
+                                </p>
+                            </div>
+                            <button onClick={() => setShowTimetable(false)} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-4 bg-gray-50 max-h-[60vh] overflow-y-auto">
+                            {todaySchedule.classes.length > 0 ? (
+                                <div className="space-y-3">
+                                    {todaySchedule.classes.map((cls, idx) => (
+                                        <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-start gap-3">
+                                            <div className="mt-1">
+                                                <div className={`w-2 h-2 rounded-full ${cls.color.includes('bg-') ? cls.color.replace('text-', 'bg-').split(' ')[0] : 'bg-blue-500'}`}></div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start">
+                                                    <h4 className="font-bold text-gray-900">{translations[language]?.timetable?.subjects?.[cls.subject] || cls.subject}</h4>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${cls.color}`}>{cls.time}</span>
+                                                </div>
+                                                <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                                    <span className="flex items-center gap-1"><User size={12} /> {cls.teacher}</span>
+                                                    <span className="flex items-center gap-1">{translations[language]?.timetable?.room || "Room"}: {cls.room}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    <p>{translations[language]?.timetable?.noClasses || "No classes scheduled for this day."}</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-3 border-t border-gray-100 bg-white text-center">
+                            <button onClick={() => navigate('/student/timetable')} className="text-sm text-blue-600 font-bold flex items-center justify-center gap-1 hover:gap-2 transition-all">
+                                {t.viewFullWeek || "View Full Week"} <ArrowRight size={14} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

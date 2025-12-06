@@ -307,23 +307,11 @@ export const translations = {
             toDate: "To Date",
             reason: "Reason for Leave",
             reasonPlaceholder: "Please provide a detailed reason for your leave request...",
-            submit: "Submit Application",
-            history: "Application History",
-            noHistory: "No leave history found.",
+            pending: "Pending",
             approved: "Approved",
-            rejected: "Rejected",
-            pending: "Pending"
+            rejected: "Rejected"
         },
         leaveManagement: {
-            title: "Leave Management",
-            subtitle: "Review and manage student leave applications.",
-            searchPlaceholder: "Search student...",
-            filters: {
-                all: "All",
-                pending: "Pending",
-                approved: "Approved",
-                rejected: "Rejected"
-            },
             noRequests: "No requests found",
             noRequestsDesc: "Try adjusting your search or filters.",
             roll: "Roll #",
@@ -778,7 +766,14 @@ export const translations = {
             status: "स्थिति",
             approved: "स्वीकृत",
             rejected: "अस्वीकृत",
-            pending: "लंबित"
+            pending: "लंबित",
+            upcomingEvents: "आगामी कार्यक्रम",
+            annualSportsDay: "वार्षिक खेल दिवस",
+            parentTeacherMeeting: "अभिभावक-शिक्षक बैठक",
+            attendanceBreakdown: "उपस्थिति विवरण",
+            daysAbsent: "अनुपस्थित दिन",
+            timesLate: "देर से आगमन",
+            leaveApplied: "छुट्टी आवेदन"
         },
         forgotPassword: {
             title: "अपना पासवर्ड भूल गए?",
