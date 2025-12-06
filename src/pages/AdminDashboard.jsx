@@ -26,6 +26,7 @@ import {
     collection,
     getDocs,
     addDoc,
+    setDoc,
     updateDoc,
     deleteDoc,
     doc,
@@ -38,7 +39,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { translations } from '../utils/translations';
 import { useLanguage } from '../context/LanguageContext';
 import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGenerator';
@@ -52,11 +53,14 @@ import Footer from '../components/Footer';
 const AdminDashboard = () => {
     const { currentUser, logout } = useAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { language } = useLanguage();
     const t = translations[language].adminDashboard;
 
     // State Management
-    const [activeTab, setActiveTab] = useState('dashboard');
+    const activeTab = searchParams.get('tab') || 'dashboard';
+    const setActiveTab = (tab) => setSearchParams({ tab });
+
     const [students, setStudents] = useState([]);
     const [teachers, setTeachers] = useState([]);
     const [classes, setClasses] = useState([]);
@@ -233,19 +237,30 @@ const AdminDashboard = () => {
 
         try {
             // 1. Create Student
-            const studentRef = await addDoc(collection(db, 'students'), studentData);
+            let studentId;
+            if (studentData.rfidId) {
+                // Use RFID ID as document ID
+                const studentRef = doc(db, 'students', studentData.rfidId);
+                await setDoc(studentRef, studentData);
+                studentId = studentData.rfidId;
+            } else {
+                // Fallback to auto-ID if no RFID provided (though it should be required ideally)
+                const studentRef = await addDoc(collection(db, 'students'), studentData);
+                studentId = studentRef.id;
+            }
 
             // 2. Create Parent Account if credentials provided
             if (newStudent.parentUid && newStudent.parentPassword) {
                 await createParentProfile({
                     email: newStudent.parentUid,
                     password: newStudent.parentPassword,
-                    studentId: studentRef.id,
+                    studentId: studentId,
                     studentName: studentData.name
                 });
             }
 
             setIsAddingStudent(false);
+            setNewStudent({ name: '', rollNo: '', classId: '', rfidId: '', parentName: '', parentPhone: '', parentUid: '', parentPassword: '' });
             fetchData();
             alert("Student and Parent Account added successfully!");
         } catch (error) {

@@ -41,8 +41,18 @@ const Home = () => {
         setError('');
 
         if (role === 'government') {
-            // Bypass authentication for Government Monitor
-            navigate('/government-dashboard');
+            // Check credentials against environment variables
+            const GOV_ID = import.meta.env.VITE_GOV_ID;
+            const GOV_PASS = import.meta.env.VITE_GOV_PASS;
+
+            if (credentials.userid === GOV_ID && credentials.password === GOV_PASS) {
+                // Successful Login
+                sessionStorage.setItem('isGovtAuthenticated', 'true');
+                navigate('/government-dashboard');
+            } else {
+                setError('Invalid Government Credentials');
+                console.error("Login failed. Expected env vars to be set.");
+            }
             setLoading(false);
             return;
         }

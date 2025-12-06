@@ -1,92 +1,82 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     School,
-    TrendingDown,
-    AlertTriangle,
     Utensils,
     Users,
     MapPin,
     BrainCircuit,
-    ArrowDownRight,
-    ArrowUpRight
+    AlertCircle,
+    BookOpen
 } from 'lucide-react';
-import { Line } from 'react-chartjs-2';
+import { Bar } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
     CategoryScale,
     LinearScale,
-    PointElement,
-    LineElement,
+    BarElement,
     Title,
     Tooltip,
-    Legend,
-    Filler
+    Legend
 } from 'chart.js';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import {
     getDistricts,
-    getDistrictStats,
-    getSchoolTrends,
-    getGhostSchools,
-    getAIInsight
+    getDistrictStats
 } from '../services/governmentService';
 import SchoolAuditPanel from '../components/SchoolAuditPanel';
+import DetailedReportModal from '../components/DetailedReportModal';
 
 ChartJS.register(
     CategoryScale,
     LinearScale,
-    PointElement,
-    LineElement,
+    BarElement,
     Title,
     Tooltip,
-    Legend,
-    Filler
+    Legend
 );
 
 const GovernmentDashboard = () => {
-    const [selectedDistrict, setSelectedDistrict] = useState('Varanasi');
+    const [selectedDistrict, setSelectedDistrict] = useState('Amritsar');
     const [stats, setStats] = useState(null);
-    const [trendData, setTrendData] = useState(null);
-    const [ghostSchools, setGhostSchools] = useState([]);
-    const [aiInsight, setAiInsight] = useState(null);
     const [districts, setDistricts] = useState([]);
-    const [selectedAuditSchool, setSelectedAuditSchool] = useState(null);
+    const [showReportModal, setShowReportModal] = useState(false);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const isAuth = sessionStorage.getItem('isGovtAuthenticated');
+        if (isAuth !== 'true') {
+            navigate('/');
+        }
+    }, [navigate]);
 
     useEffect(() => {
         setDistricts(getDistricts());
     }, []);
 
     useEffect(() => {
-        // Fetch data when district changes
         const districtStats = getDistrictStats(selectedDistrict);
-        const trends = getSchoolTrends(selectedDistrict);
-        const ghosts = getGhostSchools(selectedDistrict);
-        const insight = getAIInsight(selectedDistrict);
-
         setStats(districtStats);
-        setTrendData(trends);
-        setGhostSchools(ghosts);
-        setAiInsight(insight);
     }, [selectedDistrict]);
 
-    if (!stats || !trendData) return <div className="p-8 text-center">Loading Ministry Data...</div>;
+    if (!stats) return <div className="p-8 text-center">Loading Ministry Data...</div>;
 
     const chartData = {
-        labels: trendData.labels,
+        labels: ['Grade 3 Reading', 'Grade 5 Math'],
         datasets: [
             {
-                label: 'Avg Attendance %',
-                data: trendData.data,
-                fill: true,
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderColor: 'rgb(59, 130, 246)',
-                tension: 0.4,
-                pointBackgroundColor: 'white',
-                pointBorderColor: 'rgb(59, 130, 246)',
-                pointBorderWidth: 2,
-                pointRadius: 4,
+                label: '% Students',
+                data: [
+                    stats.aserData.learningLevels.reading.std3_can_read_std2_level,
+                    stats.aserData.learningLevels.arithmetic.std5_can_do_division
+                ],
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(99, 102, 241, 0.8)'
+                ],
+                borderRadius: 8,
             },
         ],
     };
@@ -99,6 +89,9 @@ const GovernmentDashboard = () => {
                 backgroundColor: 'rgba(17, 24, 39, 0.9)',
                 padding: 12,
                 cornerRadius: 8,
+                callbacks: {
+                    label: (context) => `${context.raw}% Students`
+                }
             }
         },
         scales: {
@@ -106,7 +99,10 @@ const GovernmentDashboard = () => {
                 beginAtZero: true,
                 max: 100,
                 grid: { color: '#f3f4f6' },
-                ticks: { font: { size: 11 } }
+                ticks: {
+                    font: { size: 11 },
+                    callback: (value) => `${value}%`
+                }
             },
             x: {
                 grid: { display: false },
@@ -144,131 +140,178 @@ const GovernmentDashboard = () => {
                     </div>
                 </div>
 
-                {/* AI Insight Badge */}
-                {aiInsight && (
-                    <div className="mb-8 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 p-4 rounded-xl flex items-start gap-4 shadow-sm relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <BrainCircuit size={64} className="text-indigo-600" />
-                        </div>
-                        <div className="bg-white p-2 rounded-lg shadow-sm text-indigo-600 z-10">
-                            <BrainCircuit size={24} />
-                        </div>
-                        <div className="z-10">
-                            <h3 className="text-indigo-900 font-bold text-sm uppercase tracking-wider mb-1 flex items-center gap-2">
-                                AI Insight Detected
-                                <span className="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full">BETA</span>
-                            </h3>
-                            <p className="text-indigo-800 font-medium">{aiInsight.message}</p>
-                        </div>
-                    </div>
-                )}
-
-                {/* KPI Cards */}
+                {/* KPI Cards (Real ASER Data) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    {/* Active Schools */}
+                    {/* Student Attendance */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                                <School size={24} />
+                                <Users size={24} />
                             </div>
-                            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full flex items-center gap-1">
-                                <ArrowUpRight size={12} /> +2.4%
+                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full flex items-center gap-1">
+                                Day of Visit
                             </span>
                         </div>
-                        <h3 className="text-3xl font-bold text-gray-900 mb-1">{stats.activeSchools}</h3>
-                        <p className="text-gray-500 text-sm font-medium">Active Schools Reporting</p>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-1">{stats.avg_student_attendance}%</h3>
+                        <p className="text-gray-500 text-sm font-medium">Avg Student Attendance (DoV)</p>
                     </div>
 
-                    {/* Avg Attendance */}
+                    {/* Govt School Enrollment */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
-                                <Users size={24} />
+                                <School size={24} />
                             </div>
-                            <span className={`text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 ${parseFloat(stats.avgAttendance) < 75 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'}`}>
-                                {parseFloat(stats.avgAttendance) < 75 ? <ArrowDownRight size={12} /> : <ArrowUpRight size={12} />}
-                                {Math.abs(parseFloat(stats.avgAttendance) - 75).toFixed(1)}%
+                            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full flex items-center gap-1">
+                                Age 6-14
                             </span>
                         </div>
-                        <h3 className="text-3xl font-bold text-gray-900 mb-1">{stats.avgAttendance}%</h3>
-                        <p className="text-gray-500 text-sm font-medium">Average Attendance</p>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-1">{stats.enrollment_govt}%</h3>
+                        <p className="text-gray-500 text-sm font-medium">Govt School Enrollment</p>
                     </div>
 
-                    {/* Resources Saved */}
+                    {/* Private Tuition */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start mb-4">
                             <div className="p-3 bg-orange-50 text-orange-600 rounded-lg">
                                 <Utensils size={24} />
                             </div>
                             <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                                Today
+                                Std I-V
                             </span>
                         </div>
-                        <h3 className="text-3xl font-bold text-gray-900 mb-1">{stats.mealsSaved}</h3>
-                        <p className="text-gray-500 text-sm font-medium">Mid-Day Meals Saved (Audit)</p>
-                        <p className="text-xs text-gray-400 mt-2">Based on {stats.totalEnrolled} enrolled vs {stats.totalPresent} present</p>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-1">{stats.private_tuition}%</h3>
+                        <p className="text-gray-500 text-sm font-medium">Students taking Pvt Tuition</p>
                     </div>
                 </div>
 
-                {/* Charts & Tables */}
+                {/* ASER Education Quality Report Card */}
+                {stats && stats.aserData && (
+                    <div className="mb-8 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 px-6 py-4 flex justify-between items-center text-white">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <BrainCircuit size={20} className="text-yellow-400" />
+                                ASER 2024 Educational Quality Metrics
+                            </h3>
+                            <span className="text-xs bg-white/10 px-3 py-1 rounded-full border border-white/20">Learning Outcomes</span>
+                        </div>
+                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                            <div className="space-y-2">
+                                <p className="text-sm text-gray-500 font-medium">Grade 3 (Reading)</p>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-2xl font-bold text-gray-900">{stats.aserData.learningLevels.reading.std3_can_read_std2_level}%</span>
+                                    <span className="text-xs text-green-600 mb-1">Students can read Grade 2 text</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${stats.aserData.learningLevels.reading.std3_can_read_std2_level}%` }}></div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm text-gray-500 font-medium">Grade 5 (Arithmetic)</p>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-2xl font-bold text-gray-900">{stats.aserData.learningLevels.arithmetic.std5_can_do_division}%</span>
+                                    <span className="text-xs text-indigo-600 mb-1">Students can do Division</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${stats.aserData.learningLevels.arithmetic.std5_can_do_division}%` }}></div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm text-gray-500 font-medium">School Facilities (Toilets)</p>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-2xl font-bold text-gray-900">{stats.aserData.schoolFacilities.toilets.usable}%</span>
+                                    <span className="text-xs text-gray-500 mb-1">Functional</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${stats.aserData.schoolFacilities.toilets.usable}%` }}></div>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-sm text-gray-500 font-medium">Drinking Water</p>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-2xl font-bold text-gray-900">{stats.aserData.schoolFacilities.drinkingWater.available}%</span>
+                                    <span className="text-xs text-gray-500 mb-1">Available</span>
+                                </div>
+                                <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-cyan-500 rounded-full" style={{ width: `${stats.aserData.schoolFacilities.drinkingWater.available}%` }}></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Charts & Privacy Note */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Trend Graph */}
+                    {/* Learning Levels Chart */}
                     <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                         <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-gray-900">Attendance Trend (7 Days)</h3>
-                            <button className="text-sm text-blue-600 hover:underline">View Full Report</button>
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <BookOpen size={20} className="text-indigo-600" />
+                                Learning Levels Distribution
+                            </h3>
+                            <button
+                                onClick={() => setShowReportModal(true)}
+                                className="text-sm text-blue-600 hover:underline"
+                            >
+                                View Full Report
+                            </button>
                         </div>
                         <div className="h-[300px]">
-                            <Line data={chartData} options={chartOptions} />
+                            <Bar data={chartData} options={chartOptions} />
                         </div>
                     </div>
 
-                    {/* Ghost School Detector */}
+                    {/* Data Privacy Note */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
-                        <div className="flex items-center gap-2 mb-6 text-red-600">
-                            <AlertTriangle size={20} />
-                            <h3 className="text-lg font-bold text-gray-900">"Ghost School" Detector</h3>
+                        <div className="flex items-center gap-2 mb-6 text-gray-600">
+                            <AlertCircle size={20} />
+                            <h3 className="text-lg font-bold text-gray-900">Data Privacy Notice</h3>
                         </div>
-                        <p className="text-sm text-gray-500 mb-4">Schools with critical attendance levels ({'<'} 50%) flagged for immediate audit.</p>
 
-                        <div className="flex-1 overflow-y-auto pr-2">
-                            {ghostSchools.length === 0 ? (
-                                <div className="text-center py-8 text-gray-400 text-sm">No critical alerts in this district.</div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {ghostSchools.map(school => (
-                                        <div key={school.id} className="p-3 bg-red-50 border border-red-100 rounded-lg">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <h4 className="font-bold text-gray-800 text-sm">{school.name}</h4>
-                                                <span className="bg-red-200 text-red-800 text-[10px] font-bold px-1.5 py-0.5 rounded">
-                                                    {school.attendance}%
-                                                </span>
-                                            </div>
-                                            <div className="text-xs text-gray-600">ID: {school.id}</div>
-                                            <div className="text-xs text-gray-600 mt-1 flex items-center gap-1">
-                                                <Users size={10} /> Principal: {school.principal}
-                                            </div>
-                                            <button
-                                                onClick={() => setSelectedAuditSchool(school)}
-                                                className="mt-2 w-full py-1 bg-white border border-red-200 text-red-600 text-xs font-medium rounded hover:bg-red-50 transition-colors"
-                                            >
-                                                Initiate Audit
-                                            </button>
-                                        </div>
-                                    ))}
+                        <div className="flex-1 overflow-y-auto">
+                            <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-4">
+                                <h4 className="font-bold text-yellow-800 text-sm mb-2">School-Level Data Unavailable</h4>
+                                <p className="text-sm text-yellow-700 leading-relaxed">
+                                    To protect the privacy of students and staff, the Annual Status of Education Report (ASER) 2024
+                                    <strong> does not publish identifiers for individual schools or blocks.</strong>
+                                </p>
+                                <p className="text-sm text-yellow-700 mt-2 leading-relaxed">
+                                    All metrics displayed are aggregated at the State level to ensure statistical significance and anonymity.
+                                </p>
+                            </div>
+
+                            <div className="mt-6 space-y-3">
+                                <h4 className="font-bold text-gray-900 text-sm">Available Data Granularity:</h4>
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span className="text-sm text-gray-600">State-Level Aggregates</span>
                                 </div>
-                            )}
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span className="text-sm text-gray-600">National Trends</span>
+                                </div>
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg opacity-50">
+                                    <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                    <span className="text-sm text-gray-400 line-through">District/Block Specifics</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </main>
             <Footer />
-            <Footer />
 
             <SchoolAuditPanel
-                isOpen={!!selectedAuditSchool}
-                onClose={() => setSelectedAuditSchool(null)}
-                school={selectedAuditSchool}
+                isOpen={false}
+                onClose={() => { }}
+                school={null}
+            />
+
+            <DetailedReportModal
+                isOpen={showReportModal}
+                onClose={() => setShowReportModal(false)}
+                district={selectedDistrict}
+                stats={stats}
             />
         </div>
     );
