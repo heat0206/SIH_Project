@@ -82,7 +82,9 @@ export const translations = {
                     "Export government compliant reports"
                 ],
                 ctaTitle: "Ready to transform your school?",
-                ctaButton: "Get Started Now"
+                ctaButton: "Get Started Now",
+                videoLabel: "Watch Demo",
+                youtubeButton: "See Digital Hazri in Action"
             }
         },
         login: {
@@ -429,7 +431,9 @@ export const translations = {
                     "सरकारी अनुपालन रिपोर्ट निर्यात करें"
                 ],
                 ctaTitle: "अपने स्कूल को बदलने के लिए तैयार हैं?",
-                ctaButton: "अभी शुरू करें"
+                ctaButton: "अभी शुरू करें",
+                videoLabel: "डेमो देखें",
+                youtubeButton: "डिजिटल हाज़िरी को एक्शन में देखें"
             }
         },
         login: {

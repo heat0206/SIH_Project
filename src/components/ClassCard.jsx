@@ -1,7 +1,49 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-const ClassCard = ({ className, studentCount, present, absent, isMarked, id, role, subject }) => {
+const ClassCard = ({ className, studentCount, present, absent, isMarked, id, role, subject, previousWeekAvg }) => {
+    // Calculate current attendance percentage
+    const currentPercentage = studentCount > 0 ? Math.round((present / studentCount) * 100) : 0;
+
+    // Calculate trend compared to previous week
+    const getTrend = () => {
+        if (previousWeekAvg === undefined || previousWeekAvg === null) {
+            return { type: 'neutral', diff: 0 };
+        }
+        const diff = currentPercentage - previousWeekAvg;
+        if (diff > 2) return { type: 'up', diff: Math.abs(diff) };
+        if (diff < -2) return { type: 'down', diff: Math.abs(diff) };
+        return { type: 'neutral', diff: 0 };
+    };
+
+    const trend = getTrend();
+
+    const TrendIcon = () => {
+        if (trend.type === 'up') {
+            return (
+                <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full" title={`+${trend.diff}% vs last week`}>
+                    <TrendingUp size={14} className="stroke-[2.5]" />
+                    <span className="text-xs font-bold">+{trend.diff}%</span>
+                </div>
+            );
+        }
+        if (trend.type === 'down') {
+            return (
+                <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full" title={`-${trend.diff}% vs last week`}>
+                    <TrendingDown size={14} className="stroke-[2.5]" />
+                    <span className="text-xs font-bold">-{trend.diff}%</span>
+                </div>
+            );
+        }
+        return (
+            <div className="flex items-center gap-1 text-gray-500 bg-gray-100 px-2 py-1 rounded-full" title="No change vs last week">
+                <Minus size={14} className="stroke-[2.5]" />
+                <span className="text-xs font-bold">0%</span>
+            </div>
+        );
+    };
+
     return (
         <div className={`bg-white rounded-xl border-l-4 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${isMarked ? 'border-[#1e3a8a]' : 'border-gray-300'}`}>
             <div className="p-5">
@@ -21,6 +63,14 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                             )}
                         </div>
                         <p className="text-sm text-gray-500 font-medium">Total Strength: {studentCount}</p>
+                    </div>
+
+                    {/* Attendance Percentage with Trend */}
+                    <div className="flex flex-col items-end gap-1">
+                        <div className="text-2xl font-extrabold text-gray-800">
+                            {currentPercentage}%
+                        </div>
+                        <TrendIcon />
                     </div>
                 </div>
 
@@ -48,8 +98,8 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                     <Link
                         to={`/attendance/view?classId=${id}`}
                         className={`block w-full text-center py-3 rounded-lg font-semibold text-sm transition-colors ${role === 'Class Teacher' && isMarked
-                                ? 'bg-white text-[#1e3a8a] border border-[#1e3a8a] hover:bg-blue-50'
-                                : 'bg-[#1e3a8a] text-white hover:bg-blue-800 shadow-md'
+                            ? 'bg-white text-[#1e3a8a] border border-[#1e3a8a] hover:bg-blue-50'
+                            : 'bg-[#1e3a8a] text-white hover:bg-blue-800 shadow-md'
                             }`}
                     >
                         {role === 'Class Teacher'
