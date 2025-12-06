@@ -292,6 +292,11 @@ const ParentDashboard = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Footer - visible on desktop, hidden on mobile due to bottom nav */}
+            <div className="hidden lg:block">
+                <Footer />
+            </div>
         </div>
     );
 };

@@ -76,6 +76,42 @@ const Dashboard = () => {
                             absent = studentCount - present;
                         }
 
+                        // Calculate previous week's average attendance
+                        let previousWeekAvg = null;
+                        try {
+                            const selectedDate = new Date(date);
+                            const weekAttendance = [];
+
+                            // Get attendance for the previous 7 days (excluding current date)
+                            for (let i = 1; i <= 7; i++) {
+                                const pastDate = new Date(selectedDate);
+                                pastDate.setDate(selectedDate.getDate() - i);
+
+                                // Skip Sundays (holidays)
+                                if (pastDate.getDay() === 0) continue;
+
+                                const pastDateStr = pastDate.toISOString().split('T')[0];
+                                const pastRecord = await getAttendanceByDate(cls.id, pastDateStr);
+
+                                if (pastRecord && pastRecord.records && pastRecord.records.length > 0) {
+                                    const pastPresent = pastRecord.records.filter(r => r.present).length;
+                                    const pastTotal = pastRecord.records.length;
+                                    if (pastTotal > 0) {
+                                        weekAttendance.push(Math.round((pastPresent / pastTotal) * 100));
+                                    }
+                                }
+                            }
+
+                            // Calculate average if we have data
+                            if (weekAttendance.length > 0) {
+                                previousWeekAvg = Math.round(
+                                    weekAttendance.reduce((a, b) => a + b, 0) / weekAttendance.length
+                                );
+                            }
+                        } catch (err) {
+                            console.error("Failed to fetch previous week data", err);
+                        }
+
                         return {
                             id: cls.id,
                             className: cls.name,
@@ -84,7 +120,8 @@ const Dashboard = () => {
                             absent,
                             isMarked,
                             role,
-                            subject
+                            subject,
+                            previousWeekAvg
                         };
                     }));
 
