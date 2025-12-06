@@ -1,78 +1,199 @@
-// Mock Data Service for Government Dashboard
+import { db } from '../firebase';
+import { collection, query, where, getDocs, addDoc, writeBatch, doc, setDoc } from 'firebase/firestore';
+import { ASER_DATA } from '../utils/aserData';
 
-const DISTRICTS = ['Varanasi', 'Lucknow', 'Kanpur', 'Prayagraj', 'Gorakhpur'];
-
-const generateRandomStats = (baseAttendance) => {
-    const variance = Math.random() * 10 - 5; // +/- 5%
-    return Math.min(100, Math.max(0, baseAttendance + variance)).toFixed(1);
-};
+const DISTRICTS = [...new Set(ASER_DATA.schools.map(school => school.district))];
 
 export const getDistricts = () => DISTRICTS;
 
-export const getDistrictStats = (district) => {
-    // Simulate API call
-    const schoolCount = Math.floor(Math.random() * 50) + 20; // 20-70 schools
-    const avgAttendance = generateRandomStats(75); // ~75% avg
-    const totalEnrolled = schoolCount * 400; // ~400 students per school
-    const totalPresent = Math.floor(totalEnrolled * (avgAttendance / 100));
-    const mealsSaved = totalEnrolled - totalPresent;
+// Seed Data Function
+export const seedDatabase = async () => {
+    const batch = writeBatch(db);
+    const schoolsCollection = collection(db, 'schools');
+    const schoolsData = ASER_DATA.schools;
 
-    return {
-        activeSchools: schoolCount,
-        avgAttendance: avgAttendance,
-        totalEnrolled: totalEnrolled,
-        totalPresent: totalPresent,
-        mealsSaved: mealsSaved,
-        lastUpdated: new Date().toISOString()
-    };
-};
+    console.log(`Seeding ${schoolsData.length} schools from ASER data...`);
 
-export const getSchoolTrends = (district) => {
-    // Generate 7 days of data
-    const labels = [];
-    const data = [];
-    const today = new Date();
+    for (const school of schoolsData) {
+        const schoolRef = doc(schoolsCollection); // Auto-ID
 
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(today.getDate() - i);
-        labels.push(d.toLocaleDateString('en-IN', { weekday: 'short' }));
-        data.push(generateRandomStats(70 + Math.random() * 10));
+        // Generate daily attendance trend (last 7 days) based on avgAttendance
+        const attendanceLog = {};
+        const today = new Date();
+        for (let d = 0; d < 7; d++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - d);
+            const dateStr = date.toISOString().split('T')[0];
+            // Add some random variance to daily attendance
+            const dailyVariance = (Math.random() * 10 - 5);
+            const dailyVal = Math.min(100, Math.max(0, school.avgAttendance + dailyVariance)).toFixed(1);
+            attendanceLog[dateStr] = dailyVal;
+        }
+
+        batch.set(schoolRef, {
+            name: school.name,
+            district: school.district,
+            totalEnrolled: school.totalEnrolled,
+            avgAttendance: school.avgAttendance,
+            principal: school.principal,
+            teachers: school.teachers,
+            infrastructure: school.infrastructure,
+            attendanceLog: attendanceLog,
+            lastUpdated: new Date()
+        });
     }
 
-    return { labels, data };
+    await batch.commit();
+    console.log("Database seeded successfully with ASER data!");
 };
 
-const GHOST_SCHOOLS_DATA = {
-    'Varanasi': [
-        { id: 'SCH-VAR-001', name: 'Govt Primary School, Shivpur', attendance: '12.5', principal: 'Mr. R.K. Gupta', status: 'Critical' },
-        { id: 'SCH-VAR-089', name: 'Upper Primary School, Sarnath', attendance: '28.3', principal: 'Mrs. S. Singh', status: 'Critical' },
-        { id: 'SCH-VAR-112', name: 'Kanya Vidyalaya, Lanka', attendance: '41.0', principal: 'Mr. A. Pandey', status: 'Warning' }
-    ],
-    'Lucknow': [
-        { id: 'SCH-LKO-202', name: 'Nagar Nigam School, Alambagh', attendance: '15.2', principal: 'Mr. V. Verma', status: 'Critical' },
-        { id: 'SCH-LKO-331', name: 'Primary School, Gomti Nagar', attendance: '35.6', principal: 'Mrs. P. Sharma', status: 'Warning' }
-    ],
-    'Kanpur': [
-        { id: 'SCH-KNP-554', name: 'Govt High School, Kalyanpur', attendance: '9.8', principal: 'Mr. S. Yadav', status: 'Critical' },
-        { id: 'SCH-KNP-101', name: 'Balika Vidyalaya, Civil Lines', attendance: '45.2', principal: 'Mrs. K. Dixit', status: 'Warning' },
-        { id: 'SCH-KNP-772', name: 'Primary Pathshala, Govind Nagar', attendance: '22.1', principal: 'Mr. M. Khan', status: 'Critical' },
-        { id: 'SCH-KNP-883', name: 'Adarsh Vidyalaya, Panki', attendance: '31.4', principal: 'Mr. J. Singh', status: 'Warning' }
-    ],
-    'Prayagraj': [
-        { id: 'SCH-PRY-005', name: 'Sangam Primary School', attendance: '18.5', principal: 'Mr. T. Tripathi', status: 'Critical' }
-    ],
-    'Gorakhpur': [
-        { id: 'SCH-GKP-991', name: 'Railway Colony School', attendance: '25.0', principal: 'Mr. B. Lal', status: 'Critical' },
-        { id: 'SCH-GKP-442', name: 'City Montessori (Govt Wing)', attendance: '38.9', principal: 'Mrs. R. Devi', status: 'Warning' }
-    ]
+export const getDistrictStats = async (district) => {
+    try {
+        const q = query(collection(db, 'schools'), where('district', '==', district));
+        const snapshot = await getDocs(q);
+
+        let totalEnrolled = 0;
+        let totalAvgAttendance = 0;
+        let schoolCount = 0;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            totalEnrolled += data.totalEnrolled || 0;
+            totalAvgAttendance += data.avgAttendance || 0;
+            schoolCount++;
+        });
+
+        const overallAvg = schoolCount > 0 ? (totalAvgAttendance / schoolCount).toFixed(1) : 0;
+        const totalPresent = Math.floor(totalEnrolled * (overallAvg / 100));
+
+        return {
+            activeSchools: schoolCount,
+            avgAttendance: overallAvg,
+            totalEnrolled: totalEnrolled,
+            totalPresent: totalPresent,
+            mealsSaved: totalEnrolled - totalPresent,
+            lastUpdated: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error("Error fetching district stats:", error);
+        return null;
+    }
 };
 
-export const getGhostSchools = (district) => {
-    return GHOST_SCHOOLS_DATA[district] || [];
+export const getSchoolTrends = async (district) => {
+    try {
+        const q = query(collection(db, 'schools'), where('district', '==', district));
+        const snapshot = await getDocs(q);
+
+        const dailyTotals = {}; // date -> {sum: 0, count: 0}
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.attendanceLog) {
+                Object.entries(data.attendanceLog).forEach(([date, val]) => {
+                    if (!dailyTotals[date]) dailyTotals[date] = { sum: 0, count: 0 };
+                    dailyTotals[date].sum += parseFloat(val);
+                    dailyTotals[date].count++;
+                });
+            }
+        });
+
+        const labels = [];
+        const data = [];
+        // Sort dates
+        const sortedDates = Object.keys(dailyTotals).sort();
+
+        sortedDates.forEach(date => {
+            const dayData = dailyTotals[date];
+            labels.push(new Date(date).toLocaleDateString('en-IN', { weekday: 'short' }));
+            data.push((dayData.sum / dayData.count).toFixed(1));
+        });
+
+        return { labels, data };
+    } catch (error) {
+        console.error("Error fetching trends:", error);
+        return { labels: [], data: [] };
+    }
+};
+
+export const getGhostSchools = async (district) => {
+    try {
+        // Define ghost school as attendance < 50%
+        const q = query(collection(db, 'schools'), where('district', '==', district));
+        const snapshot = await getDocs(q);
+
+        const ghosts = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.avgAttendance < 50) {
+                ghosts.push({
+                    id: doc.id,
+                    name: data.name,
+                    attendance: data.avgAttendance,
+                    principal: data.principal,
+                    status: data.avgAttendance < 30 ? 'Critical' : 'Warning'
+                });
+            }
+        });
+        return ghosts;
+    } catch (error) {
+        console.error("Error fetching ghost schools:", error);
+        return [];
+    }
+};
+
+export const getTeacherStats = async (district) => {
+    try {
+        const q = query(collection(db, 'schools'), where('district', '==', district));
+        const snapshot = await getDocs(q);
+
+        const stats = {};
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.teachers) {
+                Object.entries(data.teachers).forEach(([subj, count]) => {
+                    stats[subj] = (stats[subj] || 0) + count;
+                });
+            }
+        });
+        return stats;
+    } catch (error) {
+        console.error("Error fetching teacher stats:", error);
+        return {};
+    }
+};
+
+export const addSchool = async (schoolData) => {
+    try {
+        const schoolsCollection = collection(db, 'schools');
+        await addDoc(schoolsCollection, {
+            ...schoolData,
+            lastUpdated: new Date()
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error adding school:", error);
+        return { success: false, error };
+    }
+};
+
+export const updateSchool = async (schoolId, updateData) => {
+    try {
+        const schoolRef = doc(db, 'schools', schoolId);
+        await setDoc(schoolRef, {
+            ...updateData,
+            lastUpdated: new Date()
+        }, { merge: true });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating school:", error);
+        return { success: false, error };
+    }
 };
 
 export const getAIInsight = (district) => {
+    // Keep mock for now or simple heuristic
     const drop = (Math.random() * 15 + 5).toFixed(1);
     return {
         type: 'warning',

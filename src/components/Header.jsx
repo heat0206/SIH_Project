@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HelpCircle, Languages } from 'lucide-react';
+import { HelpCircle, Languages, GraduationCap } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { translations } from '../utils/translations';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import logo from '../assets/logo.jpg';
 
 const Header = ({ variant = 'landing' }) => {
@@ -58,13 +59,10 @@ const Header = ({ variant = 'landing' }) => {
                     {/* Right Section: Utilities */}
                     <div className="flex items-center gap-2 md:gap-6">
                         {/* Network Status */}
-                        <div className="hidden md:flex items-center gap-2 bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                            <span className="relative flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                            </span>
-                            <span className="text-xs font-semibold text-green-700 uppercase tracking-wider">
-                                Online
+                        <div className="hidden md:flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
+                            <div className={`w-2.5 h-2.5 rounded-full ${useOnlineStatus() ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                                {useOnlineStatus() ? 'Online' : 'Offline'}
                             </span>
                         </div>
 
