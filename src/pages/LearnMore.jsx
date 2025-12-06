@@ -52,7 +52,7 @@ const LearnMore = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
-            <Header variant="simple" />
+            <Header variant="landing" />
 
             <main className="flex-grow">
                 {/* Hero Section */}
