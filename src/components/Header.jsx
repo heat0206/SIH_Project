@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HelpCircle, Languages, GraduationCap } from 'lucide-react';
+import { HelpCircle, Languages, LogOut } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { translations } from '../utils/translations';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import logo from '../assets/logo.jpg';
 
-const Header = ({ variant = 'landing' }) => {
+const Header = ({ variant = 'landing', title }) => {
     const location = useLocation();
     const { language, switchLanguage } = useLanguage();
     const t = translations[language].header;
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const timeoutRef = React.useRef(null);
+    const isOnline = useOnlineStatus();
+    const navigate = useNavigate();
+    const { currentUser, logout } = useAuth();
 
     const toggleLanguage = () => {
         switchLanguage(language === 'en' ? 'hi' : 'en');
@@ -31,8 +34,11 @@ const Header = ({ variant = 'landing' }) => {
         }, 500);
     };
 
-    const { currentUser, logout } = useAuth();
-    const navigate = useNavigate(); // Add this hook
+    const handleGovtLogout = () => {
+        sessionStorage.removeItem('isGovtAuthenticated');
+        navigate('/');
+    };
+
     const displayName = currentUser?.name || 'User';
     const displayRole = currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : 'User';
     const displayInitials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
@@ -48,21 +54,21 @@ const Header = ({ variant = 'landing' }) => {
                         </Link>
                         <div className="hidden md:flex flex-col justify-center border-l border-gray-300 pl-4 h-10">
                             <h1 className="text-xl font-bold text-[#1e3a8a] leading-none tracking-tight">
-                                Digital-Hazri-StrategIQ
+                                {title || "Digital-Hazri-StrategIQ"}
                             </h1>
                             <p className="text-xs text-gray-500 font-medium tracking-wide mt-1">
-                                Rural Education Initiative
+                                {title ? "Official Portal" : "Rural Education Initiative"}
                             </p>
                         </div>
                     </div>
 
                     {/* Right Section: Utilities */}
                     <div className="flex items-center gap-2 md:gap-6">
-                        {/* Network Status */}
-                        <div className="hidden md:flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
-                            <div className={`w-2.5 h-2.5 rounded-full ${useOnlineStatus() ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                                {useOnlineStatus() ? 'Online' : 'Offline'}
+                        {/* Network Status - Always Visible */}
+                        <div className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full border border-gray-200">
+                            <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                            <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:inline-block">
+                                {isOnline ? 'Online' : 'Offline'}
                             </span>
                         </div>
 
@@ -84,8 +90,20 @@ const Header = ({ variant = 'landing' }) => {
                             </span>
                         </button>
 
-                        {/* User Profile (Only for logged in / dashboard view) */}
-                        {variant !== 'landing' && currentUser && (
+                        {/* Government Dashboard Lookup: No Profile, Just Logout */}
+                        {variant === 'simple' && (
+                            <button
+                                onClick={handleGovtLogout}
+                                className="flex items-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 px-4 py-2 rounded-lg transition-colors border border-red-100"
+                                title="Exit Dashboard"
+                            >
+                                <LogOut size={18} />
+                                <span className="hidden md:inline font-medium text-sm">Logout</span>
+                            </button>
+                        )}
+
+                        {/* User Profile (Only for Standard Login & Non-Govt variants) */}
+                        {variant !== 'landing' && variant !== 'simple' && currentUser && (
                             <div
                                 className="relative ml-2"
                                 onMouseEnter={() => window.innerWidth >= 768 && handleMouseEnter()}

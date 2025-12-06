@@ -41,8 +41,18 @@ const Home = () => {
         setError('');
 
         if (role === 'government') {
-            // Bypass authentication for Government Monitor
-            navigate('/government-dashboard');
+            // Check credentials against environment variables
+            const GOV_ID = import.meta.env.VITE_GOV_ID;
+            const GOV_PASS = import.meta.env.VITE_GOV_PASS;
+
+            if (credentials.userid === GOV_ID && credentials.password === GOV_PASS) {
+                // Successful Login
+                sessionStorage.setItem('isGovtAuthenticated', 'true');
+                navigate('/government-dashboard');
+            } else {
+                setError(t.invalidGovtCredentials || 'Invalid Government Credentials');
+                console.error("Login failed. Expected env vars to be set.");
+            }
             setLoading(false);
             return;
         }
@@ -168,7 +178,7 @@ const Home = () => {
                                     <RoleCard id="teacher" icon={GraduationCap} label={t.teacher} />
                                     <RoleCard id="student" icon={Users} label={t.parent} />
                                     <RoleCard id="admin" icon={ShieldCheck} label={t.admin} />
-                                    <RoleCard id="government" icon={Building2} label="Govt." />
+                                    <RoleCard id="government" icon={Building2} label={t.government || "Govt."} />
                                 </div>
 
                                 <form onSubmit={handleLogin} className="space-y-5">
@@ -213,19 +223,23 @@ const Home = () => {
                                     </div>
 
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center">
-                                            <input
-                                                id="remember-me"
-                                                name="remember-me"
-                                                type="checkbox"
-                                                checked={rememberMe}
-                                                onChange={(e) => setRememberMe(e.target.checked)}
-                                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                            />
-                                            <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                                                {t.rememberMe || "Remember me"}
-                                            </label>
-                                        </div>
+                                        {role === 'student' ? (
+                                            <div className="flex items-center">
+                                                <input
+                                                    id="remember-me"
+                                                    name="remember-me"
+                                                    type="checkbox"
+                                                    checked={rememberMe}
+                                                    onChange={(e) => setRememberMe(e.target.checked)}
+                                                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                                />
+                                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                                                    {t.rememberMe || "Remember me"}
+                                                </label>
+                                            </div>
+                                        ) : (
+                                            <div></div> /* Spacer to keep Forgot Password on the right */
+                                        )}
 
                                         <div className="text-sm">
                                             <Link

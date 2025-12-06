@@ -3,12 +3,12 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
-import { GraduationCap, Users, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, Users, ShieldCheck, ArrowRight, CheckCircle2, Youtube, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const LearnMore = () => {
     const { language } = useLanguage();
-    const t = translations[language]?.learnMore || {};
+    const t = translations[language]?.home?.learnMore || {};
     const navigate = useNavigate();
 
     const features = [
@@ -64,6 +64,37 @@ const LearnMore = () => {
                         <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
                             {t.heroSubtitle || "Discover how our smart attendance system empowers schools, protects students, and simplifies administration."}
                         </p>
+                    </div>
+                </div>
+
+                {/* YouTube CTA Section */}
+                <div className="bg-gradient-to-r from-red-600 via-red-500 to-orange-500 py-8">
+                    <div className="container mx-auto px-4 max-w-4xl">
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                            <div className="flex items-center gap-4 text-white">
+                                <div className="p-3 bg-white/20 rounded-full backdrop-blur-sm animate-pulse">
+                                    <Youtube size={32} className="text-white" />
+                                </div>
+                                <div className="text-center md:text-left">
+                                    <p className="text-white/80 text-sm font-medium uppercase tracking-wider">
+                                        {t.videoLabel || "Watch Demo"}
+                                    </p>
+                                </div>
+                            </div>
+                            <a
+                                href="https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group relative inline-flex items-center gap-3 bg-white text-red-600 px-8 py-4 rounded-full font-bold text-lg shadow-2xl hover:shadow-red-500/40 transform hover:scale-105 transition-all duration-300 overflow-hidden"
+                            >
+                                <span className="absolute inset-0 bg-gradient-to-r from-red-100 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                                <Play size={24} className="relative z-10 fill-red-600" />
+                                <span className="relative z-10">
+                                    {t.youtubeButton || "See Digital Hazri in Action"}
+                                </span>
+                                <span className="relative z-10 w-2 h-2 bg-red-600 rounded-full animate-ping"></span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 
