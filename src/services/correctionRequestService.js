@@ -152,3 +152,74 @@ export const getPendingCorrectionRequests = async () => {
         return [];
     }
 };
+
+/**
+ * Get correction requests by user role (for Admin to see teacher/parent requests)
+ * @param {Array<string>} roles - Array of roles to filter by ['teacher', 'parent']
+ * @param {string} status - Optional status filter ('pending', 'approved', 'rejected', or null for all)
+ * @returns {Promise<Array>} - List of requests
+ */
+export const getRequestsByUserRole = async (roles, status = null) => {
+    try {
+        let q;
+        if (status) {
+            q = query(
+                collection(db, COLLECTION_NAME),
+                where('userRole', 'in', roles),
+                where('status', '==', status),
+                orderBy('createdAt', 'desc')
+            );
+        } else {
+            q = query(
+                collection(db, COLLECTION_NAME),
+                where('userRole', 'in', roles),
+                orderBy('createdAt', 'desc')
+            );
+        }
+
+        const querySnapshot = await getDocs(q);
+
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date()
+        }));
+    } catch (error) {
+        console.error('Error fetching requests by role:', error);
+        return [];
+    }
+};
+
+/**
+ * Get all correction requests (for Government Dashboard)
+ * @param {string} status - Optional status filter
+ * @returns {Promise<Array>} - List of all requests
+ */
+export const getAllCorrectionRequestsAdmin = async (status = null) => {
+    try {
+        let q;
+        if (status) {
+            q = query(
+                collection(db, COLLECTION_NAME),
+                where('status', '==', status),
+                orderBy('createdAt', 'desc')
+            );
+        } else {
+            q = query(
+                collection(db, COLLECTION_NAME),
+                orderBy('createdAt', 'desc')
+            );
+        }
+
+        const querySnapshot = await getDocs(q);
+
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate() || new Date()
+        }));
+    } catch (error) {
+        console.error('Error fetching all requests:', error);
+        return [];
+    }
+};

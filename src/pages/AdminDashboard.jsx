@@ -45,8 +45,10 @@ import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGene
 import { deleteStudent } from '../services/studentService';
 import { createParentProfile } from '../services/userService';
 import { subscribeToRFIDLogs } from '../services/attendanceService';
+import { getRequestsByUserRole, updateCorrectionRequestStatus } from '../services/correctionRequestService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { Clock, AlertCircle as AlertCircleIcon } from 'lucide-react';
 
 // Admin Dashboard Component
 const AdminDashboard = () => {
@@ -67,6 +69,8 @@ const AdminDashboard = () => {
     const [totalPresent, setTotalPresent] = useState(0);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [leaveRequests, setLeaveRequests] = useState([]);
+    const [correctionRequests, setCorrectionRequests] = useState([]);
+    const [correctionFilter, setCorrectionFilter] = useState('pending');
 
     // Modal States
     const [isAddingStudent, setIsAddingStudent] = useState(false);
@@ -125,6 +129,10 @@ const AdminDashboard = () => {
             const leavesSnapshot = await getDocs(leavesQuery);
             const leavesList = leavesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setLeaveRequests(leavesList);
+
+            // Fetch Data Correction Requests from teachers and parents
+            const corrections = await getRequestsByUserRole(['teacher', 'parent']);
+            setCorrectionRequests(corrections);
 
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -626,6 +634,14 @@ const AdminDashboard = () => {
                         </button>
                         <button onClick={() => setActiveTab('leaves')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leaves' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <FileText size={20} /> Leaves
+                        </button>
+                        <button onClick={() => setActiveTab('corrections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'corrections' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <AlertCircleIcon size={20} /> Data Corrections
+                            {correctionRequests.filter(r => r.status === 'pending').length > 0 && (
+                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                    {correctionRequests.filter(r => r.status === 'pending').length}
+                                </span>
+                            )}
                         </button>
                     </nav>
                 </div>
