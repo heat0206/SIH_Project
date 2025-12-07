@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Users,
     GraduationCap,
@@ -223,14 +223,7 @@ const AdminDashboard = () => {
     }, [searchStudentQuery, studentClassFilter, students]);
 
     // Handlers
-    const handleLogout = async () => {
-        try {
-            await logout();
-            navigate('/');
-        } catch (error) {
-            console.error("Failed to log out", error);
-        }
-    };
+
 
     const handleAddStudent = async (e) => {
         e.preventDefault();
@@ -321,36 +314,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleCleanupInvalidStudents = async () => {
-        if (!window.confirm("This will delete all students with missing or invalid names (likely caused by the previous bug). Are you sure?")) return;
 
-        setLoading(true);
-        try {
-            const studentsSnapshot = await getDocs(collection(db, 'students'));
-            const invalidStudents = studentsSnapshot.docs.filter(doc => {
-                const data = doc.data();
-                // Check for null, undefined, empty string, or string "null"
-                return !data.name || data.name === 'null' || data.name.trim() === '';
-            });
-
-            if (invalidStudents.length === 0) {
-                alert("No invalid students found.");
-                setLoading(false);
-                return;
-            }
-
-            // Delete in parallel
-            await Promise.all(invalidStudents.map(d => deleteDoc(doc(db, 'students', d.id))));
-
-            alert(`Successfully removed ${invalidStudents.length} invalid student records.`);
-            fetchData();
-        } catch (error) {
-            console.error("Error cleaning up:", error);
-            alert("Failed to cleanup students.");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleAddTeacher = async (e) => {
         e.preventDefault();
@@ -1508,8 +1472,9 @@ const AdminDashboard = () => {
                             )
                         }
 
-                </div >
-            </div >
+                    </main>
+                </div>
+            </div>
             <Footer />
 
             {/* Assign Teacher Modal */}
