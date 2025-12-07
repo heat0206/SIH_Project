@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { getTeacherClasses } from '../services/classService';
 import { getStudentsByClass } from '../services/studentService';
 import { getAttendanceByDate } from '../services/attendanceService';
+
 import { translations } from '../utils/translations';
 
 const Dashboard = () => {
@@ -37,8 +38,11 @@ const Dashboard = () => {
     const { currentUser } = useAuth();
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
+
     // Use name from context, fallback to 'Teacher' if not yet loaded
     const userName = currentUser?.name || 'Teacher';
+
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -204,6 +208,8 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
+
+
 
                 {status === 'active' && (
                     <>

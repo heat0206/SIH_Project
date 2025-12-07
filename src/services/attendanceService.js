@@ -54,20 +54,16 @@ export const subscribeToAttendance = (classId, date, onUpdate) => {
 
 export const getStudentMonthlyAttendance = async (classId, studentId, month, year) => {
     try {
-        // Construct start and end dates for the month
-        // Format in DB is YYYY-MM-DD
         const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-        // Simple way to get end of month:
         const lastDay = new Date(year, month + 1, 0).getDate();
         const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${lastDay}`;
 
         const attendanceRef = collection(db, "attendance");
-        // We query by classId and range of dates (lexicographical comparison works for YYYY-MM-DD)
+
+        // Query by classId only to avoid composite index requirements (safe for SIH scale)
         const q = query(
             attendanceRef,
-            where("classId", "==", classId),
-            where("date", ">=", startDate),
-            where("date", "<=", endDate)
+            where("classId", "==", classId)
         );
 
         const querySnapshot = await getDocs(q);
@@ -76,15 +72,19 @@ export const getStudentMonthlyAttendance = async (classId, studentId, month, yea
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             const date = data.date;
-            // Find student's record in the 'records' array
-            const studentRecord = data.records?.find(r => r.studentId === studentId);
 
-            if (studentRecord) {
-                monthlyRecords.push({
-                    date: date,
-                    status: studentRecord.present ? 'present' : 'absent',
-                    verificationMethod: studentRecord.verificationMethod
-                });
+            // Filter by date range in JS
+            if (date >= startDate && date <= endDate) {
+                // Find student's record in the 'records' array
+                const studentRecord = data.records?.find(r => r.studentId === studentId);
+
+                if (studentRecord) {
+                    monthlyRecords.push({
+                        date: date,
+                        status: studentRecord.present ? 'present' : 'absent',
+                        verificationMethod: studentRecord.verificationMethod
+                    });
+                }
             }
         });
 
@@ -105,7 +105,7 @@ export const logRFIDScan = async (student, classId, status) => {
             classId: classId,
             status: status, // 'present' or 'absent' (toggle)
             timestamp: new Date(),
-            date: new Date().toISOString().split('T')[0]
+            date: new Date().toLocaleDateString('en-CA')
         });
     } catch (error) {
         console.error("Error logging RFID scan:", error);
@@ -239,7 +239,7 @@ export const processSingleLog = async (logId, logData) => {
             const logSnap = await transaction.get(logRef);
             if (!logSnap.exists() || logSnap.data().processed) return;
 
-            const targetDate = logData.date || new Date().toISOString().split('T')[0];
+            const targetDate = logData.date || new Date().toLocaleDateString('en-CA');
             const recordId = `${student.classId}_${targetDate}`;
             const attendanceRef = doc(db, "attendance", recordId);
             const attendanceSnap = await transaction.get(attendanceRef);
@@ -301,6 +301,46 @@ export const processRFIDLogsToAttendance = async (dateStr) => {
     // ... (Old code commented out)
 };
 */
+
+// Check if student has scanned today (Real-time check)
+export const getStudentTodayStatus = async (studentId) => {
+    try {
+        const todayStr = new Date().toLocaleDateString('en-CA');
+        const logsRef = collection(db, "rfid_logs");
+        // We need to query by date AND studentId (or rfidId if studentId isn't on logs)
+        // Current implementation of logRFIDScan stores studentId.
+
+        // Note: This requires a composite index on studentId + date if we simple query.
+        // However, we can query by studentId and filter by date client side if logs are few, 
+        // OR query by date and filter by studentId (better if high volume of daily logs).
+        // Given we don't have composite index guarantee, let's query by date (equality) 
+        // and filter in code, assuming reasonable number of logs per day or use the exact query if index exists.
+
+        // Let's try precise query first. If it fails due to index, we'll catch and fallback? 
+        // Actually, 'rfid_logs' might not have 'studentId' indexed?
+        // Let's rely on the fact that we can query by 'studentId' (usually low cardinality per student)
+        // actually no, querying by studentId over ALL time is bad.
+        // Querying by date for ALL students is also scalable only to a point.
+
+        // Alternative: Query 'rfid_logs' where date == today AND studentId == studentId
+        const q = query(
+            logsRef,
+            where("date", "==", todayStr),
+            where("studentId", "==", studentId)
+        );
+
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+            // Check if any log is 'present'
+            const presentLog = snapshot.docs.find(d => d.data().status === 'present');
+            return presentLog ? 'present' : null;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching student today status:", error);
+        return null;
+    }
+};
 
 export const subscribeToRFIDLogs = (date, onUpdate) => {
     console.log("[AttendanceService] subscribeToRFIDLogs called for:", date);

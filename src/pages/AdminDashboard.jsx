@@ -46,10 +46,12 @@ import { translations } from '../utils/translations';
 import { useLanguage } from '../context/LanguageContext';
 import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGenerator';
 import { deleteStudent } from '../services/studentService';
-import { createParentProfile } from '../services/userService';
+import { createParentProfile, updateUserProfile } from '../services/userService';
 import { subscribeToRFIDLogs } from '../services/attendanceService';
+import { getRequestsByUserRole, updateCorrectionRequestStatus, deleteCorrectionRequest } from '../services/correctionRequestService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { Clock, AlertCircle as AlertCircleIcon } from 'lucide-react';
 
 // Admin Dashboard Component
 const AdminDashboard = () => {
@@ -73,6 +75,8 @@ const AdminDashboard = () => {
     const [totalPresent, setTotalPresent] = useState(0);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [leaveRequests, setLeaveRequests] = useState([]);
+    const [correctionRequests, setCorrectionRequests] = useState([]);
+    const [correctionFilter, setCorrectionFilter] = useState('pending');
     const [isStreaming, setIsStreaming] = useState(false);
     const streamUrl = "http://10.182.229.153:81/stream";
 
@@ -133,6 +137,10 @@ const AdminDashboard = () => {
             const leavesSnapshot = await getDocs(leavesQuery);
             const leavesList = leavesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setLeaveRequests(leavesList);
+
+            // Fetch Data Correction Requests from teachers and parents
+            const corrections = await getRequestsByUserRole(['teacher', 'parent']);
+            setCorrectionRequests(corrections);
 
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -615,6 +623,78 @@ const AdminDashboard = () => {
         setIsAssigning(true);
     };
 
+    // Handle correction request approval/rejection
+    const handleApproveCorrection = async (requestId) => {
+        try {
+            // Find the request object
+            const request = correctionRequests.find(r => r.id === requestId);
+
+            if (request) {
+                // Map display field name to database field key
+                let dbField = '';
+                switch (request.fieldName) {
+                    case 'Name': dbField = 'name'; break;
+                    case 'Phone': dbField = 'phone'; break;
+                    case 'Address': dbField = 'address'; break;
+                    case 'Email': dbField = 'email'; break;
+                    case 'Department': dbField = 'department'; break;
+                    case 'Employee ID': dbField = 'employeeId'; break;
+                    default:
+                        // Try to convert to lowercase camelCase if no match
+                        dbField = request.fieldName.toLowerCase().replace(/\s+(.)/g, (match, group1) => group1.toUpperCase());
+                }
+
+                if (dbField) {
+                    // Update user profile
+                    await updateUserProfile(request.userId, {
+                        [dbField]: request.requestedValue
+                    });
+                }
+            }
+
+            await updateCorrectionRequestStatus(requestId, 'approved', currentUser.uid, '');
+            // Refresh the list
+            const corrections = await getRequestsByUserRole(['teacher', 'parent']);
+            setCorrectionRequests(corrections);
+            alert('Correction request approved and user profile updated!');
+        } catch (error) {
+            console.error('Error approving correction:', error);
+            alert('Failed to approve request.');
+        }
+    };
+
+    const handleRejectCorrection = async (requestId) => {
+        const notes = prompt('Enter reason for rejection (optional):');
+        try {
+            await updateCorrectionRequestStatus(requestId, 'rejected', currentUser.uid, notes || '');
+            // Refresh the list
+            const corrections = await getRequestsByUserRole(['teacher', 'parent']);
+            setCorrectionRequests(corrections);
+            alert('Correction request rejected.');
+        } catch (error) {
+            console.error('Error rejecting correction:', error);
+            alert('Failed to reject request.');
+        }
+    };
+
+    const handleDeleteCorrection = async (requestId) => {
+        if (!window.confirm('Are you sure you want to delete this correction request? This cannot be undone.')) return;
+        try {
+            await deleteCorrectionRequest(requestId);
+            const corrections = await getRequestsByUserRole(['teacher', 'parent']);
+            setCorrectionRequests(corrections);
+            alert('Correction request deleted.');
+        } catch (error) {
+            console.error('Error deleting correction:', error);
+            alert('Failed to delete request.');
+        }
+    };
+
+    // Filter correction requests based on selected filter
+    const filteredCorrectionRequests = correctionRequests.filter(req =>
+        correctionFilter === 'all' ? true : req.status === correctionFilter
+    );
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -644,7 +724,15 @@ const AdminDashboard = () => {
                             <School size={20} /> {t.classes}
                         </button>
                         <button onClick={() => setActiveTab('leaves')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leaves' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
-                            <FileText size={20} /> Leaves
+                            <FileText size={20} /> {t.leaves || 'Leaves'}
+                        </button>
+                        <button onClick={() => setActiveTab('corrections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'corrections' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <AlertCircleIcon size={20} /> {t.dataCorrections || 'Data Corrections'}
+                            {correctionRequests.filter(r => r.status === 'pending').length > 0 && (
+                                <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                    {correctionRequests.filter(r => r.status === 'pending').length}
+                                </span>
+                            )}
                         </button>
                     </nav>
                 </div>
@@ -782,8 +870,8 @@ const AdminDashboard = () => {
                                                 <button
                                                     onClick={() => setIsStreaming(!isStreaming)}
                                                     className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${isStreaming
-                                                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
                                                         }`}
                                                 >
                                                     {isStreaming ? (
@@ -1199,24 +1287,24 @@ const AdminDashboard = () => {
 
                         {activeTab === 'leaves' && (
                             <>
-                                <h2 className="text-xl font-bold text-gray-900 mb-6">Leave Requests</h2>
+                                <h2 className="text-xl font-bold text-gray-900 mb-6">{t.leaveRequests || 'Leave Requests'}</h2>
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left">
                                             <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
                                                 <tr>
-                                                    <th className="px-6 py-4">Student</th>
-                                                    <th className="px-6 py-4">Type & Reason</th>
-                                                    <th className="px-6 py-4">Dates</th>
-                                                    <th className="px-6 py-4">Status</th>
-                                                    <th className="px-6 py-4 text-right">Action</th>
+                                                    <th className="px-6 py-4">{t.student || 'Student'}</th>
+                                                    <th className="px-6 py-4">{t.typeReason || 'Type & Reason'}</th>
+                                                    <th className="px-6 py-4">{t.dates || 'Dates'}</th>
+                                                    <th className="px-6 py-4">{t.status || 'Status'}</th>
+                                                    <th className="px-6 py-4 text-right">{t.action || 'Action'}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200">
                                                 {leaveRequests.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="5" className="px-6 py-8 text-center text-gray-500 italic">
-                                                            No leave notices found.
+                                                            {t.noLeaves || 'No leave notices found.'}
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -1232,7 +1320,7 @@ const AdminDashboard = () => {
                                                             </td>
                                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                                 <div>{leave.from} to {leave.to}</div>
-                                                                <div className="text-xs text-gray-500">({leave.days} days)</div>
+                                                                <div className="text-xs text-gray-500">({leave.days} {t.days || 'days'})</div>
                                                             </td>
                                                             <td className="px-6 py-4">
                                                                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${leave.status === 'Approved' ? 'bg-green-100 text-green-800' :
@@ -1251,13 +1339,13 @@ const AdminDashboard = () => {
                                                                             onClick={() => handleApproveLeave(leave.id)}
                                                                             className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1 text-xs font-medium"
                                                                         >
-                                                                            <CheckCircle size={14} /> Approve
+                                                                            <CheckCircle size={14} /> {t.approve || 'Approve'}
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleRejectLeave(leave.id)}
                                                                             className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1 text-xs font-medium"
                                                                         >
-                                                                            <XCircle size={14} /> Reject
+                                                                            <XCircle size={14} /> {t.reject || 'Reject'}
                                                                         </button>
                                                                     </div>
                                                                 )}
@@ -1272,9 +1360,156 @@ const AdminDashboard = () => {
                             </>
                         )}
 
-                    </main >
-                </div>
-            </div>
+
+
+
+                        {
+                            activeTab === 'corrections' && (
+                                <>
+                                    {/* Data Corrections Section */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                                        <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                            <div>
+                                                <h2 className="text-xl font-bold text-gray-900">{t.correctionRequests || 'Data Correction Requests'}</h2>
+                                                <p className="text-sm text-gray-500 mt-1">{t.reviewCorrections || 'Review and manage profile correction requests from teachers and parents'}</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setCorrectionFilter('pending')}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                                >
+                                                    {t.pending || 'Pending'} ({correctionRequests.filter(r => r.status === 'pending').length})
+                                                </button>
+                                                <button
+                                                    onClick={() => setCorrectionFilter('approved')}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'approved' ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                                >
+                                                    {t.approved || 'Approved'}
+                                                </button>
+                                                <button
+                                                    onClick={() => setCorrectionFilter('rejected')}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'rejected' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                                >
+                                                    {t.rejected || 'Rejected'}
+                                                </button>
+                                                <button
+                                                    onClick={() => setCorrectionFilter('all')}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'all' ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                                >
+                                                    {t.all || 'All'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left">
+                                                <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
+                                                    <tr>
+                                                        <th className="px-6 py-4">{t.user || 'User'}</th>
+                                                        <th className="px-6 py-4">{t.field || 'Field'}</th>
+                                                        <th className="px-6 py-4">{t.currentVal || 'Current Value'}</th>
+                                                        <th className="px-6 py-4">{t.requestedVal || 'Requested Value'}</th>
+                                                        <th className="px-6 py-4">{t.reason || 'Reason'}</th>
+                                                        <th className="px-6 py-4">{t.status || 'Status'}</th>
+                                                        <th className="px-6 py-4 text-right">{t.action || 'Actions'}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {filteredCorrectionRequests.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan="7" className="px-6 py-8 text-center text-gray-500 italic">
+                                                                {t.noCorrections || 'No correction requests found.'}
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        filteredCorrectionRequests.map((req) => (
+                                                            <tr key={req.id} className="hover:bg-gray-50 transition-colors">
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ${req.userRole === 'teacher' ? 'bg-blue-500' : 'bg-purple-500'}`}>
+                                                                            {req.userRole === 'teacher' ? 'T' : 'P'}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div className="font-medium text-gray-900 capitalize">{req.userRole}</div>
+                                                                            <div className="text-xs text-gray-500">
+                                                                                {req.createdAt?.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm font-medium text-gray-700">
+                                                                        {req.fieldName}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="text-sm text-gray-600 max-w-xs truncate" title={req.currentValue}>
+                                                                        {req.currentValue || <span className="italic text-gray-400">Not provided</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="text-sm font-medium text-green-700 max-w-xs truncate" title={req.requestedValue}>
+                                                                        {req.requestedValue}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="text-sm text-gray-500 max-w-xs truncate" title={req.reason}>
+                                                                        {req.reason || <span className="italic text-gray-400">No reason</span>}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${req.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                                                        req.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                                                            'bg-yellow-100 text-yellow-800'
+                                                                        }`}>
+                                                                        {req.status === 'approved' && <CheckCircle size={12} />}
+                                                                        {req.status === 'rejected' && <XCircle size={12} />}
+                                                                        {req.status === 'pending' && <Clock size={12} />}
+                                                                        {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    {req.status === 'pending' && (
+                                                                        <div className="flex items-center justify-end gap-2">
+                                                                            <button
+                                                                                onClick={() => handleApproveCorrection(req.id)}
+                                                                                className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1 text-xs font-medium"
+                                                                            >
+                                                                                <CheckCircle size={14} /> {t.approve || 'Approve'}
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleRejectCorrection(req.id)}
+                                                                                className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1 text-xs font-medium"
+                                                                            >
+                                                                                <XCircle size={14} /> {t.reject || 'Reject'}
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => handleDeleteCorrection(req.id)}
+                                                                        className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors ml-2 inline-flex"
+                                                                        title={t.delete || "Delete Request"}
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
+                                                                    {req.status !== 'pending' && req.adminNotes && (
+                                                                        <div className="text-xs text-gray-500 italic" title={req.adminNotes}>
+                                                                            {t.note || 'Note'}: {req.adminNotes.substring(0, 20)}...
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </>
+                            )
+                        }
+
+                </div >
+            </div >
             <Footer />
 
             {/* Assign Teacher Modal */}
