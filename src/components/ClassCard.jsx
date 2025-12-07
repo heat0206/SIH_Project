@@ -1,8 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../utils/translations';
 
 const ClassCard = ({ className, studentCount, present, absent, isMarked, id, role, subject, previousWeekAvg }) => {
+    const { language } = useLanguage();
+    const t = translations[language]?.classCard || {};
+
     // Calculate current attendance percentage
     const currentPercentage = studentCount > 0 ? Math.round((present / studentCount) * 100) : 0;
 
@@ -22,7 +27,7 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
     const TrendIcon = () => {
         if (trend.type === 'up') {
             return (
-                <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full" title={`+${trend.diff}% vs last week`}>
+                <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-full" title={`+${trend.diff}% ${t.vsLastWeek || 'vs last week'}`}>
                     <TrendingUp size={14} className="stroke-[2.5]" />
                     <span className="text-xs font-bold">+{trend.diff}%</span>
                 </div>
@@ -30,14 +35,14 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
         }
         if (trend.type === 'down') {
             return (
-                <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full" title={`-${trend.diff}% vs last week`}>
+                <div className="flex items-center gap-1 text-red-600 bg-red-50 px-2 py-1 rounded-full" title={`-${trend.diff}% ${t.vsLastWeek || 'vs last week'}`}>
                     <TrendingDown size={14} className="stroke-[2.5]" />
                     <span className="text-xs font-bold">-{trend.diff}%</span>
                 </div>
             );
         }
         return (
-            <div className="flex items-center gap-1 text-gray-500 bg-gray-100 px-2 py-1 rounded-full" title="No change vs last week">
+            <div className="flex items-center gap-1 text-gray-500 bg-gray-100 px-2 py-1 rounded-full" title={t.noChange || "No change vs last week"}>
                 <Minus size={14} className="stroke-[2.5]" />
                 <span className="text-xs font-bold">0%</span>
             </div>
@@ -53,7 +58,7 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                             <h3 className="text-xl font-bold text-gray-800">{className}</h3>
                             {role === 'Class Teacher' && (
                                 <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-                                    Class Teacher
+                                    {t.classTeacher || 'Class Teacher'}
                                 </span>
                             )}
                             {role === 'Subject Teacher' && (
@@ -62,7 +67,7 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                                 </span>
                             )}
                         </div>
-                        <p className="text-sm text-gray-500 font-medium">Total Strength: {studentCount}</p>
+                        <p className="text-sm text-gray-500 font-medium">{t.totalStrength || 'Total Strength'}: {studentCount}</p>
                     </div>
 
                     {/* Attendance Percentage with Trend */}
@@ -80,7 +85,7 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center border-2 border-green-500 mb-1">
                                 <span className="text-lg font-bold text-green-700">{present}</span>
                             </div>
-                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Present</span>
+                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.present || 'Present'}</span>
                         </div>
 
                         <div className="h-10 w-px bg-gray-300"></div>
@@ -89,7 +94,7 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                             <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center border-2 border-red-500 mb-1">
                                 <span className="text-lg font-bold text-red-600">{absent}</span>
                             </div>
-                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Absent</span>
+                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{t.absent || 'Absent'}</span>
                         </div>
                     </div>
                 </div>
@@ -103,8 +108,8 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
                             }`}
                     >
                         {role === 'Class Teacher'
-                            ? (isMarked ? 'View / Edit Record' : 'Mark Attendance Now')
-                            : 'View Attendance'
+                            ? (isMarked ? (t.viewEdit || 'View / Edit Record') : (t.markNow || 'Mark Attendance Now'))
+                            : (t.viewAttendance || 'View Attendance')
                         }
                     </Link>
                 </div>
