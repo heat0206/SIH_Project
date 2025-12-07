@@ -106,7 +106,7 @@ const UserProfile = () => {
 
     const handleSubmitRequest = async () => {
         if (!requestForm.fieldName || !requestForm.requestedValue) {
-            alert('Please fill in all required fields');
+            alert(t.fillAllFields);
             return;
         }
 
@@ -127,9 +127,9 @@ const UserProfile = () => {
 
             setShowRequestModal(false);
             setRequestForm({ fieldName: '', currentValue: '', requestedValue: '', reason: '' });
-            alert('Data correction request submitted successfully!');
+            alert(t.requestSubmitted);
         } catch (error) {
-            alert('Failed to submit request. Please try again.');
+            alert(t.submitError);
         } finally {
             setSubmitting(false);
         }
@@ -392,7 +392,7 @@ const UserProfile = () => {
                                                 <RefreshCw className="w-4 h-4 text-blue-700" />
                                                 <span className="text-sm font-medium text-blue-800">{t.lastSync}</span>
                                             </div>
-                                            <span className="text-xs font-bold text-blue-700">Today, 08:30 AM</span>
+                                            <span className="text-xs font-bold text-blue-700">{t.today}, 08:30 AM</span>
                                         </div>
                                     </div>
                                 </div>

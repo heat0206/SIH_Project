@@ -782,17 +782,17 @@ const AdminDashboard = () => {
                                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[400px] flex flex-col">
                                         <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                                             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                                <Users size={18} /> Recent Scans
+                                                <Users size={18} /> {t.recentScans}
                                             </h2>
-                                            <span className="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">Live</span>
+                                            <span className="text-xs font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded">{t.live}</span>
                                         </div>
                                         <div className="overflow-y-auto flex-grow p-0">
                                             <table className="w-full text-left">
                                                 <thead className="bg-gray-50 text-gray-500 text-xs uppercase sticky top-0">
                                                     <tr>
-                                                        <th className="px-4 py-3">Time</th>
-                                                        <th className="px-4 py-3">Name</th>
-                                                        <th className="px-4 py-3 text-right">Status</th>
+                                                        <th className="px-4 py-3">{t.time}</th>
+                                                        <th className="px-4 py-3">{t.name}</th>
+                                                        <th className="px-4 py-3 text-right">{t.status}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-100">
@@ -808,12 +808,12 @@ const AdminDashboard = () => {
                                                                 <td className="px-4 py-3 text-gray-500 text-xs font-mono">
                                                                     {log.timestamp?.seconds
                                                                         ? new Date(log.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                                                        : 'Just now'}
+                                                                        : t.justNow}
                                                                 </td>
                                                                 <td className="px-4 py-3 font-medium text-gray-800 text-sm">{log.studentName}</td>
                                                                 <td className="px-4 py-3 text-right">
                                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${log.status === 'present' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                                        {log.status === 'present' ? 'Present' : 'Absent'}
+                                                                        {log.status === 'present' ? t.present : t.absent}
                                                                     </span>
                                                                 </td>
                                                             </tr>
@@ -828,7 +828,7 @@ const AdminDashboard = () => {
                                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[400px] flex flex-col">
                                         <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
                                             <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                                <Video size={18} /> Live Camera Feed
+                                                <Video size={18} /> {t.liveCameraFeed}
                                             </h2>
                                             <div className="flex items-center gap-3">
                                                 <button
@@ -840,11 +840,11 @@ const AdminDashboard = () => {
                                                 >
                                                     {isStreaming ? (
                                                         <>
-                                                            <Square size={12} fill="currentColor" /> Stop Feed
+                                                            <Square size={12} fill="currentColor" /> {t.stopFeed}
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <Play size={12} fill="currentColor" /> Start Feed
+                                                            <Play size={12} fill="currentColor" /> {t.startFeed}
                                                         </>
                                                     )}
                                                 </button>
@@ -874,8 +874,8 @@ const AdminDashboard = () => {
                                                 /* Placeholder for Stream */
                                                 <div className="text-center p-6">
                                                     <div className="w-16 h-16 border-4 border-gray-700 border-t-gray-500 rounded-full animate-spin mb-4 mx-auto"></div>
-                                                    <p className="text-gray-400 font-mono text-sm">Feed Paused</p>
-                                                    <p className="text-gray-600 text-xs mt-2">Click 'Start Feed' to connect</p>
+                                                    <p className="text-gray-400 font-mono text-sm">{t.feedPaused}</p>
+                                                    <p className="text-gray-600 text-xs mt-2">{t.clickStartFeed}</p>
                                                     <p className="text-gray-700 text-[10px] mt-1 font-mono">{streamUrl}</p>
                                                 </div>
                                             )}
@@ -905,7 +905,7 @@ const AdminDashboard = () => {
                             <>
                                 <div className="flex justify-end mb-6">
                                     <button onClick={() => setIsAddingClass(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                        <Plus size={18} /> Add New Class
+                                        <Plus size={18} /> {t.addNewClass}
                                     </button>
                                 </div>
                                 {/* Class Assignments */}
@@ -918,7 +918,7 @@ const AdminDashboard = () => {
                                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                                 <input
                                                     type="text"
-                                                    placeholder="Search class..."
+                                                    placeholder={t.searchClass}
                                                     value={searchClassQuery}
                                                     onChange={(e) => setSearchClassQuery(e.target.value)}
                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -930,7 +930,7 @@ const AdminDashboard = () => {
                                                 className="flex items-center justify-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium"
                                             >
                                                 <RefreshCw size={18} />
-                                                Sync Data
+                                                {t.syncData}
                                             </button>
                                         </div>
                                     </div>
@@ -938,7 +938,7 @@ const AdminDashboard = () => {
                                         <table className="w-full text-left">
                                             <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
                                                 <tr>
-                                                    <th className="px-6 py-4">Class Info</th>
+                                                    <th className="px-6 py-4">{t.classInfo}</th>
                                                     <th className="px-6 py-4">{t.assignedTeacher}</th>
                                                     <th className="px-6 py-4 text-right">{t.action}</th>
                                                 </tr>
@@ -947,7 +947,7 @@ const AdminDashboard = () => {
                                                 {filteredClasses.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="3" className="px-6 py-8 text-center text-gray-500 italic">
-                                                            No classes found.
+                                                            {t.noClassesFound}
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -983,7 +983,7 @@ const AdminDashboard = () => {
                                                                     onClick={() => openAssignModal(cls)}
                                                                     className="px-3 py-1.5 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 text-sm font-medium transition-colors"
                                                                 >
-                                                                    Assign
+                                                                    {t.assign}
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -1000,7 +1000,7 @@ const AdminDashboard = () => {
                             <>
                                 <div className="flex justify-end mb-6">
                                     <button onClick={() => setIsAddingTeacher(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                        <Plus size={18} /> Add New Teacher
+                                        <Plus size={18} /> {t.addNewTeacher}
                                     </button>
                                 </div>
                                 {/* Teachers List */}
@@ -1013,7 +1013,7 @@ const AdminDashboard = () => {
                                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                                 <input
                                                     type="text"
-                                                    placeholder="Search teacher..."
+                                                    placeholder={t.searchTeacher}
                                                     value={searchTeacherQuery}
                                                     onChange={(e) => setSearchTeacherQuery(e.target.value)}
                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1025,7 +1025,7 @@ const AdminDashboard = () => {
                                                 className="flex items-center justify-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium"
                                             >
                                                 <RefreshCw size={18} />
-                                                Sync Data
+                                                {t.syncData}
                                             </button>
                                         </div>
                                     </div>
@@ -1033,9 +1033,9 @@ const AdminDashboard = () => {
                                         <table className="w-full text-left">
                                             <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
                                                 <tr>
-                                                    <th className="px-6 py-4">Teacher Info</th>
+                                                    <th className="px-6 py-4">{t.teacherInfo}</th>
                                                     <th className="px-6 py-4">Subject</th>
-                                                    <th className="px-6 py-4">Classes Assigned</th>
+                                                    <th className="px-6 py-4">{t.classesAssigned}</th>
                                                     <th className="px-6 py-4 text-right">{t.action}</th>
                                                 </tr>
                                             </thead>
@@ -1043,7 +1043,7 @@ const AdminDashboard = () => {
                                                 {filteredTeachers.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="4" className="px-6 py-8 text-center text-gray-500 italic">
-                                                            No teachers found.
+                                                            {t.noTeachersFound}
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -1113,13 +1113,13 @@ const AdminDashboard = () => {
                             <>
                                 <div className="flex justify-end mb-6">
                                     <button onClick={() => setIsAddingStudent(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                                        <Plus size={18} /> Add New Student
+                                        <Plus size={18} /> {t.addNewStudent}
                                     </button>
                                 </div>
                                 {/* Manage Students Section */}
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mt-8">
                                     <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                                        <h2 className="text-xl font-bold text-gray-900">Manage Students</h2>
+                                        <h2 className="text-xl font-bold text-gray-900">{t.manageStudents}</h2>
 
                                         <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                                             {/* Search */}
@@ -1127,7 +1127,7 @@ const AdminDashboard = () => {
                                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                                 <input
                                                     type="text"
-                                                    placeholder="Search student..."
+                                                    placeholder={t.searchStudent}
                                                     value={searchStudentQuery}
                                                     onChange={(e) => setSearchStudentQuery(e.target.value)}
                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1142,7 +1142,7 @@ const AdminDashboard = () => {
                                                     onChange={(e) => setStudentClassFilter(e.target.value)}
                                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
                                                 >
-                                                    <option value="">All Classes</option>
+                                                    <option value="">{t.allClasses}</option>
                                                     {classes.map(cls => (
                                                         <option key={cls.id} value={cls.id}>{cls.name}</option>
                                                     ))}
@@ -1155,7 +1155,7 @@ const AdminDashboard = () => {
                                                 className="flex items-center justify-center gap-2 px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors text-sm font-medium"
                                             >
                                                 <RefreshCw size={18} />
-                                                Sync Data
+                                                {t.syncData}
                                             </button>
                                         </div>
                                     </div>
@@ -1163,19 +1163,19 @@ const AdminDashboard = () => {
                                         <table className="w-full text-left">
                                             <thead className="bg-gray-50 text-gray-600 font-medium text-sm sticky top-0 z-10">
                                                 <tr>
-                                                    <th className="px-6 py-4">Profile</th>
-                                                    <th className="px-6 py-4">Student Info</th>
-                                                    <th className="px-6 py-4">Class</th>
-                                                    <th className="px-6 py-4">Attendance Rate</th>
-                                                    <th className="px-6 py-4">Parent Contact</th>
-                                                    <th className="px-6 py-4 text-right">Actions</th>
+                                                    <th className="px-6 py-4">{t.profile}</th>
+                                                    <th className="px-6 py-4">{t.studentInfo}</th>
+                                                    <th className="px-6 py-4">{t.class}</th>
+                                                    <th className="px-6 py-4">{t.attendanceRate}</th>
+                                                    <th className="px-6 py-4">{t.parentContact}</th>
+                                                    <th className="px-6 py-4 text-right">{t.actions}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200">
                                                 {filteredStudents.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="6" className="px-6 py-8 text-center text-gray-500 italic">
-                                                            No students found.
+                                                            {t.noStudentsFound}
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -1225,14 +1225,14 @@ const AdminDashboard = () => {
                                                                                 setIsEditingStudent(true);
                                                                             }}
                                                                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                            title="Edit Student"
+                                                                            title={t.editStudent}
                                                                         >
                                                                             <Edit size={18} />
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleDeleteStudent(student.id)}
                                                                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                                            title="Delete Student"
+                                                                            title={t.deleteStudent}
                                                                         >
                                                                             <Trash2 size={18} />
                                                                         </button>
@@ -1251,24 +1251,24 @@ const AdminDashboard = () => {
 
                         {activeTab === 'leaves' && (
                             <>
-                                <h2 className="text-xl font-bold text-gray-900 mb-6">{t.leaveRequests || 'Leave Requests'}</h2>
+                                <h2 className="text-xl font-bold text-gray-900 mb-6">{t.leaveRequests}</h2>
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left">
                                             <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
                                                 <tr>
-                                                    <th className="px-6 py-4">{t.student || 'Student'}</th>
-                                                    <th className="px-6 py-4">{t.typeReason || 'Type & Reason'}</th>
-                                                    <th className="px-6 py-4">{t.dates || 'Dates'}</th>
-                                                    <th className="px-6 py-4">{t.status || 'Status'}</th>
-                                                    <th className="px-6 py-4 text-right">{t.action || 'Action'}</th>
+                                                    <th className="px-6 py-4">{t.student}</th>
+                                                    <th className="px-6 py-4">{t.typeReason}</th>
+                                                    <th className="px-6 py-4">{t.dates}</th>
+                                                    <th className="px-6 py-4">{t.status}</th>
+                                                    <th className="px-6 py-4 text-right">{t.action}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200">
                                                 {leaveRequests.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="5" className="px-6 py-8 text-center text-gray-500 italic">
-                                                            {t.noLeaves || 'No leave notices found.'}
+                                                            {t.noLeaves}
                                                         </td>
                                                     </tr>
                                                 ) : (
@@ -1284,7 +1284,7 @@ const AdminDashboard = () => {
                                                             </td>
                                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                                 <div>{leave.from} to {leave.to}</div>
-                                                                <div className="text-xs text-gray-500">({leave.days} {t.days || 'days'})</div>
+                                                                <div className="text-xs text-gray-500">({leave.days} {t.days})</div>
                                                             </td>
                                                             <td className="px-6 py-4">
                                                                 <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${leave.status === 'Approved' ? 'bg-green-100 text-green-800' :
@@ -1303,13 +1303,13 @@ const AdminDashboard = () => {
                                                                             onClick={() => handleApproveLeave(leave.id)}
                                                                             className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1 text-xs font-medium"
                                                                         >
-                                                                            <CheckCircle size={14} /> {t.approve || 'Approve'}
+                                                                            <CheckCircle size={14} /> {t.approve}
                                                                         </button>
                                                                         <button
                                                                             onClick={() => handleRejectLeave(leave.id)}
                                                                             className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1 text-xs font-medium"
                                                                         >
-                                                                            <XCircle size={14} /> {t.reject || 'Reject'}
+                                                                            <XCircle size={14} /> {t.reject}
                                                                         </button>
                                                                     </div>
                                                                 )}
@@ -1334,33 +1334,33 @@ const AdminDashboard = () => {
                                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                         <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                             <div>
-                                                <h2 className="text-xl font-bold text-gray-900">{t.correctionRequests || 'Data Correction Requests'}</h2>
-                                                <p className="text-sm text-gray-500 mt-1">{t.reviewCorrections || 'Review and manage profile correction requests from teachers and parents'}</p>
+                                                <h2 className="text-xl font-bold text-gray-900">{t.correctionRequests}</h2>
+                                                <p className="text-sm text-gray-500 mt-1">{t.reviewCorrections}</p>
                                             </div>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => setCorrectionFilter('pending')}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'pending' ? 'bg-yellow-100 text-yellow-800 border border-yellow-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                                 >
-                                                    {t.pending || 'Pending'} ({correctionRequests.filter(r => r.status === 'pending').length})
+                                                    {t.pending} ({correctionRequests.filter(r => r.status === 'pending').length})
                                                 </button>
                                                 <button
                                                     onClick={() => setCorrectionFilter('approved')}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'approved' ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                                 >
-                                                    {t.approved || 'Approved'}
+                                                    {t.approved}
                                                 </button>
                                                 <button
                                                     onClick={() => setCorrectionFilter('rejected')}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'rejected' ? 'bg-red-100 text-red-800 border border-red-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                                 >
-                                                    {t.rejected || 'Rejected'}
+                                                    {t.rejected}
                                                 </button>
                                                 <button
                                                     onClick={() => setCorrectionFilter('all')}
                                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${correctionFilter === 'all' ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                                 >
-                                                    {t.all || 'All'}
+                                                    {t.all}
                                                 </button>
                                             </div>
                                         </div>
@@ -1368,20 +1368,20 @@ const AdminDashboard = () => {
                                             <table className="w-full text-left">
                                                 <thead className="bg-gray-50 text-gray-600 font-medium text-sm">
                                                     <tr>
-                                                        <th className="px-6 py-4">{t.user || 'User'}</th>
-                                                        <th className="px-6 py-4">{t.field || 'Field'}</th>
-                                                        <th className="px-6 py-4">{t.currentVal || 'Current Value'}</th>
-                                                        <th className="px-6 py-4">{t.requestedVal || 'Requested Value'}</th>
-                                                        <th className="px-6 py-4">{t.reason || 'Reason'}</th>
-                                                        <th className="px-6 py-4">{t.status || 'Status'}</th>
-                                                        <th className="px-6 py-4 text-right">{t.action || 'Actions'}</th>
+                                                        <th className="px-6 py-4">{t.user}</th>
+                                                        <th className="px-6 py-4">{t.field}</th>
+                                                        <th className="px-6 py-4">{t.currentVal}</th>
+                                                        <th className="px-6 py-4">{t.requestedVal}</th>
+                                                        <th className="px-6 py-4">{t.reason}</th>
+                                                        <th className="px-6 py-4">{t.status}</th>
+                                                        <th className="px-6 py-4 text-right">{t.action}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200">
                                                     {filteredCorrectionRequests.length === 0 ? (
                                                         <tr>
                                                             <td colSpan="7" className="px-6 py-8 text-center text-gray-500 italic">
-                                                                {t.noCorrections || 'No correction requests found.'}
+                                                                {t.noCorrections}
                                                             </td>
                                                         </tr>
                                                     ) : (
@@ -1393,7 +1393,7 @@ const AdminDashboard = () => {
                                                                             {req.userRole === 'teacher' ? 'T' : 'P'}
                                                                         </div>
                                                                         <div>
-                                                                            <div className="font-medium text-gray-900 capitalize">{req.userRole}</div>
+                                                                            <div className="font-medium text-gray-900 capitalize">{req.userRole === 'teacher' ? t.teacher : t.parent}</div>
                                                                             <div className="text-xs text-gray-500">
                                                                                 {req.createdAt?.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                                             </div>
@@ -1407,7 +1407,7 @@ const AdminDashboard = () => {
                                                                 </td>
                                                                 <td className="px-6 py-4">
                                                                     <div className="text-sm text-gray-600 max-w-xs truncate" title={req.currentValue}>
-                                                                        {req.currentValue || <span className="italic text-gray-400">Not provided</span>}
+                                                                        {req.currentValue || <span className="italic text-gray-400">{t.notProvided}</span>}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4">
@@ -1417,7 +1417,7 @@ const AdminDashboard = () => {
                                                                 </td>
                                                                 <td className="px-6 py-4">
                                                                     <div className="text-sm text-gray-500 max-w-xs truncate" title={req.reason}>
-                                                                        {req.reason || <span className="italic text-gray-400">No reason</span>}
+                                                                        {req.reason || <span className="italic text-gray-400">{t.noReason}</span>}
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-6 py-4">
@@ -1428,7 +1428,7 @@ const AdminDashboard = () => {
                                                                         {req.status === 'approved' && <CheckCircle size={12} />}
                                                                         {req.status === 'rejected' && <XCircle size={12} />}
                                                                         {req.status === 'pending' && <Clock size={12} />}
-                                                                        {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
+                                                                        {t[req.status]}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-right">
@@ -1438,26 +1438,26 @@ const AdminDashboard = () => {
                                                                                 onClick={() => handleApproveCorrection(req.id)}
                                                                                 className="p-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors flex items-center gap-1 text-xs font-medium"
                                                                             >
-                                                                                <CheckCircle size={14} /> {t.approve || 'Approve'}
+                                                                                <CheckCircle size={14} /> {t.approve}
                                                                             </button>
                                                                             <button
                                                                                 onClick={() => handleRejectCorrection(req.id)}
                                                                                 className="p-1.5 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors flex items-center gap-1 text-xs font-medium"
                                                                             >
-                                                                                <XCircle size={14} /> {t.reject || 'Reject'}
+                                                                                <XCircle size={14} /> {t.reject}
                                                                             </button>
                                                                         </div>
                                                                     )}
                                                                     <button
                                                                         onClick={() => handleDeleteCorrection(req.id)}
                                                                         className="p-1.5 text-gray-400 hover:text-red-500 rounded transition-colors ml-2 inline-flex"
-                                                                        title={t.delete || "Delete Request"}
+                                                                        title={t.delete}
                                                                     >
                                                                         <Trash2 size={16} />
                                                                     </button>
                                                                     {req.status !== 'pending' && req.adminNotes && (
                                                                         <div className="text-xs text-gray-500 italic" title={req.adminNotes}>
-                                                                            {t.note || 'Note'}: {req.adminNotes.substring(0, 20)}...
+                                                                            {t.note}: {req.adminNotes.substring(0, 20)}...
                                                                         </div>
                                                                     )}
                                                                 </td>
@@ -1482,7 +1482,7 @@ const AdminDashboard = () => {
                 isAssigning && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <h3 className="text-xl font-bold mb-4">Manage Teachers for {selectedClass?.name}</h3>
+                            <h3 className="text-xl font-bold mb-4">{t.manageTeachers} {selectedClass?.name}</h3>
 
                             {/* Tabs */}
                             <div className="flex border-b border-gray-200 mb-4">
@@ -1490,13 +1490,13 @@ const AdminDashboard = () => {
                                     className={`px-4 py-2 font-medium text-sm ${!isSubjectTeacherMode ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     onClick={() => { setIsSubjectTeacherMode(false); setFilterSubject(''); setSearchName(''); }}
                                 >
-                                    Class Teacher
+                                    {t.classTeacher}
                                 </button>
                                 <button
                                     className={`px-4 py-2 font-medium text-sm ${isSubjectTeacherMode ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                                     onClick={() => { setIsSubjectTeacherMode(true); setFilterSubject(''); setSearchName(''); }}
                                 >
-                                    Subject Teachers
+                                    {t.subjectTeachers}
                                 </button>
                             </div>
 
@@ -1506,7 +1506,7 @@ const AdminDashboard = () => {
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                     <input
                                         type="text"
-                                        placeholder="Search teacher by name..."
+                                        placeholder={t.searchTeacherByName}
                                         value={searchName}
                                         onChange={(e) => setSearchName(e.target.value)}
                                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1517,7 +1517,7 @@ const AdminDashboard = () => {
                                     onChange={(e) => setFilterSubject(e.target.value)}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                                 >
-                                    <option value="">All Subjects</option>
+                                    <option value="">{t.allSubjects}</option>
                                     {[...new Set(teachers.map(t => t.subject).filter(Boolean))].map(subject => (
                                         <option key={subject} value={subject}>{subject}</option>
                                     ))}
@@ -1527,7 +1527,7 @@ const AdminDashboard = () => {
                             {/* Class Teacher Section */}
                             {!isSubjectTeacherMode && (
                                 <div className="space-y-4">
-                                    <p className="text-sm text-gray-600">Select a Class Teacher responsible for daily attendance.</p>
+                                    <p className="text-sm text-gray-600">{t.selectClassTeacherCtx}</p>
 
                                     <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
                                         {teachers
@@ -1543,7 +1543,7 @@ const AdminDashboard = () => {
                                                 >
                                                     <div>
                                                         <div className="font-medium text-gray-900">{t.name}</div>
-                                                        <div className="text-xs text-gray-500">{t.subject || 'No Subject'} • {t.email}</div>
+                                                        <div className="text-xs text-gray-500">{t.subject || t.noSubject || 'No Subject'} • {t.email}</div>
                                                     </div>
                                                     {selectedTeacher === t.id && <div className="w-3 h-3 bg-blue-600 rounded-full"></div>}
                                                 </div>
@@ -1555,14 +1555,14 @@ const AdminDashboard = () => {
                                             onClick={() => setIsAssigning(false)}
                                             className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                                         >
-                                            Cancel
+                                            {t.cancel}
                                         </button>
                                         <button
                                             onClick={handleAssignTeacher}
                                             disabled={!selectedTeacher}
                                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                                         >
-                                            Save Class Teacher
+                                            {t.saveClassTeacher}
                                         </button>
                                     </div>
                                 </div>
@@ -1572,7 +1572,7 @@ const AdminDashboard = () => {
                             {isSubjectTeacherMode && (
                                 <div className="space-y-4">
                                     <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                                        <h4 className="font-medium text-sm text-gray-900 mb-2">Current Subject Teachers</h4>
+                                        <h4 className="font-medium text-sm text-gray-900 mb-2">{t.currentSubjectTeachers}</h4>
                                         {selectedClass?.subjectTeachers && selectedClass.subjectTeachers.length > 0 ? (
                                             <ul className="space-y-2">
                                                 {selectedClass.subjectTeachers.map((st, index) => (
@@ -1585,6 +1585,7 @@ const AdminDashboard = () => {
                                                         <button
                                                             onClick={() => handleRemoveSubjectTeacher(st)}
                                                             className="text-red-500 hover:text-red-700 p-1"
+                                                            title={t.removeSubjectTeacher}
                                                         >
                                                             <Trash2 size={14} />
                                                         </button>
@@ -1592,12 +1593,12 @@ const AdminDashboard = () => {
                                                 ))}
                                             </ul>
                                         ) : (
-                                            <p className="text-sm text-gray-500 italic">No subject teachers assigned yet.</p>
+                                            <p className="text-sm text-gray-500 italic">{t.noSubjectTeachers}</p>
                                         )}
                                     </div>
 
                                     <div className="border-t border-gray-200 pt-4">
-                                        <h4 className="font-medium text-sm text-gray-900 mb-2">Select Subject Teacher to Add</h4>
+                                        <h4 className="font-medium text-sm text-gray-900 mb-2">{t.selectSubjectTeacherAdd}</h4>
 
                                         <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto mb-3">
                                             {teachers
@@ -1613,7 +1614,7 @@ const AdminDashboard = () => {
                                                     >
                                                         <div>
                                                             <div className="font-medium text-gray-900">{t.name}</div>
-                                                            <div className="text-xs text-gray-500">{t.subject || 'No Subject'}</div>
+                                                            <div className="text-xs text-gray-500">{t.subject || t.noSubject || 'No Subject'}</div>
                                                         </div>
                                                         {selectedSubjectTeacher === t.id && <div className="w-3 h-3 bg-indigo-600 rounded-full"></div>}
                                                     </div>
@@ -1625,7 +1626,7 @@ const AdminDashboard = () => {
                                             disabled={!selectedSubjectTeacher}
                                             className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Add Subject Teacher
+                                            {t.addSubjectTeacher}
                                         </button>
                                     </div>
 
@@ -1634,7 +1635,7 @@ const AdminDashboard = () => {
                                             onClick={() => setIsAssigning(false)}
                                             className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                                         >
-                                            Close
+                                            {t.close}
                                         </button>
                                     </div>
                                 </div>
@@ -1649,10 +1650,10 @@ const AdminDashboard = () => {
                 isAddingTeacher && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                            <h3 className="text-xl font-bold mb-4">Add New Teacher</h3>
+                            <h3 className="text-xl font-bold mb-4">{t.addNewTeacher}</h3>
                             <form onSubmit={handleAddTeacher} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
                                     <input
                                         type="text"
                                         required
@@ -1663,7 +1664,7 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
                                     <input
                                         type="email"
                                         required
@@ -1674,19 +1675,19 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.password}</label>
                                     <input
                                         type="password"
                                         required
                                         value={newTeacher.password || ''}
                                         onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                        placeholder="Set a password (min 6 chars)"
+                                        placeholder={t.minChars}
                                         minLength={6}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.subject}</label>
                                     <input
                                         type="text"
                                         value={newTeacher.subject}
@@ -1701,13 +1702,13 @@ const AdminDashboard = () => {
                                         onClick={() => setIsAddingTeacher(false)}
                                         className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                                     >
-                                        Cancel
+                                        {t.cancel}
                                     </button>
                                     <button
                                         type="submit"
                                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                     >
-                                        Add Teacher
+                                        {t.addNewTeacher}
                                     </button>
                                 </div>
                             </form>
@@ -1721,10 +1722,10 @@ const AdminDashboard = () => {
                 isAddingClass && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                         <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
-                            <h3 className="text-xl font-bold mb-4">Add New Class</h3>
+                            <h3 className="text-xl font-bold mb-4">{t.addNewClass}</h3>
                             <form onSubmit={handleCreateClass} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.className}</label>
                                     <input
                                         type="text"
                                         required
@@ -1740,13 +1741,13 @@ const AdminDashboard = () => {
                                         onClick={() => setIsAddingClass(false)}
                                         className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                                     >
-                                        Cancel
+                                        {t.cancel}
                                     </button>
                                     <button
                                         type="submit"
                                         className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                     >
-                                        Create Class
+                                        {t.createClass}
                                     </button>
                                 </div>
                             </form>
@@ -1760,14 +1761,14 @@ const AdminDashboard = () => {
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-gray-900">Add New Student</h3>
+                                <h3 className="text-xl font-bold text-gray-900">{t.addNewStudent}</h3>
                                 <button onClick={() => setIsAddingStudent(false)} className="text-gray-400 hover:text-gray-600">
                                     <LogOut size={20} className="rotate-45" />
                                 </button>
                             </div>
                             <form onSubmit={handleAddStudent} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
                                     <input
                                         type="text"
                                         required
@@ -1777,18 +1778,18 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">RFID / Student ID</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.rfid}</label>
                                     <input
                                         type="text"
                                         required
-                                        placeholder="Scan RFID or enter ID"
+                                        placeholder={t.scanRfid}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono"
                                         value={newStudent.rfidId}
                                         onChange={(e) => setNewStudent({ ...newStudent, rfidId: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.rollNo}</label>
                                     <input
                                         type="text"
                                         required
@@ -1798,21 +1799,21 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Assign Class</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.assignClass}</label>
                                     <select
                                         required
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         value={newStudent.classId}
                                         onChange={(e) => setNewStudent({ ...newStudent, classId: e.target.value })}
                                     >
-                                        <option value="">-- Select Class --</option>
+                                        <option value="">{t.selectClass}</option>
                                         {classes.map(cls => (
                                             <option key={cls.id} value={cls.id}>{cls.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.parentName}</label>
                                     <input
                                         type="text"
                                         required
@@ -1822,27 +1823,27 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent User ID (Email)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.parentEmail}</label>
                                     <input
                                         type="email"
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="For Parent Login"
+                                        placeholder={t.forParentLogin}
                                         value={newStudent.parentUid}
                                         onChange={(e) => setNewStudent({ ...newStudent, parentUid: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Password</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.parentPassword}</label>
                                     <input
                                         type="password"
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder="Min 6 chars"
+                                        placeholder={t.minChars}
                                         value={newStudent.parentPassword}
                                         onChange={(e) => setNewStudent({ ...newStudent, parentPassword: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.parentPhone}</label>
                                     <input
                                         type="tel"
                                         required
@@ -1855,7 +1856,7 @@ const AdminDashboard = () => {
                                     type="submit"
                                     className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
                                 >
-                                    Add Student
+                                    {t.addStudentBtn}
                                 </button>
                             </form>
                         </div>
@@ -1868,14 +1869,14 @@ const AdminDashboard = () => {
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-gray-900">Edit Student Details</h3>
+                                <h3 className="text-xl font-bold text-gray-900">{t.editStudentTitle}</h3>
                                 <button onClick={() => setIsEditingStudent(false)} className="text-gray-400 hover:text-gray-600">
                                     <LogOut size={20} className="rotate-45" />
                                 </button>
                             </div>
                             <form onSubmit={handleUpdateStudent} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
                                     <input
                                         type="text"
                                         required
@@ -1885,7 +1886,7 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">RFID / Student ID (Read Only)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.rfid} ({t.readOnly})</label>
                                     <input
                                         type="text"
                                         readOnly
@@ -1894,7 +1895,7 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Roll Number</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.rollNo}</label>
                                     <input
                                         type="text"
                                         required
@@ -1904,21 +1905,21 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Assign Class</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.assignClass}</label>
                                     <select
                                         required
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         value={editingStudent.classId}
                                         onChange={(e) => setEditingStudent({ ...editingStudent, classId: e.target.value })}
                                     >
-                                        <option value="">-- Select Class --</option>
+                                        <option value="">{t.selectClass}</option>
                                         {classes.map(cls => (
                                             <option key={cls.id} value={cls.id}>{cls.name}</option>
                                         ))}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.parentName}</label>
                                     <input
                                         type="text"
                                         required
@@ -1928,7 +1929,7 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Parent Phone</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.parentPhone}</label>
                                     <input
                                         type="tel"
                                         required
@@ -1941,7 +1942,7 @@ const AdminDashboard = () => {
                                     type="submit"
                                     className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
                                 >
-                                    Update Student
+                                    {t.updateStudent}
                                 </button>
                             </form>
                         </div>
@@ -1955,14 +1956,14 @@ const AdminDashboard = () => {
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-xl font-bold text-gray-900">Edit Teacher Details</h3>
+                                <h3 className="text-xl font-bold text-gray-900">{t.editTeacherTitle}</h3>
                                 <button onClick={() => setIsEditingTeacher(false)} className="text-gray-400 hover:text-gray-600">
                                     <LogOut size={20} className="rotate-45" />
                                 </button>
                             </div>
                             <form onSubmit={handleUpdateTeacher} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.fullName}</label>
                                     <input
                                         type="text"
                                         required
@@ -1972,7 +1973,7 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.email}</label>
                                     <input
                                         type="email"
                                         required
@@ -1982,7 +1983,7 @@ const AdminDashboard = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{t.subject}</label>
                                     <input
                                         type="text"
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1995,7 +1996,7 @@ const AdminDashboard = () => {
                                     type="submit"
                                     className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-medium mt-2"
                                 >
-                                    Update Teacher
+                                    {t.updateTeacher}
                                 </button>
                             </form>
                         </div>
