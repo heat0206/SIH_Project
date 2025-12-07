@@ -250,7 +250,7 @@ const AttendanceView = () => {
                                 {classId === 'default' ? 'Class VI - Section B' : (className || `Class ${classId}`)}
                             </div>
                             <div className="detail-meta" style={{ color: 'var(--text-light)', fontSize: '1rem', marginTop: '0.25rem' }}>
-                                {t.markedOn}: <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{new Date().toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                {t.markedOn}: <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{new Date().toLocaleDateString(language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                             </div>
                             <div className="summary-chips" style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                                 <span className="chip success" style={{ background: '#ecfdf5', color: '#059669', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #d1fae5' }}>{t.present}: {presentCount}</span>
@@ -278,7 +278,7 @@ const AttendanceView = () => {
                                     <polyline points="7 10 12 15 17 10"></polyline>
                                     <line x1="12" y1="15" x2="12" y2="3"></line>
                                 </svg>
-                                {t.download || 'Download'}
+                                {t.download}
                             </button>
                             {canEdit && (
                                 <button onClick={markAllPresent} className="btn-sm" style={{
@@ -300,7 +300,7 @@ const AttendanceView = () => {
                                     onMouseOver={(e) => e.currentTarget.style.background = '#047857'}
                                     onMouseOut={(e) => e.currentTarget.style.background = '#059669'}
                                 >
-                                    Save Attendance
+                                    {t.saveAttendance}
                                 </button>
                             )}
                         </div>
@@ -360,7 +360,7 @@ const AttendanceView = () => {
                         </div>
                         <div className="student-list">
                             {filteredStudents.length === 0 ? (
-                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>No students found.</div>
+                                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-light)' }}>{t.noStudentsFound}</div>
                             ) : (
                                 filteredStudents.map(s => (
                                     <div key={s.id} className="student-row" style={{
@@ -419,7 +419,7 @@ const AttendanceView = () => {
                                             {!s.present && canEdit && (
                                                 <button
                                                     onClick={() => handleNotify(s.name)}
-                                                    title="Send Absence Alert to Parent"
+                                                    title={t.notifyParent}
                                                     style={{
                                                         padding: '0.5rem', fontSize: '0.85rem', border: '1px solid #e5e7eb',
                                                         background: 'white', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-dark)', fontWeight: 500,

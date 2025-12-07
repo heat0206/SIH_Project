@@ -204,7 +204,7 @@ const Dashboard = () => {
                                     </svg>
                                 </div>
                                 <span className="font-medium text-gray-900 min-w-[140px]">
-                                    {new Date(date).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    {new Date(date).toLocaleDateString(language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                                 </span>
                                 <input
                                     type="date"
