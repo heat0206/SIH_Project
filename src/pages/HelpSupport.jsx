@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Mail, Phone, MessageCircle, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Mail, Phone, MessageCircle, ChevronDown, ChevronUp, Search, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 
 const HelpSupport = () => {
     const { language } = useLanguage();
+    const navigate = useNavigate();
     const [activeAccordion, setActiveAccordion] = useState(null);
     const t = translations[language]?.help || translations['en'].help;
 
@@ -27,6 +29,14 @@ const HelpSupport = () => {
                         <div className="absolute top-[-10%] right-[-5%] w-[300px] h-[300px] rounded-full bg-white blur-[50px]"></div>
                         <div className="absolute bottom-[-10%] left-[-5%] w-[300px] h-[300px] rounded-full bg-white blur-[50px]"></div>
                     </div>
+
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="absolute top-6 left-6 p-2 bg-white/20 hover:bg-white/30 text-white rounded-full transition-all backdrop-blur-md z-20"
+                    >
+                        <ArrowLeft size={24} />
+                    </button>
+
                     <div className="max-w-4xl mx-auto text-center relative z-10">
                         <h1 className="text-3xl md:text-5xl font-bold mb-4">
                             {t.heroTitle}
