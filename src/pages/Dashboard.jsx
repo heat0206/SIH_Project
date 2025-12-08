@@ -43,7 +43,7 @@ const Dashboard = () => {
     const userName = currentUser?.name || 'Teacher';
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
+
         let unsubLogs = () => { };
         let unsubAttendance = [];
 
@@ -186,7 +186,7 @@ const Dashboard = () => {
             }
         };
 
-        fetchDashboardData();
+
         fetchData();
 
         return () => {
