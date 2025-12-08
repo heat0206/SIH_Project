@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Utensils, Cloud, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Utensils, Cloud, CheckCircle, AlertCircle, RefreshCw, Calendar, WifiOff } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ClassCard from '../components/ClassCard';
@@ -8,7 +8,6 @@ import { useAuth } from '../context/AuthContext';
 import { getTeacherClasses } from '../services/classService';
 import { getStudentsByClass } from '../services/studentService';
 import { getAttendanceByDate } from '../services/attendanceService';
-
 import { translations } from '../utils/translations';
 
 const Dashboard = () => {
@@ -38,11 +37,10 @@ const Dashboard = () => {
     const { currentUser } = useAuth();
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isOffline, setIsOffline] = useState(false); // Mock offline state
 
     // Use name from context, fallback to 'Teacher' if not yet loaded
     const userName = currentUser?.name || 'Teacher';
-
-
 
     useEffect(() => {
         const fetchData = async () => {
@@ -146,6 +144,17 @@ const Dashboard = () => {
     const totalPresent = classes.reduce((acc, cls) => acc + cls.present, 0);
     const avgAttendance = totalStudents > 0 ? Math.round((totalPresent / totalStudents) * 100) : 0;
 
+    // Sort classes: Marked ones last (or first depending on preference, logic here seems to not strictly sort by status but we leave it as is if there was no explicit sort)
+    // Actually, in the broken file, I saw `sortedClasses`, let's just use `classes` or implement a sort if needed.
+    // The previous code used `classes` in `totalStudents` calc but map used `sortedClasses`??
+    // Checking Step 120 diff: `classes.map((cls) => ...`. Wait, line 259 used `sortedClasses`.
+    // I need to define `sortedClasses`.
+    const sortedClasses = [...classes].sort((a, b) => {
+        // Unmarked first
+        if (a.isMarked === b.isMarked) return 0;
+        return a.isMarked ? 1 : -1;
+    });
+
     return (
         <>
             <Header variant="dashboard" />
@@ -195,7 +204,7 @@ const Dashboard = () => {
                                     </svg>
                                 </div>
                                 <span className="font-medium text-gray-900 min-w-[140px]">
-                                    {new Date(date).toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    {new Date(date).toLocaleDateString(language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                                 </span>
                                 <input
                                     type="date"
@@ -208,8 +217,6 @@ const Dashboard = () => {
                         </div>
                     </div>
                 </div>
-
-
 
                 {status === 'active' && (
                     <>
@@ -225,22 +232,31 @@ const Dashboard = () => {
                             <div style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>
                                     <Utensils size={16} />
-                                    <span>Mid-Day Meals</span>
+                                    <p className="text-sm font-medium text-gray-500">{t.midDayMeals || "Mid-Day Meals"}</p>
                                 </div>
                                 <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-dark)', marginTop: '0.5rem' }}>
                                     {totalPresent}<span className="text-gray-400 text-lg font-normal">/{totalStudents}</span>
                                 </div>
-                                <div className="text-xs text-green-600 font-medium mt-1">Served Today</div>
+                                <div className="text-xs text-green-600 font-medium mt-1">{t.servedToday || "Served Today"}</div>
                             </div>
 
                             {/* Card 3: Pending Sync */}
                             <div style={{ background: 'white', padding: '1.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }}>
-                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>Pending Sync</div>
+                                <div style={{ color: 'var(--text-light)', fontSize: '0.9rem', fontWeight: 500 }}>{t.pendingSync || "Pending Sync"}</div>
                                 <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <CheckCircle size={24} className="text-green-500" />
-                                    <span className="text-lg font-bold text-green-700">All Synced</span>
+                                    {isOffline ? (
+                                        <div className="flex items-center text-amber-600 bg-amber-50 px-3 py-1 rounded-full">
+                                            <WifiOff className="w-4 h-4 mr-1" />
+                                            <span className="text-lg font-bold">{t.pendingSync || "Pending Sync"}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center text-green-600 bg-green-50 px-3 py-1 rounded-full">
+                                            <RefreshCw className="w-4 h-4 mr-1" />
+                                            <span className="text-lg font-bold">{t.allSynced || "All Synced"}</span>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="text-xs text-gray-400 mt-1">Last synced: 2 mins ago</div>
+                                <div className="text-xs text-gray-400 mt-1">{t.lastSynced || "Last synced"}: 2 mins ago</div>
                             </div>
                         </div>
 
@@ -250,13 +266,14 @@ const Dashboard = () => {
                                 <div className="col-span-full flex justify-center py-8">
                                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                                 </div>
-                            ) : classes.length > 0 ? (
-                                classes.map((cls) => (
+                            ) : sortedClasses.length > 0 ? (
+                                sortedClasses.map((cls) => (
                                     <ClassCard key={cls.id} {...cls} />
                                 ))
                             ) : (
                                 <div className="col-span-full text-center py-8 text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
-                                    <p>No classes assigned to you yet.</p>
+                                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                                    <h3 className="text-lg font-medium text-gray-900">{t.noClassesAssigned || "No classes assigned to you yet."}</h3>
                                 </div>
                             )}
                         </section>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { HelpCircle, Languages, LogOut } from 'lucide-react';
+import { HelpCircle, Languages, LogOut, ChevronDown, Check } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { translations } from '../utils/translations';
@@ -12,14 +12,13 @@ const Header = ({ variant = 'landing', title }) => {
     const { language, switchLanguage } = useLanguage();
     const t = translations[language].header;
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isLangOpen, setIsLangOpen] = useState(false);
     const timeoutRef = React.useRef(null);
     const isOnline = useOnlineStatus();
     const navigate = useNavigate();
     const { currentUser, logout } = useAuth();
 
-    const toggleLanguage = () => {
-        switchLanguage(language === 'en' ? 'hi' : 'en');
-    };
+
 
     const handleMouseEnter = () => {
         if (timeoutRef.current) {
@@ -78,17 +77,42 @@ const Header = ({ variant = 'landing', title }) => {
                             <span className="text-sm font-medium">Help / सहायता</span>
                         </Link>
 
-                        {/* Language Toggle */}
-                        <button
-                            onClick={toggleLanguage}
-                            className="flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-full p-2 md:px-4 md:py-2 transition-colors border border-gray-200"
-                            aria-label="Switch Language"
-                        >
-                            <Languages size={20} className="text-[#1e3a8a]" />
-                            <span className="hidden md:inline-block ml-2 text-sm font-medium text-gray-700">
-                                {language === 'en' ? 'English' : 'हिन्दी'}
-                            </span>
-                        </button>
+                        {/* Language Dropdown */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsLangOpen(!isLangOpen)}
+                                className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 rounded-full p-2 md:px-4 md:py-2 transition-colors border border-gray-200"
+                                aria-label="Select Language"
+                            >
+                                <Languages size={20} className="text-[#1e3a8a]" />
+                                <span className="hidden md:inline-block text-sm font-medium text-gray-700">
+                                    {language === 'en' ? 'English' : language === 'hi' ? 'हिन्दी' : 'ਪੰਜਾਬੀ'}
+                                </span>
+                                <ChevronDown size={14} className={`text-gray-500 transition-transform ${isLangOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isLangOpen && (
+                                <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-1 border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                                    {[
+                                        { code: 'en', label: 'English' },
+                                        { code: 'hi', label: 'हिन्दी' },
+                                        { code: 'pa', label: 'ਪੰਜਾਬੀ' }
+                                    ].map((lang) => (
+                                        <button
+                                            key={lang.code}
+                                            onClick={() => {
+                                                switchLanguage(lang.code);
+                                                setIsLangOpen(false);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-[#1e3a8a] flex items-center justify-between"
+                                        >
+                                            <span>{lang.label}</span>
+                                            {language === lang.code && <Check size={14} className="text-green-600" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
 
                         {/* Government Dashboard Lookup: No Profile, Just Logout */}
                         {variant === 'simple' && (

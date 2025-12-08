@@ -27,7 +27,7 @@ const ParentDashboard = () => {
 
     const [loading, setLoading] = useState(true);
 
-    // Mock Timetable Data (Same as Timetable.jsx)
+    // Mock Timetable Data
     const timetableData = {
         schedule: {
             mon: [
@@ -76,9 +76,10 @@ const ParentDashboard = () => {
     const getTodaySchedule = () => {
         const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
         const todayKey = days[new Date().getDay()];
+        const locale = language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-US';
         return {
             key: todayKey,
-            name: new Date().toLocaleDateString('en-US', { weekday: 'long' }),
+            name: new Date().toLocaleDateString(locale, { weekday: 'long' }),
             classes: timetableData.schedule[todayKey] || []
         };
     };
@@ -95,94 +96,83 @@ const ParentDashboard = () => {
 
     useEffect(() => {
         const fetchDashboardData = async () => {
-            if (!currentUser || !currentUser.studentId) {
+            // 1. Fetch Student Details
+            let student = null;
+
+            if (currentUser?.studentId) {
+                student = await getStudentById(currentUser.studentId);
+            } else if (currentUser?.email) {
+                student = await getStudentByParentEmail(currentUser.email);
+            }
+
+            if (!student) {
+                console.error("No student found for this parent account.");
                 setLoading(false);
                 return;
             }
 
-            try {
-                // 1. Fetch Student Details
-                let student = null;
+            setStudentData(student);
 
-                if (currentUser.studentId) {
-                    student = await getStudentById(currentUser.studentId);
+            // 2. Fetch Monthly Attendance
+            const today = new Date();
+            const records = await getStudentMonthlyAttendance(
+                student.classId,
+                student.id,
+                today.getMonth(),
+                today.getFullYear()
+            );
+
+            // Helper to ensure consistent YYYY-MM-DD format using local time
+            const formatDate = (d) => {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            // Check for real-time status (RFID logs) for today if not already marked in attendance records
+            const todayDateStr = formatDate(today);
+            const hasTodayRecord = records.some(r => r.date === todayDateStr);
+
+            if (!hasTodayRecord) {
+                const realtimeStatus = await getStudentTodayStatus(student.id);
+                if (realtimeStatus === 'present') {
+                    records.push({
+                        date: todayDateStr,
+                        status: 'present',
+                        verificationMethod: 'rfid-realtime'
+                    });
                 }
-
-                // Fallback: If no studentId in profile, try looking up by parent email
-                if (!student && currentUser.email) {
-                    console.log("No studentId in profile, attempting lookup by email:", currentUser.email);
-                    student = await getStudentByParentEmail(currentUser.email);
-                }
-
-                if (!student) {
-                    console.error("No student found for this parent account.");
-                    setLoading(false);
-                    return;
-                }
-
-                setStudentData(student);
-
-                // 2. Fetch Monthly Attendance
-                const today = new Date();
-                const records = await getStudentMonthlyAttendance(
-                    student.classId,
-                    student.id,
-                    today.getMonth(),
-                    today.getFullYear()
-                );
-
-                // Helper to ensure consistent YYYY-MM-DD format using local time
-                const formatDate = (d) => {
-                    const year = d.getFullYear();
-                    const month = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-
-                // Check for real-time status (RFID logs) for today if not already marked in attendance records
-                const todayDateStr = formatDate(today);
-                const hasTodayRecord = records.some(r => r.date === todayDateStr);
-
-                if (!hasTodayRecord) {
-                    const realtimeStatus = await getStudentTodayStatus(student.id);
-                    if (realtimeStatus === 'present') {
-                        console.log("Found real-time present status, updating dashboard.");
-                        records.push({
-                            date: todayDateStr,
-                            status: 'present',
-                            verificationMethod: 'rfid-realtime'
-                        });
-                    }
-                }
-
-                setAttendanceData(records);
-
-                // 3. Sync Parent Name, Phone, and Student Roll No to Profile if missing
-                if (currentUser && (!currentUser.name || !currentUser.phone || !currentUser.studentRollNo) && student) {
-                    const updateData = {};
-                    if (!currentUser.name && student.parentName) updateData.name = student.parentName;
-                    if (!currentUser.phone && student.parentPhone) updateData.phone = student.parentPhone;
-                    if (!currentUser.studentRollNo && student.rollNo) updateData.studentRollNo = student.rollNo;
-
-                    if (Object.keys(updateData).length > 0) {
-                        await updateUserProfile(currentUser.uid, updateData);
-                        await refreshProfile();
-                    }
-                }
-
-                // 4. Fetch Leave Count
-                const leavesQ = query(collection(db, 'leave_requests'), where('studentId', '==', student.id));
-                const leavesSnap = await getDocs(leavesQ);
-                setLeaveCount(leavesSnap.size);
-
-            } catch (error) {
-                console.error("Error fetching parent dashboard data:", error);
-            } finally {
-                setLoading(false);
             }
+
+            setAttendanceData(records);
+
+            // 3. Sync Parent Name, Phone, and Student Roll No to Profile if missing
+            if (currentUser && (!currentUser.name || !currentUser.phone || !currentUser.studentRollNo) && student) {
+                const updateData = {};
+                if (!currentUser.name && student.parentName) updateData.name = student.parentName;
+                if (!currentUser.phone && student.parentPhone) updateData.phone = student.parentPhone;
+                if (!currentUser.studentRollNo && student.rollNo) updateData.studentRollNo = student.rollNo;
+
+                if (Object.keys(updateData).length > 0) {
+                    await updateUserProfile(currentUser.uid, updateData);
+                    await refreshProfile();
+                }
+            }
+
+            // 4. Fetch Leave Count
+            const leavesQ = query(collection(db, 'leave_requests'), where('studentId', '==', student.id));
+            const leavesSnap = await getDocs(leavesQ);
+            setLeaveCount(leavesSnap.size);
+
+            setLoading(false);
         };
 
-        fetchDashboardData();
+        if (currentUser) {
+            fetchDashboardData();
+        } else {
+            setLoading(false);
+        }
     }, [currentUser]);
 
     // Helper for consistency in render
@@ -222,14 +212,6 @@ const ParentDashboard = () => {
     const presentCount = attendanceData.filter(r => r.status === 'present').length;
     const absCount = attendanceData.filter(r => r.status === 'absent').length || 0;
     const lateCount = attendanceData.filter(r => r.status === 'late').length || 0;
-
-    // We might need to count absences based on the calendar logic if 'absent' isn't explicitly stored in DB for past days
-    // But for the "Breakdown" widget, simple DB count is safer, or explicit calculation:
-    // Actually, attendanceData only contains records that EXIST. If a student was absent and it wasn't marked, it might not be there?
-    // Admin dashboard marks 'absent' explicitly usually.
-    // Let's rely on filter. However, standard absence often isn't a record if just missing.
-    // But our calendar logic infers absence.
-    // Let's refine `totalAbsent` to match the calendar visual.
     const totalAbsent = calendarDays.filter(d => d.day <= today.getDate() && d.status === 'absent').length;
 
     const totalDays = Math.max(1, today.getDate());
@@ -304,25 +286,26 @@ const ParentDashboard = () => {
                                 {currentStreak > 0 ? (
                                     <>
                                         <Flame className="text-yellow-300 fill-yellow-300 animate-pulse" size={18} />
-                                        <span className="font-bold text-sm tracking-wide">{currentStreak} Day Streak!</span>
+                                        <span className="font-bold text-sm tracking-wide">{currentStreak} {t.dayStreak || 'Day Streak!'}</span>
                                     </>
                                 ) : (
                                     <>
                                         <Trophy className="text-yellow-200" size={18} />
-                                        <span className="font-bold text-sm tracking-wide">Start your streak!</span>
+                                        <span className="font-bold text-sm tracking-wide">{t.startStreak || 'Start your streak!'}</span>
                                     </>
                                 )}
                             </div>
+
                             <div className="relative z-10 pt-2">
                                 <div className="bg-white/20 w-fit p-3 rounded-2xl mb-4 backdrop-blur-sm border border-white/10">
                                     <ShieldCheck size={32} className="text-white" />
                                 </div>
                                 <h2 className="text-3xl font-bold mb-2 leading-tight">
-                                    {studentData.name} {isPresentToday ? (t.isSafe || 'is Safe at School') : 'is Absent Today'}
+                                    {studentData.name} {isPresentToday ? (t.isSafe || 'is Safe at School') : (t.isAbsent || 'is Absent Today')}
                                 </h2>
                                 <p className="text-green-50 font-medium flex items-center gap-2 opacity-90">
                                     <Clock size={18} />
-                                    {isPresentToday ? (t.clockedIn || 'Clocked in via Face ID') : 'No entry recorded today'}
+                                    {isPresentToday ? (t.clockedIn || 'Clocked in via Face ID') : (t.noEntryRecorded || 'No entry recorded today')}
                                 </p>
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/10 to-transparent pointer-events-none"></div>
@@ -451,10 +434,10 @@ const ParentDashboard = () => {
                                 {calendarDays.map((day) => (
                                     <div key={day.day} className="flex flex-col items-center gap-1">
                                         <span className="text-xs font-medium text-gray-700">{day.day}</span>
-                                        {day.status === 'present' && <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm" title="Present"></div>}
-                                        {day.status === 'absent' && <div className="w-3 h-3 rounded-sm bg-red-500 shadow-sm" title="Absent"></div>}
-                                        {day.status === 'late' && <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" title="Late"></div>}
-                                        {(day.status === 'holiday' || day.status === 'weekend') && <div className="w-3 h-3 bg-gray-300 rounded-[2px]" title="Holiday/Weekend"></div>}
+                                        {day.status === 'present' && <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm" title={t.present || "Present"}></div>}
+                                        {day.status === 'absent' && <div className="w-3 h-3 rounded-sm bg-red-500 shadow-sm" title={t.absent || "Absent"}></div>}
+                                        {day.status === 'late' && <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" title={t.late || "Late"}></div>}
+                                        {(day.status === 'holiday' || day.status === 'weekend') && <div className="w-3 h-3 bg-gray-300 rounded-[2px]" title={t.holiday || "Holiday"}></div>}
                                     </div>
                                 ))}
                             </div>
@@ -464,7 +447,7 @@ const ParentDashboard = () => {
                     {/* Desktop Sidebar (Quick Actions) */}
                     <div className="hidden lg:block w-80 space-y-6 sticky top-6 self-start">
                         <div className="bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">{t.quickActions || 'Quick Actions'}</h3>
                             <div className="space-y-3">
                                 <button
                                     onClick={() => navigate('/student/leave')}

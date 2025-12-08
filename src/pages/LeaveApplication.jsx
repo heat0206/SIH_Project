@@ -73,7 +73,7 @@ const LeaveApplication = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!studentData) {
-            alert("Student profile not linked. Cannot apply.");
+            alert(t.studentNotLinked);
             return;
         }
 
@@ -108,21 +108,21 @@ const LeaveApplication = () => {
             setTimeout(() => setShowSuccess(false), 3000);
         } catch (error) {
             console.error("Error submitting leave:", error);
-            alert("Failed to submit leave application.");
+            alert(t.submitError);
             setIsSubmitting(false);
         }
     };
 
 
     const handleDeleteLeave = async (leaveId) => {
-        if (!window.confirm("Are you sure you want to delete this leave application?")) return;
+        if (!window.confirm(t.deleteConfirm)) return;
         try {
             await deleteDoc(doc(db, 'leave_requests', leaveId));
             setLeaveHistory(prev => prev.filter(l => l.id !== leaveId));
-            alert("Leave application deleted.");
+            alert(t.deleteSuccess);
         } catch (error) {
             console.error("Error deleting leave:", error);
-            alert("Failed to delete leave application.");
+            alert(t.deleteError);
         }
     };
 
@@ -167,7 +167,7 @@ const LeaveApplication = () => {
                                 {showSuccess && (
                                     <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-3 animate-fade-in">
                                         <CheckCircle className="w-5 h-5" />
-                                        <span className="font-medium">Leave application submitted successfully!</span>
+                                        <span className="font-medium">{t.successMessage}</span>
                                     </div>
                                 )}
 

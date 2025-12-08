@@ -106,7 +106,7 @@ const UserProfile = () => {
 
     const handleSubmitRequest = async () => {
         if (!requestForm.fieldName || !requestForm.requestedValue) {
-            alert('Please fill in all required fields');
+            alert(t.fillAllFields);
             return;
         }
 
@@ -127,9 +127,9 @@ const UserProfile = () => {
 
             setShowRequestModal(false);
             setRequestForm({ fieldName: '', currentValue: '', requestedValue: '', reason: '' });
-            alert('Data correction request submitted successfully!');
+            alert(t.requestSubmitted);
         } catch (error) {
-            alert('Failed to submit request. Please try again.');
+            alert(t.submitError);
         } finally {
             setSubmitting(false);
         }
@@ -171,7 +171,7 @@ const UserProfile = () => {
                     className="mb-4 flex items-center gap-2 text-gray-600 hover:text-blue-700 transition-colors font-medium"
                 >
                     <ArrowLeft className="w-5 h-5" />
-                    Back to Dashboard
+                    {t.backToDashboard}
                 </button>
                 <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
                     {/* Cover Image */}
@@ -253,16 +253,16 @@ const UserProfile = () => {
                                     <section>
                                         <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                                             <GraduationCap className="w-5 h-5 text-blue-700" />
-                                            Student Details
+                                            {t.studentDetails}
                                         </h2>
                                         <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 shadow-sm">
                                             <div className="grid grid-cols-1 gap-4">
                                                 <div className="flex justify-between items-center border-b border-gray-200 pb-3">
-                                                    <span className="text-gray-600 font-medium">Student Name</span>
+                                                    <span className="text-gray-600 font-medium">{t.studentName}</span>
                                                     <span className="text-gray-900 font-bold">{user.studentName}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center">
-                                                    <span className="text-gray-600 font-medium">Student Roll Number</span>
+                                                    <span className="text-gray-600 font-medium">{t.studentRollNo}</span>
                                                     <span className="text-gray-900 font-bold">{user.studentRollNo}</span>
                                                 </div>
                                             </div>
@@ -310,7 +310,7 @@ const UserProfile = () => {
                                                         <span className="font-medium text-gray-700">{lastRequest.requestedValue}</span>
                                                     </div>
                                                     <div className="text-xs text-gray-500 mt-1">
-                                                        {lastRequest.createdAt?.toLocaleDateString(language === 'hi' ? 'hi-IN' : 'en-IN', {
+                                                        {lastRequest.createdAt?.toLocaleDateString(language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-IN', {
                                                             day: 'numeric',
                                                             month: 'short',
                                                             year: 'numeric'
@@ -392,7 +392,7 @@ const UserProfile = () => {
                                                 <RefreshCw className="w-4 h-4 text-blue-700" />
                                                 <span className="text-sm font-medium text-blue-800">{t.lastSync}</span>
                                             </div>
-                                            <span className="text-xs font-bold text-blue-700">Today, 08:30 AM</span>
+                                            <span className="text-xs font-bold text-blue-700">{t.today}, 08:30 AM</span>
                                         </div>
                                     </div>
                                 </div>
