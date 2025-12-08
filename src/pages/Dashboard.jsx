@@ -48,139 +48,148 @@ const Dashboard = () => {
         let unsubAttendance = [];
 
         const fetchData = async () => {
-            if (currentUser) {
-                // Try to load cached data first
-                const cacheKey = `dashboard_cache_${currentUser.uid}_${date}`;
-                const cached = localStorage.getItem(cacheKey);
-                if (cached) {
-                    try {
-                        const parsed = JSON.parse(cached);
+            if (!currentUser) return;
+
+            // Try to load cached data first
+            const cacheKey = `dashboard_cache_${currentUser.uid}_${date}`;
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    if (isMounted) {
                         setClasses(parsed);
                         setLoading(false); // Show cached data immediately
-                    } catch (e) {
-                         console.error("Cache parse error", e);
                     }
+                } catch (e) {
+                    console.error("Cache parse error", e);
                 }
+            }
 
-                try {
-                    // Fetch classes
-                    const classData = await getTeacherClasses(currentUser.uid);
+            try {
+                // Fetch classes
+                const classData = await getTeacherClasses(currentUser.uid);
+                if (!isMounted) return;
 
-                    // Setup RFID Subscription (Process logs regardless of class initially)
-                    // We only need one listener for the dashboard to trigger processing
-                    unsubLogs = subscribeToRFIDLogs(date, (logs) => {
-                        console.log("New RFID logs processed:", logs.length);
-                    }, { autoProcess: true });
+                // Setup RFID Subscription (Process logs regardless of class initially)
+                // We only need one listener for the dashboard to trigger processing
+                unsubLogs = subscribeToRFIDLogs(date, (logs) => {
+                    console.log("New RFID logs processed:", logs.length);
+                }, { autoProcess: true });
 
-                    const classesWithDetails = await Promise.all(classData.map(async (cls) => {
-                        let role = 'Subject Teacher';
-                        let subject = '';
+                const classesWithDetails = await Promise.all(classData.map(async (cls) => {
+                    let role = 'Subject Teacher';
+                    let subject = '';
 
-                        if (cls.teacherId === currentUser.uid) {
-                            role = 'Class Teacher';
-                        } else if (cls.subjectTeachers) {
-                            const st = cls.subjectTeachers.find(t => t.id === currentUser.uid);
-                            if (st) {
-                                subject = st.subject;
-                            }
+                    if (cls.teacherId === currentUser.uid) {
+                        role = 'Class Teacher';
+                    } else if (cls.subjectTeachers) {
+                        const st = cls.subjectTeachers.find(t => t.id === currentUser.uid);
+                        if (st) {
+                            subject = st.subject;
                         }
+                    }
 
-                        // Fetch students for count
-                        const students = await getStudentsByClass(cls.id);
-                        const studentCount = students.length;
+                    // Fetch students for count
+                    const students = await getStudentsByClass(cls.id);
+                    const studentCount = students.length;
 
-                        // Initial Attendance Fetch
-                        const attendanceRecord = await getAttendanceByDate(cls.id, date);
-                        let present = 0;
-                        let absent = studentCount;
-                        let isMarked = false;
+                    // Initial Attendance Fetch
+                    const attendanceRecord = await getAttendanceByDate(cls.id, date);
+                    let present = 0;
+                    let absent = studentCount;
+                    let isMarked = false;
 
-                        if (attendanceRecord && attendanceRecord.records) {
-                            isMarked = true;
-                            present = attendanceRecord.records.filter(r => r.present).length;
-                            absent = studentCount - present;
-                        }
+                    if (attendanceRecord && attendanceRecord.records) {
+                        isMarked = true;
+                        present = attendanceRecord.records.filter(r => r.present).length;
+                        absent = studentCount - present;
+                    }
 
-                        // Setup Real-time Attendance Listener for this class
-                        const unsub = subscribeToAttendance(cls.id, date, (updatedRecord) => {
-                            setClasses(prevClasses => prevClasses.map(c => {
-                                if (c.id === cls.id) {
-                                    let newPresent = 0;
-                                    let newIsMarked = false;
-                                    if (updatedRecord && updatedRecord.records) {
-                                        newIsMarked = true;
-                                        newPresent = updatedRecord.records.filter(r => r.present).length;
-                                    }
-                                    return {
-                                        ...c,
-                                        isMarked: newIsMarked,
-                                        present: newPresent,
-                                        absent: c.studentCount - newPresent
-                                    };
+                    // Setup Real-time Attendance Listener for this class
+                    // Note: We create the subscription immediately, but we must check mounted in the callback if we set state.
+                    // However, these listeners update 'classes' state below which is fine.
+                    const unsub = subscribeToAttendance(cls.id, date, (updatedRecord) => {
+                         if (!isMounted) return;
+                         setClasses(prevClasses => prevClasses.map(c => {
+                            if (c.id === cls.id) {
+                                let newPresent = 0;
+                                let newIsMarked = false;
+                                if (updatedRecord && updatedRecord.records) {
+                                    newIsMarked = true;
+                                    newPresent = updatedRecord.records.filter(r => r.present).length;
                                 }
-                                return c;
-                            }));
-                        });
-                        unsubAttendance.push(unsub);
+                                return {
+                                    ...c,
+                                    isMarked: newIsMarked,
+                                    present: newPresent,
+                                    absent: c.studentCount - newPresent
+                                };
+                            }
+                            return c;
+                        }));
+                    });
+                    unsubAttendance.push(unsub);
 
 
-                        // Calculate previous week's average attendance
-                        let previousWeekAvg = null;
-                        try {
-                            const selectedDate = new Date(date);
-                            const weekAttendance = [];
+                    // Calculate previous week's average attendance
+                    let previousWeekAvg = null;
+                    try {
+                        const selectedDate = new Date(date);
+                        const weekAttendance = [];
 
-                            // Get attendance for the previous 7 days (excluding current date)
-                            for (let i = 1; i <= 7; i++) {
-                                const pastDate = new Date(selectedDate);
-                                pastDate.setDate(selectedDate.getDate() - i);
+                        // Get attendance for the previous 7 days (excluding current date)
+                        for (let i = 1; i <= 7; i++) {
+                            const pastDate = new Date(selectedDate);
+                            pastDate.setDate(selectedDate.getDate() - i);
 
-                                // Skip Sundays (holidays)
-                                if (pastDate.getDay() === 0) continue;
+                            // Skip Sundays (holidays)
+                            if (pastDate.getDay() === 0) continue;
 
-                                const pastDateStr = pastDate.toISOString().split('T')[0];
-                                const pastRecord = await getAttendanceByDate(cls.id, pastDateStr);
+                            const pastDateStr = pastDate.toISOString().split('T')[0];
+                            const pastRecord = await getAttendanceByDate(cls.id, pastDateStr);
 
-                                if (pastRecord && pastRecord.records && pastRecord.records.length > 0) {
-                                    const pastPresent = pastRecord.records.filter(r => r.present).length;
-                                    const pastTotal = pastRecord.records.length;
-                                    if (pastTotal > 0) {
-                                        weekAttendance.push(Math.round((pastPresent / pastTotal) * 100));
-                                    }
+                            if (pastRecord && pastRecord.records && pastRecord.records.length > 0) {
+                                const pastPresent = pastRecord.records.filter(r => r.present).length;
+                                const pastTotal = pastRecord.records.length;
+                                if (pastTotal > 0) {
+                                    weekAttendance.push(Math.round((pastPresent / pastTotal) * 100));
                                 }
                             }
-
-                            // Calculate average if we have data
-                            if (weekAttendance.length > 0) {
-                                previousWeekAvg = Math.round(
-                                    weekAttendance.reduce((a, b) => a + b, 0) / weekAttendance.length
-                                );
-                            }
-                        } catch (err) {
-                            console.error("Failed to fetch previous week data", err);
                         }
 
-                        return {
-                            id: cls.id,
-                            className: cls.name,
-                            studentCount,
-                            present,
-                            absent,
-                            isMarked,
-                            role,
-                            subject,
-                            previousWeekAvg
-                        };
-                    }));
+                        // Calculate average if we have data
+                        if (weekAttendance.length > 0) {
+                            previousWeekAvg = Math.round(
+                                weekAttendance.reduce((a, b) => a + b, 0) / weekAttendance.length
+                            );
+                        }
+                    } catch (err) {
+                        console.error("Failed to fetch previous week data", err);
+                    }
 
+                    return {
+                        id: cls.id,
+                        className: cls.name,
+                        studentCount,
+                        present,
+                        absent,
+                        isMarked,
+                        role,
+                        subject,
+                        previousWeekAvg
+                    };
+                }));
+                
+                if (isMounted) {
                     setClasses(classesWithDetails);
-                    
                     // Update Cache
                     localStorage.setItem(cacheKey, JSON.stringify(classesWithDetails));
-                    
-                } catch (err) {
-                    console.error("Failed to fetch dashboard data", err);
-                } finally {
+                }
+                
+            } catch (err) {
+                console.error("Failed to fetch dashboard data", err);
+            } finally {
+                if (isMounted) {
                     setLoading(false);
                 }
             }
@@ -190,6 +199,7 @@ const Dashboard = () => {
         fetchData();
 
         return () => {
+            isMounted = false;
             unsubLogs();
             unsubAttendance.forEach(unsub => unsub && unsub());
         };
