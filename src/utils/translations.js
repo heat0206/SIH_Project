@@ -449,7 +449,6 @@ const enWrapper = {
             wifsMedicineDesc: "AI-powered prediction for Weekly Iron & Folic Acid Supplementation",
             predictedMedicines: "Suggested WIFS Medicines",
             registeredStudents: "Registered",
-            medicineReason: "Based on monthly attendance patterns, approximately 50-60 students are expected to attend this week.",
             weeklyDistribution: "Weekly Distribution",
             estimatedAttendees: "Expected Attendees"
         },

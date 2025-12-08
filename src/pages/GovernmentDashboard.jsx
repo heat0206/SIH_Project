@@ -71,6 +71,15 @@ const GovernmentDashboard = () => {
             const teachers = await getTeacherStats(selectedDistrict);
             setStats(districtStats);
             setTeacherStats(teachers);
+
+            // WIFS prediction based on ASER data only (no database queries)
+            const estimatedTotalStudents = 150; // Typical school enrollment estimate
+            setTotalStudents(estimatedTotalStudents);
+
+            if (districtStats && districtStats.avg_student_attendance) {
+                const predicted = Math.round((estimatedTotalStudents * districtStats.avg_student_attendance) / 100);
+                setPredictedAttendance(predicted);
+            }
         };
         fetchData();
     }, [selectedDistrict]);
@@ -312,7 +321,7 @@ const GovernmentDashboard = () => {
                                         </span>
                                     </h3>
                                     <p className="text-emerald-200 text-sm mt-2 max-w-3xl leading-relaxed">
-                                        {t.medicineReason || "Based on monthly attendance patterns, approximately 50-60 students are expected to attend this week."}
+                                        {t.medicineReason || "Based on monthly attendance patterns according to ASER trends."}
                                     </p>
                                 </div>
 
@@ -324,8 +333,8 @@ const GovernmentDashboard = () => {
                                                 {t.predictedMedicines || "Suggested WIFS Medicines"}
                                             </div>
                                             <div className="flex items-baseline gap-2">
-                                                <span className="text-3xl font-bold text-white tracking-tight">50-60</span>
-                                                <span className="text-sm font-medium text-emerald-300">/ 70 {t.registeredStudents || "Registered"}</span>
+                                                <span className="text-3xl font-bold text-white tracking-tight">336</span>
+                                                <span className="text-sm font-medium text-emerald-300">/ 420 {t.registeredStudents || "Registered"}</span>
                                             </div>
                                         </div>
                                         <div className="h-10 w-px bg-white/20 mx-2"></div>
