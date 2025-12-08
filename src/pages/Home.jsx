@@ -47,7 +47,8 @@ const Home = () => {
 
             if (credentials.userid === GOV_ID && credentials.password === GOV_PASS) {
                 // Successful Login
-                sessionStorage.setItem('isGovtAuthenticated', 'true');
+                // Successful Login
+                localStorage.setItem('isGovtAuthenticated', 'true');
                 navigate('/government-dashboard');
             } else {
                 setError(t.invalidGovtCredentials || 'Invalid Government Credentials');

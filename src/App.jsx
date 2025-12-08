@@ -27,6 +27,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 
 import AttendanceProcessor from './components/AttendanceProcessor';
+import PWAStatus from './components/PWAStatus';
 
 import LearnMore from './pages/LearnMore';
 
@@ -35,6 +36,7 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <AttendanceProcessor />
+        <PWAStatus />
         <Router>
           <Routes>
             <Route path="/" element={<Home />} />

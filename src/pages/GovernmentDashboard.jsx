@@ -55,7 +55,7 @@ const GovernmentDashboard = () => {
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
     useEffect(() => {
-        const isAuth = sessionStorage.getItem('isGovtAuthenticated');
+        const isAuth = localStorage.getItem('isGovtAuthenticated');
         if (isAuth !== 'true') {
             navigate('/');
         }

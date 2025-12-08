@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { translations } from '../utils/translations';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import logo from '../assets/logo.jpg';
 
 const Header = ({ variant = 'landing', title }) => {
@@ -15,6 +16,7 @@ const Header = ({ variant = 'landing', title }) => {
     const [isLangOpen, setIsLangOpen] = useState(false);
     const timeoutRef = React.useRef(null);
     const isOnline = useOnlineStatus();
+    const { isInstallable, install } = usePWAInstall();
     const navigate = useNavigate();
     const { currentUser, logout } = useAuth();
 
@@ -34,7 +36,7 @@ const Header = ({ variant = 'landing', title }) => {
     };
 
     const handleGovtLogout = () => {
-        sessionStorage.removeItem('isGovtAuthenticated');
+        localStorage.removeItem('isGovtAuthenticated');
         navigate('/');
     };
 
@@ -70,6 +72,17 @@ const Header = ({ variant = 'landing', title }) => {
                                 {isOnline ? 'Online' : 'Offline'}
                             </span>
                         </div>
+
+                        {/* Install App Button - Only Visible when Installable */}
+                        {isInstallable && (
+                            <button
+                                onClick={install}
+                                className="hidden md:flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors shadow-sm animate-pulse"
+                            >
+                                <Users size={16} />
+                                <span className="text-sm font-bold">Install App</span>
+                            </button>
+                        )}
 
                         {/* Help Link */}
                         <Link to="/help" className="hidden md:flex items-center gap-1.5 text-gray-600 hover:text-[#1e3a8a] transition-colors group">
