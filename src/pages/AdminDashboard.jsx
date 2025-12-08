@@ -22,7 +22,9 @@ import {
     CheckCircle,
     XCircle,
     Play,
-    Square
+    Square,
+    Menu,
+    X
 } from 'lucide-react';
 import {
     collection,
@@ -107,6 +109,7 @@ const AdminDashboard = () => {
     const [filteredStudents, setFilteredStudents] = useState([]);
     const [searchTeacherQuery, setSearchTeacherQuery] = useState('');
     const [searchClassQuery, setSearchClassQuery] = useState('');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 
     // Data Fetching
@@ -672,25 +675,45 @@ const AdminDashboard = () => {
             <Header variant="dashboard" />
 
             <div className="flex flex-1">
+                {/* Mobile Sidebar Overlay */}
+                {isSidebarOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/50 z-20 md:hidden"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+
                 {/* Sidebar */}
-                <div className="w-64 bg-white border-r border-gray-200 flex flex-col z-10">
-                    <nav className="flex-1 p-4 space-y-2 mt-4">
-                        <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                <div className={`
+                    bg-white border-r border-gray-200 flex flex-col z-30
+                    fixed inset-y-0 left-0 h-full w-64 transform transition-transform duration-300 ease-in-out
+                    md:relative md:translate-x-0
+                    ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                `}>
+                    <div className="flex items-center justify-between p-4 border-b border-gray-100 md:hidden bg-blue-600 text-white">
+                        <span className="font-bold text-lg">Menu</span>
+                        <button onClick={() => setIsSidebarOpen(false)} className="p-1 rounded-full hover:bg-blue-700">
+                            <X size={20} />
+                        </button>
+                    </div>
+
+                    <nav className="flex-1 p-4 space-y-2 mt-4 overflow-y-auto">
+                        <button onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <LayoutDashboard size={20} /> {t.dashboard}
                         </button>
-                        <button onClick={() => setActiveTab('students')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'students' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <button onClick={() => { setActiveTab('students'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'students' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <Users size={20} /> {t.students}
                         </button>
-                        <button onClick={() => setActiveTab('teachers')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'teachers' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <button onClick={() => { setActiveTab('teachers'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'teachers' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <GraduationCap size={20} /> {t.teachers}
                         </button>
-                        <button onClick={() => setActiveTab('classes')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'classes' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <button onClick={() => { setActiveTab('classes'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'classes' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <School size={20} /> {t.classes}
                         </button>
-                        <button onClick={() => setActiveTab('leaves')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leaves' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <button onClick={() => { setActiveTab('leaves'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'leaves' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <FileText size={20} /> {t.leaves || 'Leaves'}
                         </button>
-                        <button onClick={() => setActiveTab('corrections')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'corrections' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <button onClick={() => { setActiveTab('corrections'); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'corrections' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}>
                             <AlertCircleIcon size={20} /> {t.dataCorrections || 'Data Corrections'}
                             {correctionRequests.filter(r => r.status === 'pending').length > 0 && (
                                 <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -701,10 +724,17 @@ const AdminDashboard = () => {
                     </nav>
                 </div>
 
-                {/* Main Content */}
-                <div className="flex-1 flex flex-col">
-                    <header className="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10">
-                        <h1 className="text-2xl font-bold text-gray-900 capitalize">{t[activeTab]}</h1>
+                <div className="flex-1 flex flex-col w-full">
+                    <header className="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center z-10 sticky top-0">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="md:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                            >
+                                <Menu size={24} />
+                            </button>
+                            <h1 className="text-xl md:text-2xl font-bold text-gray-900 capitalize truncate">{t[activeTab]}</h1>
+                        </div>
                         <div className="flex items-center gap-4">
                             <div className="text-sm text-gray-500">{new Date().toLocaleDateString()}</div>
                             <button
@@ -742,9 +772,9 @@ const AdminDashboard = () => {
                                             <UserCheck size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-sm text-gray-500 font-medium">{t.teachersPresent}</p>
+                                            <p className="text-sm text-gray-500 font-medium">{t.totalTeachers}</p>
                                             <h3 className="text-2xl font-bold text-gray-900">
-                                                {teachers.length > 0 ? `${Math.floor(teachers.length * 0.8)}/${teachers.length}` : "0/0"}
+                                                {teachers.length}
                                             </h3>
                                         </div>
                                     </div>
@@ -1159,7 +1189,8 @@ const AdminDashboard = () => {
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                                    {/* Desktop Table View */}
+                                    <div className="hidden md:block overflow-x-auto max-h-96 overflow-y-auto">
                                         <table className="w-full text-left">
                                             <thead className="bg-gray-50 text-gray-600 font-medium text-sm sticky top-0 z-10">
                                                 <tr>
@@ -1180,9 +1211,7 @@ const AdminDashboard = () => {
                                                     </tr>
                                                 ) : (
                                                     filteredStudents.map((student) => {
-                                                        // Mock attendance rate for demo
                                                         const attendanceRate = Math.floor(Math.random() * 30) + 70;
-
                                                         return (
                                                             <tr key={student.id} className="hover:bg-gray-50 transition-colors">
                                                                 <td className="px-6 py-4">
@@ -1244,6 +1273,85 @@ const AdminDashboard = () => {
                                                 )}
                                             </tbody>
                                         </table>
+                                    </div>
+
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden flex flex-col divide-y divide-gray-200">
+                                        {filteredStudents.length === 0 ? (
+                                            <div className="px-6 py-8 text-center text-gray-500 italic">
+                                                {t.noStudentsFound}
+                                            </div>
+                                        ) : (
+                                            filteredStudents.map((student) => {
+                                                const attendanceRate = Math.floor(Math.random() * 30) + 70;
+                                                return (
+                                                    <div key={student.id} className="p-4 bg-white hover:bg-gray-50 flex flex-col gap-3">
+                                                        {/* Header: Avatar, Name, Actions */}
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
+                                                                    {student.name ? student.name.charAt(0) : '?'}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-bold text-gray-900">{student.name}</div>
+                                                                    <div className="text-xs text-gray-500 font-mono">Roll: {student.rollNo}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex gap-1">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setEditingStudent(student);
+                                                                        setIsEditingStudent(true);
+                                                                    }}
+                                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                                                                >
+                                                                    <Edit size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteStudent(student.id)}
+                                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Details Grid */}
+                                                        <div className="grid grid-cols-2 gap-3 text-sm">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs text-gray-500 uppercase">{t.class}</span>
+                                                                <span className="font-medium text-gray-900 mt-1">
+                                                                    <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                                                        {student.className || 'Unassigned'}
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-col">
+                                                                <span className="text-xs text-gray-500 uppercase">{t.attendanceRate}</span>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <div className="w-16 bg-gray-200 rounded-full h-1.5 flex-grow max-w-[80px]">
+                                                                        <div
+                                                                            className="bg-green-500 h-1.5 rounded-full"
+                                                                            style={{ width: `${attendanceRate}%` }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <span className="text-xs text-gray-600 font-medium">{attendanceRate}%</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex flex-col col-span-2">
+                                                                <span className="text-xs text-gray-500 uppercase break-words">{t.parentContact}</span>
+                                                                <div className="flex items-center gap-2 mt-1 text-gray-900 w-full overflow-hidden">
+                                                                    <Phone size={14} className="text-gray-400 flex-shrink-0" />
+                                                                    <span className="truncate">{student.parentPhone}</span>
+                                                                    <span className="text-gray-400 mx-1">•</span>
+                                                                    <span className="text-gray-500 truncate">{student.parentName}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
                                     </div>
                                 </div>
                             </>
