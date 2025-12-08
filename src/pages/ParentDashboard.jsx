@@ -183,9 +183,9 @@ const ParentDashboard = () => {
         return `${year}-${month}-${day}`;
     };
 
-    // Generate Calendar Days for Current Month
     const today = new Date();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const startDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
     const calendarDays = Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
         const dateObj = new Date(today.getFullYear(), today.getMonth(), day);
@@ -431,6 +431,9 @@ const ParentDashboard = () => {
                                 ))}
                             </div>
                             <div className="grid grid-cols-7 gap-2">
+                                {[...Array(startDay)].map((_, i) => (
+                                    <div key={`empty-${i}`} />
+                                ))}
                                 {calendarDays.map((day) => (
                                     <div key={day.day} className="flex flex-col items-center gap-1">
                                         <span className="text-xs font-medium text-gray-700">{day.day}</span>
