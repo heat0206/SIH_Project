@@ -224,25 +224,55 @@ const ParentDashboard = () => {
 
     // Calculate Streak
     const calculateStreak = () => {
-        if (!attendanceData.length) return 0;
-        const sortedRecords = [...attendanceData].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const recordsMap = new Map(attendanceData.map(r => [r.date, r]));
         let streak = 0;
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const pastRecords = sortedRecords.filter(r => new Date(r.date) <= now);
+        let currentDate = new Date(); // Start from today
 
-        for (const record of pastRecords) {
-            if (record.status === 'present') {
-                streak++;
-            } else if (record.status === 'holiday' || record.date === todayDateStr) {
-                if (record.date === todayDateStr && record.status !== 'present') {
-                    if (record.status === 'absent') break;
-                    continue;
+        // Loop backwards up to 31 days (since we only show monthly view)
+        for (let i = 0; i < 31; i++) {
+            const dateStr = formatDate(currentDate);
+            const record = recordsMap.get(dateStr);
+            const dayOfWeek = currentDate.getDay();
+
+            // If we've gone past the loaded data (e.g. into previous month not loaded), break
+            // Note: Since we only fetch current month, streak will naturally cap at month start
+            // unless we fetch more. For now, this aligns with "Monthly Streak".
+            // Checking if dateStr's month matches today's month could be strict, 
+            // but rely on data availability is safer.
+
+            if (record) {
+                if (record.status === 'present') {
+                    streak++;
+                } else if (record.status === 'absent') {
+                    // Break streak
+                    if (currentDate.toDateString() === new Date().toDateString()) {
+                        // If today is absent, don't count it, but don't break previous streak?
+                        // Usually streak includes today if present. If absent today, streak starts from yesterday?
+                        // If broken today, streak is 0? 
+                        // Let's assume streak breaks.
+                        break;
+                    }
+                    break;
                 }
-                continue;
+                // If holiday, ignore and continue to prev day
             } else {
-                break;
+                // No record
+                if (dayOfWeek === 0) {
+                    // Sunday - ignore/continue
+                } else {
+                    // Break if weekday and no record (implies absent or no data)
+                    // If it's today and no record yet?
+                    if (dateStr === formatDate(new Date())) {
+                        // If today has no record, we shouldn't break the streak from yesterday
+                        // just don't increment.
+                        // But the loop continues to yesterday.
+                    } else {
+                        break;
+                    }
+                }
             }
+
+            currentDate.setDate(currentDate.getDate() - 1);
         }
         return streak;
     };
