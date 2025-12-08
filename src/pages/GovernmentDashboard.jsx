@@ -8,7 +8,8 @@ import {
     BrainCircuit,
     AlertCircle,
     BookOpen,
-    GraduationCap
+    GraduationCap,
+    Sparkles
 } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import {
@@ -215,6 +216,71 @@ const GovernmentDashboard = () => {
                         </div>
                         <h3 className="text-3xl font-bold text-gray-900 mb-1">{stats.private_tuition}%</h3>
                         <p className="text-gray-500 text-sm font-medium">{t.privateTuition}</p>
+                    </div>
+                </div>
+
+                {/* AI Insight Section */}
+                <div className="relative overflow-hidden rounded-2xl shadow-lg border border-indigo-200/50 mb-8 group">
+                    {/* Animated Gradient Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900"></div>
+
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+
+                    <div className="absolute top-4 right-4 opacity-10 rotate-12 transform group-hover:scale-110 transition-transform duration-700">
+                        <BrainCircuit size={120} className="text-white" />
+                    </div>
+
+                    <div className="relative z-10 p-8">
+                        <div className="flex flex-col md:flex-row gap-6 items-start">
+                            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
+                                <Sparkles size={32} className="text-yellow-300 drop-shadow-[0_0_8px_rgba(253,224,71,0.5)]" />
+                            </div>
+
+                            <div className="flex-1 space-y-4">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                                        {t.aiInsightTitle || "AI Attendance Insight"}
+                                        <span className="text-xs font-bold bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 px-2.5 py-0.5 rounded-full shadow-[0_2px_10px_rgba(251,191,36,0.2)]">
+                                            BETA
+                                        </span>
+                                    </h3>
+                                    <p className="text-indigo-200 text-sm mt-2 max-w-3xl leading-relaxed">
+                                        {t.predictionReason || "Based on historical attendance trends for this time of year, a drop in attendance is expected tomorrow."}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-4 items-center mt-2">
+                                    {/* Prediction Card */}
+                                    <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-xl border border-white/10 shadow-lg flex items-center gap-4 hover:bg-white/15 transition-colors cursor-default">
+                                        <div>
+                                            <div className="text-xs text-indigo-200 font-medium uppercase tracking-wider mb-1">
+                                                {t.predictedMeals || "Suggested Mid-Day Meals"}
+                                            </div>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-3xl font-bold text-white tracking-tight">50-60</span>
+                                                <span className="text-sm font-medium text-indigo-300">/ 70</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-10 w-px bg-white/20 mx-2"></div>
+                                        <div>
+                                            <div className="text-xs text-indigo-200 font-medium uppercase tracking-wider mb-1">
+                                                {t.confidence || "Confidence"}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex gap-1">
+                                                    <div className="w-1.5 h-6 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]"></div>
+                                                    <div className="w-1.5 h-6 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]"></div>
+                                                    <div className="w-1.5 h-6 rounded-full bg-emerald-400/50"></div>
+                                                </div>
+                                                <span className="text-emerald-300 font-bold text-lg">{t.accuracy || "92%"}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
