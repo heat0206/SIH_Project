@@ -10,6 +10,10 @@ const enWrapper = {
             logout: "Logout",
             welcome: "Welcome"
         },
+        months: [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ],
         home: {
             heroTitle: "Digital Hazri: Smart Attendance for Rural Schools",
             heroSubtitle: "Streamline attendance, enhance security, and simplify administration for Gram Panchayat and Education Boards.",
@@ -555,39 +559,7 @@ const enWrapper = {
                 Hindi: "Hindi",
                 Geography: "Geography",
                 Sports: "Sports",
-                callUs: "Call Us",
-                callTime: "Mon-Fri, 9am to 6pm",
-                chatSupport: "Chat Support",
-                chatDesc: "Chat with us for instant help",
-                startChat: "Start Chat",
-                emailUs: "Email Us",
-                emailDesc: "We will reply within 24 hours",
-                faqTitle: "Frequently Asked Questions",
-                faqs: [
-                    {
-                        question: "How do I reset my password?",
-                        answer: "You can click on the 'Forgot Password' link on the login page to initiate the reset process via email/OTP."
-                    },
-                    {
-                        question: "Can I mark my attendance manually?",
-                        answer: "No, attendance is marked automatically via facial recognition to ensure accuracy."
-                    },
-                    {
-                        question: "What should I do if I face a technical issue?",
-                        answer: "Please contact our support team using the contact form below or call our helpline."
-                    },
-                    {
-                        question: "Does this app work offline?",
-                        answer: "Some features may work offline, but an internet connection is required to sync data with the server."
-                    }
-                ],
-                contactTitle: "Get in Touch",
-                contactSubtitle: "Leave us a message and we will get back to you.",
-                name: "Name",
-                email: "Email",
-                message: "Message",
-                describeIssue: "Describe your issue...",
-                send: "Send Message"
+
             }
         },
         classCard: {
@@ -601,60 +573,43 @@ const enWrapper = {
             vsLastWeek: "vs last week",
             noChange: "No change vs last week"
         },
-        userProfile: {
-            title: "My Profile",
-            requestCorrection: "Request Data Correction",
-            personalInfo: "Personal Information",
-            fullName: "Full Name",
-            role: "Role / Designation",
-            email: "Email Address",
-            phone: "Phone Number",
-            address: "Address",
-            dutyRoster: "Official Duty Roster",
-            classTeacher: "Class Teacher",
-            subjects: "Subject Responsibilities",
-            additional: "Additional Charges",
-            employmentDetails: "Employment Details",
-            employeeId: "Employee ID",
-            department: "Department",
-            joiningDate: "Date of Joining",
-            udise: "School U-DISE Code",
-            block: "Block / District",
-            security: "Security & Status",
-            biometric: "Biometric Data",
-            faceId: "Face ID Registered",
-            twoFa: "2FA Status",
-            mobileLinked: "Mobile Linked",
-            lastSync: "Last Sync",
-            digitalId: "Digital Identity",
-            govtId: "Govt Education ID",
-            scanVerify: "Scan to Verify Credentials",
-            studentDetails: "Student Details",
-            studentName: "Student Name",
-            studentRollNo: "Student Roll #",
-            lastRequest: "Last Request",
-            updated: "Updated",
-            status: "Status",
-            approved: "Approved",
-            rejected: "Rejected",
-            pendingApproval: "Pending Admin Approval",
-            fieldToUpdate: "Field to Update",
-            selectField: "Select a field",
-            currentValue: "Current Value",
-            enterCurrentValue: "Enter current value",
-            requestedValue: "New/Correct Value",
-            enterNewValue: "Enter the correct value",
-            reason: "Reason",
-            optional: "optional",
-            enterReason: "Why is this correction needed?",
-            cancel: "Cancel",
-            submitting: "Submitting...",
-            submitRequest: "Submit Request",
-            backToDashboard: "Back to Dashboard",
-            fillAllFields: "Please fill in all required fields",
-            requestSubmitted: "Data correction request submitted successfully!",
-            submitError: "Failed to submit request. Please try again.",
-            today: "Today"
+        help: {
+            heroTitle: "How can we help you?",
+            heroSubtitle: "Find answers to your questions or contact our support team.",
+            searchPlaceholder: "Search your query...",
+            callUs: "Call Us",
+            callTime: "Mon-Fri, 9am to 6pm",
+            chatSupport: "Chat Support",
+            chatDesc: "Chat with us for instant help",
+            startChat: "Start Chat",
+            emailUs: "Email Us",
+            emailDesc: "We will reply within 24 hours",
+            faqTitle: "Frequently Asked Questions",
+            faqs: [
+                {
+                    question: "How do I reset my password?",
+                    answer: "You can click on the 'Forgot Password' link on the login page to initiate the reset process via email/OTP."
+                },
+                {
+                    question: "Can I mark my attendance manually?",
+                    answer: "No, attendance is marked automatically via facial recognition to ensure accuracy."
+                },
+                {
+                    question: "What should I do if I face a technical issue?",
+                    answer: "Please contact our support team using the contact form below or call our helpline."
+                },
+                {
+                    question: "Does this app work offline?",
+                    answer: "Some features may work offline, but an internet connection is required to sync data with the server."
+                }
+            ],
+            contactTitle: "Get in Touch",
+            contactSubtitle: "Leave us a message and we will get back to you.",
+            name: "Name",
+            email: "Email",
+            message: "Message",
+            describeIssue: "Describe your issue...",
+            send: "Send Message"
         }
     }
 };
@@ -671,6 +626,10 @@ const hi = {
         logout: "लॉग आउट",
         welcome: "स्वागत है"
     },
+    months: [
+        "जनवरी", "फरवरी", "मार्च", "अप्रैल", "मई", "जून",
+        "जुलाई", "अगस्त", "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"
+    ],
     home: {
         heroTitle: "डिजिटल हाज़िरी: ग्रामीण स्कूलों के लिए स्मार्ट उपस्थिति",
         heroSubtitle: "ग्राम पंचायत और शिक्षा बोर्डों के लिए उपस्थिति को सुव्यवस्थित करें, सुरक्षा बढ़ाएं और प्रशासन को सरल बनाएं।",
@@ -1198,6 +1157,10 @@ const pa = {
         logout: "ਲੌਗ ਆਉਟ",
         welcome: "ਜੀ ਆਇਆਂ ਨੂੰ"
     },
+    months: [
+        "ਜਨਵਰੀ", "ਫਰਵਰੀ", "ਮਾਰਚ", "ਅਪ੍ਰੈਲ", "ਮਈ", "ਜੂਨ",
+        "ਜੁਲਾਈ", "ਅਗਸਤ", "ਸਤੰਬਰ", "ਅਕਤੂਬਰ", "ਨਵੰਬਰ", "ਦਸੰਬਰ"
+    ],
     home: {
         heroTitle: "ਡਿਜੀਟਲ ਹਾਜ਼ਰੀ: ਪੇਂਡੂ ਸਕੂਲਾਂ ਲਈ ਸਮਾਰਟ ਹਾਜ਼ਰੀ",
         heroSubtitle: "ਹਾਜ਼ਰੀ ਨੂੰ ਸੁਚਾਰੂ ਬਣਾਓ, ਸੁਰੱਖਿਆ ਵਧਾਓ, ਅਤੇ ਗ੍ਰਾਮ ਪੰਚਾਇਤ ਅਤੇ ਸਿੱਖਿਆ ਬੋਰਡਾਂ ਲਈ ਪ੍ਰਬੰਧਨ ਨੂੰ ਸਰਲ ਬਣਾਓ।",

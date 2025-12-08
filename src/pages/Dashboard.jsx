@@ -204,7 +204,11 @@ const Dashboard = () => {
                                     </svg>
                                 </div>
                                 <span className="font-medium text-gray-900 min-w-[140px]">
-                                    {new Date(date).toLocaleDateString(language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    {(() => {
+                                        const [y, m, d] = date.split('-');
+                                        const months = translations[language]?.months || translations['en'].months;
+                                        return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`;
+                                    })()}
                                 </span>
                                 <input
                                     type="date"
