@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 
-const ClassCard = ({ className, studentCount, present, absent, isMarked, id, role, subject, previousWeekAvg }) => {
+const ClassCard = ({ className, studentCount, present, absent, isMarked, id, role, subject, previousWeekAvg, date }) => {
     const { language } = useLanguage();
     const t = translations[language]?.classCard || {};
 
@@ -101,7 +101,7 @@ const ClassCard = ({ className, studentCount, present, absent, isMarked, id, rol
 
                 <div className="mt-5">
                     <Link
-                        to={`/attendance/view?classId=${id}`}
+                        to={`/attendance/view?classId=${id}&date=${date}`}
                         className={`block w-full text-center py-3 rounded-lg font-semibold text-sm transition-colors ${role === 'Class Teacher' && isMarked
                             ? 'bg-white text-[#1e3a8a] border border-[#1e3a8a] hover:bg-blue-50'
                             : 'bg-[#1e3a8a] text-white hover:bg-blue-800 shadow-md'
