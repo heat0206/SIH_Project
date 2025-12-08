@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { getTeacherClasses } from '../services/classService';
 import { getStudentsByClass } from '../services/studentService';
-import { getAttendanceByDate } from '../services/attendanceService';
+import { subscribeToRFIDLogs, subscribeToAttendance, getAttendanceByDate } from '../services/attendanceService';
 import { translations } from '../utils/translations';
 
 const Dashboard = () => {
@@ -44,6 +44,10 @@ const Dashboard = () => {
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+        let unsubLogs = () => { };
+        let unsubAttendance = [];
+
+        const fetchData = async () => {
             if (currentUser) {
                 // Try to load cached data first
                 const cacheKey = `dashboard_cache_${currentUser.uid}_${date}`;
@@ -62,6 +66,12 @@ const Dashboard = () => {
                     // Fetch classes
                     const classData = await getTeacherClasses(currentUser.uid);
 
+                    // Setup RFID Subscription (Process logs regardless of class initially)
+                    // We only need one listener for the dashboard to trigger processing
+                    unsubLogs = subscribeToRFIDLogs(date, (logs) => {
+                        console.log("New RFID logs processed:", logs.length);
+                    }, { autoProcess: true });
+
                     const classesWithDetails = await Promise.all(classData.map(async (cls) => {
                         let role = 'Subject Teacher';
                         let subject = '';
@@ -79,7 +89,7 @@ const Dashboard = () => {
                         const students = await getStudentsByClass(cls.id);
                         const studentCount = students.length;
 
-                        // Fetch attendance for today
+                        // Initial Attendance Fetch
                         const attendanceRecord = await getAttendanceByDate(cls.id, date);
                         let present = 0;
                         let absent = studentCount;
@@ -90,6 +100,29 @@ const Dashboard = () => {
                             present = attendanceRecord.records.filter(r => r.present).length;
                             absent = studentCount - present;
                         }
+
+                        // Setup Real-time Attendance Listener for this class
+                        const unsub = subscribeToAttendance(cls.id, date, (updatedRecord) => {
+                            setClasses(prevClasses => prevClasses.map(c => {
+                                if (c.id === cls.id) {
+                                    let newPresent = 0;
+                                    let newIsMarked = false;
+                                    if (updatedRecord && updatedRecord.records) {
+                                        newIsMarked = true;
+                                        newPresent = updatedRecord.records.filter(r => r.present).length;
+                                    }
+                                    return {
+                                        ...c,
+                                        isMarked: newIsMarked,
+                                        present: newPresent,
+                                        absent: c.studentCount - newPresent
+                                    };
+                                }
+                                return c;
+                            }));
+                        });
+                        unsubAttendance.push(unsub);
+
 
                         // Calculate previous week's average attendance
                         let previousWeekAvg = null;
@@ -154,6 +187,12 @@ const Dashboard = () => {
         };
 
         fetchDashboardData();
+        fetchData();
+
+        return () => {
+            unsubLogs();
+            unsubAttendance.forEach(unsub => unsub && unsub());
+        };
     }, [currentUser, date]);
 
     // Calculate aggregate stats

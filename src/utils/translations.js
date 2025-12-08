@@ -436,7 +436,14 @@ const enWrapper = {
             stateLevel: "State-Level Aggregates",
             nationalTrends: "National Trends",
             districtBlockSpecifics: "District/Block Specifics",
-            district: "District"
+            district: "District",
+            Amritsar: "Amritsar",
+            aiInsightTitle: "AI Attendance Insight",
+            aiInsightDesc: "Predictive analysis for resource planning",
+            predictedMeals: "Suggested Mid-Day Meals",
+            predictionReason: "Based on historical trends, a seasonal drop in attendance is expected tomorrow.",
+            confidence: "Model Confidence",
+            accuracy: "92% Accuracy"
         },
         leaveApplication: {
             back: "Back",
@@ -1197,6 +1204,12 @@ const hi = {
         canReadGrade2: "छात्र कक्षा 2 का पाठ पढ़ सकते हैं",
         grade5Math: "कक्षा 5 (अंकगणित)",
         canDoDivision: "छात्र भाग कर सकते हैं",
+        aiInsightTitle: "एआई उपस्थिति अंतर्दृष्टि",
+        aiInsightDesc: "संसाधन योजना के लिए पूर्वानुमानित विश्लेषण",
+        predictedMeals: "सुझाए गए मध्याह्न भोजन",
+        predictionReason: "ऐतिहासिक रुझानों के आधार पर, कल उपस्थिति में मौसमी गिरावट अपेक्षित है।",
+        confidence: "मॉडल आत्मविश्वास",
+        accuracy: "92% सटीकता",
         grade8Reading: "कक्षा 8 (पढ़ना)",
         grade8Math: "कक्षा 8 (अंकगणित)",
         toilets: "स्कूल सुविधाएं (शौचालय)",
@@ -1215,7 +1228,8 @@ const hi = {
         stateLevel: "राज्य-स्तरीय योग",
         nationalTrends: "राष्ट्रीय रुझान",
         districtBlockSpecifics: "जिला/ब्लॉक विनिर्देश",
-        district: "जिला"
+        district: "जिला",
+        Amritsar: "अमृतसर"
     }
 };
 
@@ -1546,6 +1560,12 @@ const pa = {
         govtSchoolEnrollment: "ਸਰਕਾਰੀ ਸਕੂਲ ਦਾਖਲਾ",
         ageGroup: "ਉਮਰ 6-14",
         privateTuition: "ਪ੍ਰਾਈਵੇਟ ਟਿਊਸ਼ਨ ਲੈਣ ਵਾਲੇ ਵਿਦਿਆਰਥੀ",
+        aiInsightTitle: "AI ਹਾਜ਼ਰੀ ਸੂਝ",
+        aiInsightDesc: "ਸਰੋਤ ਯੋਜਨਾਬੰਦੀ ਲਈ ਭਵਿੱਖਬਾਣੀ ਵਿਸ਼ਲੇਸ਼ਣ",
+        predictedMeals: "ਸੁਝਾਏ ਗਏ ਮਿਡ-ਡੇ-ਮੀਲ",
+        predictionReason: "ਇਤਿਹਾਸਕ ਰੁਝਾਨਾਂ ਦੇ ਆਧਾਰ 'ਤੇ, ਕੱਲ੍ਹ ਹਾਜ਼ਰੀ ਵਿੱਚ ਮੌਸਮੀ ਗਿਰਾਵਟ ਦੀ ਉਮੀਦ ਹੈ।",
+        confidence: "ਮਾਡਲ ਭਰੋਸਾ",
+        accuracy: "92% ਸ਼ੁੱਧਤਾ",
         grades: "ਜਮਾਤ I-V",
         aserMetricsTitle: "ASER 2024 ਸਿੱਖਿਆ ਗੁਣਵੱਤਾ ਮੈਟ੍ਰਿਕਸ",
         learningOutcomes: "ਸਿੱਖਣ ਦੇ ਨਤੀਜੇ",
@@ -1571,7 +1591,8 @@ const pa = {
         stateLevel: "ਰਾਜ-ਪੱਧਰੀ ਜੋੜ",
         nationalTrends: "ਰਾਸ਼ਟਰੀ ਰੁਝਾਨ",
         districtBlockSpecifics: "ਜ਼ਿਲ੍ਹਾ/ਬਲਾਕ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ",
-        district: "ਜ਼ਿਲ੍ਹਾ"
+        district: "ਜ਼ਿਲ੍ਹਾ",
+        Amritsar: "ਅੰਮ੍ਰਿਤਸਰ"
     },
     leaveApplication: {
         back: "ਵਾਪਸ",

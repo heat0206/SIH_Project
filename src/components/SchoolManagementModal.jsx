@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 import { addSchool, updateSchool } from '../services/governmentService';
+import { useLanguage } from '../context/LanguageContext';
+import { translations } from '../utils/translations';
 
 const SchoolManagementModal = ({ isOpen, onClose, districts, onSave }) => {
+    const { language } = useLanguage();
+    const t = translations[language]?.governmentDashboard || {};
     const [formData, setFormData] = useState({
         name: '',
         district: districts[0] || '',
@@ -12,6 +16,12 @@ const SchoolManagementModal = ({ isOpen, onClose, districts, onSave }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    React.useEffect(() => {
+        if (districts.length > 0 && !formData.district) {
+            setFormData(prev => ({ ...prev, district: districts[0] }));
+        }
+    }, [districts]);
 
     if (!isOpen) return null;
 
@@ -87,14 +97,14 @@ const SchoolManagementModal = ({ isOpen, onClose, districts, onSave }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">District</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{t.district || 'District'}</label>
                         <select
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             value={formData.district}
                             onChange={e => setFormData({ ...formData, district: e.target.value })}
                         >
                             {districts.map(d => (
-                                <option key={d} value={d}>{d}</option>
+                                <option key={d} value={d}>{t[d] || d}</option>
                             ))}
                         </select>
                     </div>

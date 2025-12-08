@@ -213,8 +213,15 @@ export const processRFIDLogTransaction = async (logId, logData) => {
 
 // Helper to find student by RFID (Non-transactional read)
 export const getStudentByRFID = async (rfidId) => {
-    const q = query(collection(db, "students"), where("rfidId", "==", rfidId));
-    const snapshot = await getDocs(q);
+    if (!rfidId) return null;
+    const cleanId = rfidId.toString().trim();
+    // Query for exact match
+    const q = query(collection(db, "students"), where("rfidId", "==", cleanId));
+    let snapshot = await getDocs(q);
+
+    // Fallback: Try case-insensitive manually if low volume, or just rely on exact match? 
+    // Hardware usually sends uppercase. Let's assume exact match after trim is enough.
+
     if (snapshot.empty) return null;
     return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
 };
@@ -226,10 +233,12 @@ export const processSingleLog = async (logId, logData) => {
         // 1. Find Student
         const student = await getStudentByRFID(logData.rfidId);
         if (!student) {
-            console.warn(`Student not found for RFID ${logData.rfidId}`);
-            // Mark as processed (but failed) so we don't retry forever? 
-            // Or leave it? Let's mark as processed with error.
-            await updateDoc(doc(db, "rfid_logs", logId), { processed: true, error: "Student not found" });
+            console.warn(`Student not found for RFID '${logData.rfidId}'`);
+            await updateDoc(doc(db, "rfid_logs", logId), {
+                processed: true,
+                error: "Student not found",
+                processedAt: new Date()
+            });
             return;
         }
 
@@ -342,20 +351,29 @@ export const getStudentTodayStatus = async (studentId) => {
     }
 };
 
-export const subscribeToRFIDLogs = (date, onUpdate) => {
-    console.log("[AttendanceService] subscribeToRFIDLogs called for:", date);
+export const subscribeToRFIDLogs = (date, onUpdate, options = {}) => {
+    console.log("[AttendanceService] subscribeToRFIDLogs called for:", date, options);
     const logsRef = collection(db, "rfid_logs");
+    // Sort by timestamp desc to see newest first
     const q = query(logsRef, where("date", "==", date));
 
     return onSnapshot(q, async (snapshot) => {
         console.log("[AttendanceService] Snapshot received. Docs:", snapshot.size);
         const logs = [];
         const studentLookups = [];
+        const processingPromises = [];
 
         snapshot.forEach((logDoc) => {
             const logData = logDoc.data();
             const log = { id: logDoc.id, ...logData };
             logs.push(log);
+
+            // Auto-processing logic
+            if (options.autoProcess && !log.processed) {
+                // We process it immediately. Note: This might trigger another snapshot update 
+                // when 'processed' changes to true, but that's fine (idempotent check in processSingleLog).
+                processingPromises.push(processSingleLog(log.id, log));
+            }
 
             if (!log.studentName && log.rfidId) {
                 const studentRef = doc(db, "students", log.rfidId);
@@ -376,6 +394,15 @@ export const subscribeToRFIDLogs = (date, onUpdate) => {
                 );
             }
         });
+
+        if (processingPromises.length > 0) {
+            console.log(`[AttendanceService] Auto-processing ${processingPromises.length} logs...`);
+            // We don't await this blocking the UI update, but we do run it.
+            // Actually, better to await if we want to ensure lookups are done for the UI?
+            // No, lookups are for display. Processing is background. 
+            // Let's just let it run.
+            Promise.all(processingPromises).then(() => console.log("Auto-processing complete batch."));
+        }
 
         if (studentLookups.length > 0) {
             await Promise.all(studentLookups);
