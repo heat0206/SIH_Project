@@ -61,7 +61,7 @@ const GovernmentDashboard = () => {
     }, [navigate]);
 
     useEffect(() => {
-        setDistricts(getDistricts());
+        setDistricts(['Amritsar']);
     }, []);
 
     useEffect(() => {
