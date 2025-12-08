@@ -43,8 +43,21 @@ const Dashboard = () => {
     const userName = currentUser?.name || 'Teacher';
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchDashboardData = async () => {
             if (currentUser) {
+                // Try to load cached data first
+                const cacheKey = `dashboard_cache_${currentUser.uid}_${date}`;
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        setClasses(parsed);
+                        setLoading(false); // Show cached data immediately
+                    } catch (e) {
+                         console.error("Cache parse error", e);
+                    }
+                }
+
                 try {
                     // Fetch classes
                     const classData = await getTeacherClasses(currentUser.uid);
@@ -128,6 +141,10 @@ const Dashboard = () => {
                     }));
 
                     setClasses(classesWithDetails);
+                    
+                    // Update Cache
+                    localStorage.setItem(cacheKey, JSON.stringify(classesWithDetails));
+                    
                 } catch (err) {
                     console.error("Failed to fetch dashboard data", err);
                 } finally {
@@ -136,7 +153,7 @@ const Dashboard = () => {
             }
         };
 
-        fetchData();
+        fetchDashboardData();
     }, [currentUser, date]);
 
     // Calculate aggregate stats

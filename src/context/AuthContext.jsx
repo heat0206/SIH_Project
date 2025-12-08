@@ -20,12 +20,45 @@ export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    async function login(email, password, rememberMe = false) {
+
+    async function login(email, password, rememberMe = true) {
         try {
-            const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
-            await setPersistence(auth, persistenceType);
-            return signInWithEmailAndPassword(auth, email, password);
+            // Always use local persistence for better offline support
+            await setPersistence(auth, browserLocalPersistence);
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            
+            // Save valid credentials for future offline login
+            if (result.user) {
+                try {
+                    const { saveOfflineCredentials } = await import('../services/offlineAuthService');
+                    saveOfflineCredentials(email, password, result.user.uid);
+                } catch (e) {
+                    console.warn("Failed to save offline credentials", e);
+                }
+            }
+            return result;
         } catch (error) {
+            // If network error, try offline authentication
+            if (error.code === 'auth/network-request-failed' || !navigator.onLine) {
+                 try {
+                    const { verifyOfflineCredentials } = await import('../services/offlineAuthService');
+                    const offlineUser = verifyOfflineCredentials(email, password);
+                    
+                    if (offlineUser) {
+                        // Manually set user state for offline session
+                        setCurrentUser({
+                            uid: offlineUser.uid,
+                            email: offlineUser.email,
+                            isAnonymous: false,
+                            emailVerified: true,
+                            isOffline: true
+                        });
+                        return { user: offlineUser }; // Mock response
+                    }
+                 } catch (e) {
+                     console.error("Offline login failed", e);
+                 }
+            }
             console.error("Login error:", error);
             throw error;
         }

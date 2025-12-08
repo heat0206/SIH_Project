@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { translations } from '../utils/translations';
 
 const TeacherLogin = () => {
@@ -13,6 +14,16 @@ const TeacherLogin = () => {
     });
     const [rememberMe, setRememberMe] = useState(false);
 
+    const { login, currentUser } = useAuth(); // Get login function from context
+    const [error, setError] = useState('');
+
+    // Redirect if already logged in
+    React.useEffect(() => {
+        if (currentUser) {
+            navigate('/dashboard');
+        }
+    }, [currentUser, navigate]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -21,16 +32,43 @@ const TeacherLogin = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add authentication logic here
-        console.log('Login attempt with:', formData);
-        // For now, redirect to dashboard as per legacy behavior
-        navigate('/dashboard');
+        setError('');
+        
+        try {
+            // Attempt to login with Firebase
+            await login(formData.userid, formData.password, rememberMe);
+            navigate('/dashboard');
+        } catch (err) {
+            console.error("Login failed", err);
+            setError('Failed to log in. Please check your credentials.');
+        }
     };
+
+    // Check for offline status
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    React.useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     return (
         <div className="login-split-container">
+            {!isOnline && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, background: '#f59e0b', color: 'black', padding: '0.5rem', textAlign: 'center', zIndex: 9999 }}>
+                    ⚠️ You are offline. You can login if you have used this device before.
+                </div>
+            )}
             <div className="login-image-side">
                 <div className="login-overlay">
                     <div className="login-quote">
