@@ -96,6 +96,22 @@ const ParentDashboard = () => {
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+             // Cache Keys
+             const studentCacheKey = `parent_student_${currentUser?.email}`;
+             const attendanceCacheKey = `parent_attendance_${currentUser?.email}`;
+             
+             // 1. Try Load Cache
+             const cachedStudent = localStorage.getItem(studentCacheKey);
+             const cachedAttendance = localStorage.getItem(attendanceCacheKey);
+             
+             if (cachedStudent && cachedAttendance) {
+                 try {
+                     setStudentData(JSON.parse(cachedStudent));
+                     setAttendanceData(JSON.parse(cachedAttendance));
+                     setLoading(false);
+                 } catch (e) { console.error("Cache parse error", e); }
+             }
+
             // 1. Fetch Student Details
             let student = null;
 
@@ -106,12 +122,18 @@ const ParentDashboard = () => {
             }
 
             if (!student) {
-                console.error("No student found for this parent account.");
-                setLoading(false);
-                return;
+                // If offline and no cache, keep loading false but show nothing or old cache if available
+                if (!cachedStudent) {
+                     console.error("No student found for this parent account.");
+                     setLoading(false);
+                     return;
+                }
+                // If we have cache but fetch failed (offline), just return (keep cache)
+                if (cachedStudent) return;
             }
 
             setStudentData(student);
+            localStorage.setItem(studentCacheKey, JSON.stringify(student));
 
             // 2. Fetch Monthly Attendance
             const today = new Date();
@@ -146,6 +168,7 @@ const ParentDashboard = () => {
             }
 
             setAttendanceData(records);
+            localStorage.setItem(attendanceCacheKey, JSON.stringify(records));
 
             // 3. Sync Parent Name, Phone, and Student Roll No to Profile if missing
             if (currentUser && (!currentUser.name || !currentUser.phone || !currentUser.studentRollNo) && student) {
