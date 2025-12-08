@@ -443,7 +443,15 @@ const enWrapper = {
             predictedMeals: "Suggested Mid-Day Meals",
             predictionReason: "Based on historical trends, a seasonal drop in attendance is expected tomorrow.",
             confidence: "Model Confidence",
-            accuracy: "92% Accuracy"
+            accuracy: "92% Accuracy",
+            // WIFS Medicine Prediction
+            wifsMedicineTitle: "WIFS Medicine Distribution Insight",
+            wifsMedicineDesc: "AI-powered prediction for Weekly Iron & Folic Acid Supplementation",
+            predictedMedicines: "Suggested WIFS Medicines",
+            registeredStudents: "Registered",
+            medicineReason: "Based on monthly attendance patterns, approximately 50-60 students are expected to attend this week.",
+            weeklyDistribution: "Weekly Distribution",
+            estimatedAttendees: "Expected Attendees"
         },
         leaveApplication: {
             back: "Back",
