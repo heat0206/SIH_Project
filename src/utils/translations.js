@@ -436,7 +436,8 @@ const enWrapper = {
             stateLevel: "State-Level Aggregates",
             nationalTrends: "National Trends",
             districtBlockSpecifics: "District/Block Specifics",
-            district: "District"
+            district: "District",
+            Amritsar: "Amritsar"
         },
         leaveApplication: {
             back: "Back",
@@ -1215,7 +1216,8 @@ const hi = {
         stateLevel: "राज्य-स्तरीय योग",
         nationalTrends: "राष्ट्रीय रुझान",
         districtBlockSpecifics: "जिला/ब्लॉक विनिर्देश",
-        district: "जिला"
+        district: "जिला",
+        Amritsar: "अमृतसर"
     }
 };
 
@@ -1571,7 +1573,8 @@ const pa = {
         stateLevel: "ਰਾਜ-ਪੱਧਰੀ ਜੋੜ",
         nationalTrends: "ਰਾਸ਼ਟਰੀ ਰੁਝਾਨ",
         districtBlockSpecifics: "ਜ਼ਿਲ੍ਹਾ/ਬਲਾਕ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ",
-        district: "ਜ਼ਿਲ੍ਹਾ"
+        district: "ਜ਼ਿਲ੍ਹਾ",
+        Amritsar: "ਅੰਮ੍ਰਿਤਸਰ"
     },
     leaveApplication: {
         back: "ਵਾਪਸ",
