@@ -272,7 +272,7 @@ const Dashboard = () => {
                                 </div>
                             ) : sortedClasses.length > 0 ? (
                                 sortedClasses.map((cls) => (
-                                    <ClassCard key={cls.id} {...cls} />
+                                    <ClassCard key={cls.id} {...cls} date={date} />
                                 ))
                             ) : (
                                 <div className="col-span-full text-center py-8 text-gray-500 bg-white rounded-xl border border-dashed border-gray-300">
