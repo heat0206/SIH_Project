@@ -349,7 +349,7 @@ const GovernmentDashboard = () => {
                                                     <div className="w-1.5 h-6 rounded-full bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]"></div>
                                                     <div className="w-1.5 h-6 rounded-full bg-teal-400/50"></div>
                                                 </div>
-                                                <span className="text-teal-300 font-bold text-lg">{t.estimatedAttendees || "~71%"}</span>
+                                                <span className="text-teal-300 font-bold text-lg">~80.1%</span>
                                             </div>
                                         </div>
                                     </div>
