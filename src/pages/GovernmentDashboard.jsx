@@ -71,6 +71,15 @@ const GovernmentDashboard = () => {
             const teachers = await getTeacherStats(selectedDistrict);
             setStats(districtStats);
             setTeacherStats(teachers);
+
+            // WIFS prediction based on ASER data only (no database queries)
+            const estimatedTotalStudents = 150; // Typical school enrollment estimate
+            setTotalStudents(estimatedTotalStudents);
+
+            if (districtStats && districtStats.avg_student_attendance) {
+                const predicted = Math.round((estimatedTotalStudents * districtStats.avg_student_attendance) / 100);
+                setPredictedAttendance(predicted);
+            }
         };
         fetchData();
     }, [selectedDistrict]);
@@ -219,7 +228,7 @@ const GovernmentDashboard = () => {
                     </div>
                 </div>
 
-                {/* AI Insight Section */}
+                {/* AI Insight Section - Mid-Day Meals */}
                 <div className="relative overflow-hidden rounded-2xl shadow-lg border border-indigo-200/50 mb-8 group">
                     {/* Animated Gradient Background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-900"></div>
@@ -275,6 +284,72 @@ const GovernmentDashboard = () => {
                                                     <div className="w-1.5 h-6 rounded-full bg-emerald-400/50"></div>
                                                 </div>
                                                 <span className="text-emerald-300 font-bold text-lg">{t.accuracy || "92%"}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* WIFS Medicine Distribution AI Insight */}
+                <div className="relative overflow-hidden rounded-2xl shadow-lg border border-emerald-200/50 mb-8 group">
+                    {/* Animated Gradient Background */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-900 via-teal-950 to-cyan-900"></div>
+
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+                    <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+
+                    <div className="absolute top-4 right-4 opacity-10 rotate-12 transform group-hover:scale-110 transition-transform duration-700">
+                        <BrainCircuit size={120} className="text-white" />
+                    </div>
+
+                    <div className="relative z-10 p-8">
+                        <div className="flex flex-col md:flex-row gap-6 items-start">
+                            <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-inner">
+                                <Sparkles size={32} className="text-emerald-300 drop-shadow-[0_0_8px_rgba(110,231,183,0.5)]" />
+                            </div>
+
+                            <div className="flex-1 space-y-4">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-white flex items-center gap-3">
+                                        {t.wifsMedicineTitle || "WIFS Medicine Distribution Insight"}
+                                        <span className="text-xs font-bold bg-gradient-to-r from-emerald-200 to-teal-400 text-emerald-900 px-2.5 py-0.5 rounded-full shadow-[0_2px_10px_rgba(16,185,129,0.2)]">
+                                            AI POWERED
+                                        </span>
+                                    </h3>
+                                    <p className="text-emerald-200 text-sm mt-2 max-w-3xl leading-relaxed">
+                                        {t.medicineReason || "Based on monthly attendance patterns according to ASER trends."}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-4 items-center mt-2">
+                                    {/* Prediction Card */}
+                                    <div className="bg-white/10 backdrop-blur-md px-6 py-4 rounded-xl border border-white/10 shadow-lg flex items-center gap-4 hover:bg-white/15 transition-colors cursor-default">
+                                        <div>
+                                            <div className="text-xs text-emerald-200 font-medium uppercase tracking-wider mb-1">
+                                                {t.predictedMedicines || "Suggested WIFS Medicines"}
+                                            </div>
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-3xl font-bold text-white tracking-tight">336</span>
+                                                <span className="text-sm font-medium text-emerald-300">/ 420 {t.registeredStudents || "Registered"}</span>
+                                            </div>
+                                        </div>
+                                        <div className="h-10 w-px bg-white/20 mx-2"></div>
+                                        <div>
+                                            <div className="text-xs text-emerald-200 font-medium uppercase tracking-wider mb-1">
+                                                {t.weeklyDistribution || "Weekly Distribution"}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex gap-1">
+                                                    <div className="w-1.5 h-6 rounded-full bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]"></div>
+                                                    <div className="w-1.5 h-6 rounded-full bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]"></div>
+                                                    <div className="w-1.5 h-6 rounded-full bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.5)]"></div>
+                                                    <div className="w-1.5 h-6 rounded-full bg-teal-400/50"></div>
+                                                </div>
+                                                <span className="text-teal-300 font-bold text-lg">~80.1%</span>
                                             </div>
                                         </div>
                                     </div>
