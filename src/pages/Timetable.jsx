@@ -3,13 +3,16 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
-import { Clock, Calendar, BookOpen, User } from 'lucide-react';
+import { Clock, Calendar, BookOpen, User, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Timetable = () => {
     const { language } = useLanguage();
+    const navigate = useNavigate();
     const t = translations[language]?.timetable || {
         title: "Class Timetable",
         subtitle: "Weekly Schedule for your child",
+        back: "Back",
         days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
         time: "Time",
         subject: "Subject",
@@ -78,6 +81,13 @@ const Timetable = () => {
             <Header variant="dashboard" />
 
             <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
+                >
+                    <ArrowLeft size={20} />
+                    <span>{t.back}</span>
+                </button>
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
                         <Calendar className="text-blue-600" />

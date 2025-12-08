@@ -5,7 +5,8 @@ import { collection, addDoc, query, where, getDocs, orderBy, serverTimestamp, de
 import { getStudentById, getStudentByParentEmail } from '../services/studentService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History, Trash2 } from 'lucide-react';
+import { Calendar, Clock, FileText, Send, AlertCircle, CheckCircle, XCircle, History, Trash2, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
 
@@ -14,6 +15,7 @@ const LeaveApplication = () => {
     const t = translations[language].leaveApplication;
 
     const { currentUser } = useAuth();
+    const navigate = useNavigate();
     const [leaveType, setLeaveType] = useState('sick');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -154,6 +156,13 @@ const LeaveApplication = () => {
             <Header variant="dashboard" />
 
             <main className="flex-grow container mx-auto px-4 py-8 max-w-5xl">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
+                >
+                    <ArrowLeft size={20} />
+                    <span>{t.back}</span>
+                </button>
                 <div className="flex flex-col md:flex-row gap-8">
                     {/* Application Form */}
                     <div className="flex-grow">

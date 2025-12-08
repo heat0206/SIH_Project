@@ -18,6 +18,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 const AttendanceView = () => {
     const [searchParams] = useSearchParams();
     const classId = searchParams.get('classId') || 'default';
+    const dateParam = searchParams.get('date');
     const { language } = useLanguage();
     const t = translations[language]?.attendance || {};
     const tDashboard = translations[language]?.dashboard || {};
@@ -48,7 +49,7 @@ const AttendanceView = () => {
                     }
                 }
 
-                const date = new Date().toLocaleDateString('en-CA');
+                const date = dateParam || new Date().toLocaleDateString('en-CA');
 
                 // Subscribe to real-time updates
                 unsubscribe = subscribeToAttendance(classId, date, (attendanceData) => {
@@ -76,7 +77,7 @@ const AttendanceView = () => {
         return () => {
             if (unsubscribe) unsubscribe();
         };
-    }, [classId, currentUser]);
+    }, [classId, currentUser, dateParam]);
 
     // RFID Scanning Logic (Mock)
     useEffect(() => {
@@ -139,7 +140,7 @@ const AttendanceView = () => {
 
     const saveAttendance = async () => {
         try {
-            const date = new Date().toLocaleDateString('en-CA');
+            const date = dateParam || new Date().toLocaleDateString('en-CA');
             const attendanceData = {
                 classId,
                 date,
@@ -250,7 +251,7 @@ const AttendanceView = () => {
                                 {classId === 'default' ? 'Class VI - Section B' : (className || `Class ${classId}`)}
                             </div>
                             <div className="detail-meta" style={{ color: 'var(--text-light)', fontSize: '1rem', marginTop: '0.25rem' }}>
-                                {t.markedOn}: <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{new Date().toLocaleDateString(language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                {t.markedOn}: <span style={{ fontWeight: 500, color: 'var(--text-dark)' }}>{new Date(dateParam || new Date()).toLocaleDateString(language === 'pa' ? 'pa-IN' : language === 'hi' ? 'hi-IN' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                             </div>
                             <div className="summary-chips" style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
                                 <span className="chip success" style={{ background: '#ecfdf5', color: '#059669', padding: '0.35rem 1rem', borderRadius: '999px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #d1fae5' }}>{t.present}: {presentCount}</span>

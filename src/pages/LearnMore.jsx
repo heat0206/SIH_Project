@@ -3,7 +3,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
 import { translations } from '../utils/translations';
-import { GraduationCap, Users, ShieldCheck, ArrowRight, CheckCircle2, Youtube, Play } from 'lucide-react';
+import { GraduationCap, Users, ShieldCheck, ArrowRight, CheckCircle2, Youtube, Play, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const LearnMore = () => {
@@ -56,7 +56,14 @@ const LearnMore = () => {
 
             <main className="flex-grow">
                 {/* Hero Section */}
-                <div className="bg-white border-b border-gray-100">
+                <div className="bg-white border-b border-gray-100 relative">
+                    <button
+                        onClick={() => navigate(-1)}
+                        title={t.back || "Back"}
+                        className="absolute top-6 left-6 p-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-full transition-all border border-gray-200 shadow-sm z-20"
+                    >
+                        <ArrowLeft size={24} />
+                    </button>
                     <div className="container mx-auto px-4 py-16 md:py-24 max-w-6xl text-center">
                         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
                             {t.heroTitle || "Why Choose Digital Hazri?"}
