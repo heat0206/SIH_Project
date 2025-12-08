@@ -166,7 +166,7 @@ const GovernmentDashboard = () => {
                                 className="bg-transparent border-none text-gray-700 font-medium focus:ring-0 cursor-pointer min-w-[150px]"
                             >
                                 {districts.map(d => (
-                                    <option key={d} value={d}>{d} {t.district}</option>
+                                    <option key={d} value={d}>{t[d] || d} {t.district}</option>
                                 ))}
                             </select>
                         </div>
@@ -386,7 +386,7 @@ const GovernmentDashboard = () => {
             <SchoolManagementModal
                 isOpen={isManageModalOpen}
                 onClose={() => setIsManageModalOpen(false)}
-                districts={getDistricts()}
+                districts={districts}
                 onSave={handleDataUpdate}
             />
         </div>
