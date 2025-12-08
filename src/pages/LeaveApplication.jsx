@@ -161,7 +161,7 @@ const LeaveApplication = () => {
                     className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
                 >
                     <ArrowLeft size={20} />
-                    <span>Back</span>
+                    <span>{t.back}</span>
                 </button>
                 <div className="flex flex-col md:flex-row gap-8">
                     {/* Application Form */}

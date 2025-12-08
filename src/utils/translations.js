@@ -60,6 +60,7 @@ const enWrapper = {
             ctaButton: "Start Free Trial",
             learnMoreLink: "Learn what Digital Hazri can do for you",
             learnMore: {
+                back: "Back",
                 heroTitle: "Why Choose Digital Hazri?",
                 heroSubtitle: "Discover how our smart attendance system empowers schools, protects students, and simplifies administration.",
                 teacherTitle: "Teacher View",
@@ -438,6 +439,7 @@ const enWrapper = {
             district: "District"
         },
         leaveApplication: {
+            back: "Back",
             title: "Apply for Leave",
             subtitle: "Submit your leave request for approval.",
             leaveType: "Leave Type",
@@ -540,6 +542,7 @@ const enWrapper = {
             backToLogin: "Back to Login"
         },
         timetable: {
+            back: "Back",
             title: "Class Timetable",
             subtitle: "Weekly Schedule for your child",
             days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
@@ -574,6 +577,7 @@ const enWrapper = {
             noChange: "No change vs last week"
         },
         help: {
+            back: "Back",
             heroTitle: "How can we help you?",
             heroSubtitle: "Find answers to your questions or contact our support team.",
             searchPlaceholder: "Search your query...",
@@ -676,6 +680,7 @@ const hi = {
         ctaButton: "निःशुल्क परीक्षण शुरू करें",
         learnMoreLink: "जानें डिजिटल हाज़िरी आपके लिए क्या कर सकता है",
         learnMore: {
+            back: "वापस",
             heroTitle: "डिजिटल हाज़िरी क्यों चुनें?",
             heroSubtitle: "जानें कि हमारी स्मार्ट उपस्थिति प्रणाली स्कूलों को कैसे सशक्त बनाती है, छात्रों की सुरक्षा करती है, और प्रशासन को सरल बनाती है।",
             teacherTitle: "शिक्षक दृश्य",
@@ -1022,7 +1027,37 @@ const hi = {
         removeSubjectTeacher: "विषय शिक्षक हटाएं",
         addSubjectTeacher: "विषय शिक्षक जोड़ें"
     },
+    leaveApplication: {
+        back: "वापस",
+        title: "छुट्टी के लिए आवेदन",
+        subtitle: "अनुमोदन के लिए अपना अवकाश अनुरोध सबमिट करें।",
+        leaveType: "छुट्टी का प्रकार",
+        sick: "बीमारी की छुट्टी",
+        casual: "आकस्मिक छुट्टी",
+        family: "पारिवारिक समारोह",
+        emergency: "आपातकालीन",
+        duration: "अवधि",
+        selectDates: "तिथियां चुनें",
+        days: "दिन",
+        fromDate: "तारीख से",
+        toDate: "तारीख तक",
+        reason: "छुट्टी का कारण",
+        reasonPlaceholder: "कृपया अपने अवकाश अनुरोध का विस्तृत कारण बताएं...",
+        pending: "लंबित",
+        approved: "स्वीकृत",
+        rejected: "अस्वीकृत",
+        submit: "आवेदन जमा करें",
+        history: "आवेदन इतिहास",
+        noHistory: "कोई छुट्टी इतिहास नहीं मिला।",
+        successMessage: "छुट्टी का आवेदन सफलतापूर्वक जमा किया गया!",
+        deleteConfirm: "क्या आप वाकई इस छुट्टी आवेदन को हटाना चाहते हैं?",
+        studentNotLinked: "छात्र प्रोफ़ाइल लिंक नहीं है। आवेदन नहीं कर सकते।",
+        submitError: "छुट्टी आवेदन जमा करने में विफल।",
+        deleteError: "छुट्टी आवेदन हटाने में विफल।",
+        deleteSuccess: "छुट्टी आवेदन हटा दिया गया।"
+    },
     timetable: {
+        back: "वापस",
         title: "कक्षा समय सारिणी",
         subtitle: "आपके बच्चे के लिए साप्ताहिक कार्यक्रम",
         days: ["सोमवार", "मंगलवार", "बुधवार", "गुरुवार", "शुक्रवार", "शनिवार"],
@@ -1051,6 +1086,7 @@ const hi = {
         }
     },
     help: {
+        back: "वापस",
         heroTitle: "हम आपकी कैसे मदद कर सकते हैं?",
         heroSubtitle: "अक्सर पूछे जाने वाले प्रश्न और सहायता संपर्क",
         searchPlaceholder: "अपनी समस्या खोजें...",
@@ -1189,6 +1225,7 @@ const pa = {
         getStarted: "ਸ਼ੁਰੂ ਕਰੋ",
         learnMoreLink: "ਜਾਣੋ ਡਿਜੀਟਲ ਹਾਜ਼ਰੀ ਦੀਆਂ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ",
         learnMore: {
+            back: "ਵਾਪਸ",
             heroTitle: "ਡਿਜੀਟਲ ਹਾਜ਼ਰੀ ਕਿਉਂ ਚੁਣੀਏ?",
             heroSubtitle: "ਜਾਣੋ ਕਿ ਸਾਡੀ ਸਮਾਰਟ ਹਾਜ਼ਰੀ ਪ੍ਰਣਾਲੀ ਸਕੂਲਾਂ ਨੂੰ ਕਿਵੇਂ ਸਸ਼ਕਤ ਬਣਾਉਂਦੀ ਹੈ, ਵਿਦਿਆਰਥੀਆਂ ਦੀ ਸੁਰੱਖਿਆ ਕਰਦੀ ਹੈ ਅਤੇ ਪ੍ਰਸ਼ਾਸਨ ਨੂੰ ਸਰਲ ਬਣਾਉਂਦੀ ਹੈ।",
             teacherTitle: "ਅਧਿਆਪਕ ਦ੍ਰਿਸ਼",
@@ -1461,6 +1498,7 @@ const pa = {
         today: "ਅੱਜ"
     },
     leaveApplication: {
+        back: "ਵਾਪਸ",
         title: "ਛੁੱਟੀ ਲਈ ਅਰਜ਼ੀ ਦਿਓ",
         subtitle: "ਮਨਜ਼ੂਰੀ ਲਈ ਆਪਣੀ ਛੁੱਟੀ ਦੀ ਬੇਨਤੀ ਜਮ੍ਹਾਂ ਕਰੋ।",
         leaveType: "ਛੁੱਟੀ ਦੀ ਕਿਸਮ",
@@ -1535,6 +1573,7 @@ const pa = {
         regularClass: "ਨਿਯਮਤ ਕਲਾਸ"
     },
     timetable: {
+        back: "ਵਾਪਸ",
         title: "ਕਲਾਸ ਸਮਾਂ ਸਾਰਣੀ",
         subtitle: "ਤੁਹਾਡੇ ਬੱਚੇ ਲਈ ਹਫਤਾਵਾਰੀ ਅਨੁਸੂਚੀ",
         days: ["ਸੋਮਵਾਰ", "ਮੰਗਲਵਾਰ", "ਬੁੱਧਵਾਰ", "ਵੀਰਵਾਰ", "ਸ਼ੁੱਕਰਵਾਰ", "ਸ਼ਨੀਵਾਰ"],
@@ -1574,6 +1613,7 @@ const pa = {
         noChange: "ਪਿਛਲੇ ਹਫ਼ਤੇ ਦੇ ਮੁਕਾਬਲੇ ਕੋਈ ਬਦਲਾਅ ਨਹੀਂ"
     },
     help: {
+        back: "ਵਾਪਸ",
         heroTitle: "ਅਸੀਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦੇ ਹਾਂ?",
         heroSubtitle: "ਜਵਾਬ ਲੱਭੋ ਜਾਂ ਸਾਡੀ ਸਹਾਇਤਾ ਟੀਮ ਨਾਲ ਸੰਪਰਕ ਕਰੋ।",
         searchPlaceholder: "ਆਪਣੀ ਸਮੱਸਿਆ ਦੀ ਖੋਜ ਕਰੋ...",

@@ -32,6 +32,7 @@ const HelpSupport = () => {
 
                     <button
                         onClick={() => navigate(-1)}
+                        title={t.back || "Back"}
                         className="absolute top-6 left-6 p-2 bg-white/20 hover:bg-white/30 text-white rounded-full transition-all backdrop-blur-md z-20"
                     >
                         <ArrowLeft size={24} />

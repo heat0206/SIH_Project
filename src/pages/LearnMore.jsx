@@ -59,6 +59,7 @@ const LearnMore = () => {
                 <div className="bg-white border-b border-gray-100 relative">
                     <button
                         onClick={() => navigate(-1)}
+                        title={t.back || "Back"}
                         className="absolute top-6 left-6 p-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-full transition-all border border-gray-200 shadow-sm z-20"
                     >
                         <ArrowLeft size={24} />

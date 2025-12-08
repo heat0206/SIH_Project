@@ -12,6 +12,7 @@ const Timetable = () => {
     const t = translations[language]?.timetable || {
         title: "Class Timetable",
         subtitle: "Weekly Schedule for your child",
+        back: "Back",
         days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
         time: "Time",
         subject: "Subject",
@@ -85,7 +86,7 @@ const Timetable = () => {
                     className="mb-6 flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors font-medium"
                 >
                     <ArrowLeft size={20} />
-                    <span>Back</span>
+                    <span>{t.back}</span>
                 </button>
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
