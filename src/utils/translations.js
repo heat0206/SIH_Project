@@ -1,4 +1,4 @@
-const enWrapper = {
+﻿const enWrapper = {
     en: {
         header: {
             teacherLogin: "Teacher Login",
@@ -1599,7 +1599,12 @@ const pa = {
         nationalTrends: "ਰਾਸ਼ਟਰੀ ਰੁਝਾਨ",
         districtBlockSpecifics: "ਜ਼ਿਲ੍ਹਾ/ਬਲਾਕ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ",
         district: "ਜ਼ਿਲ੍ਹਾ",
-        Amritsar: "ਅੰਮ੍ਰਿਤਸਰ"
+        Amritsar: "ਅੰਮ੍ਰਿਤਸਰ",
+        wifsMedicineTitle: "WIFS ਦਵਾਈ ਵੰਡ ਸੂਝ",
+        medicineReason: "ASER ਰੁਝਾਨਾਂ ਦੇ ਅਨੁਸਾਰ ਮਾਸਿਕ ਹਾਜ਼ਰੀ ਪੈਟਰਨਾਂ 'ਤੇ ਅਧਾਰਤ।",
+        predictedMedicines: "ਸੁਝਾਈਆਂ ਗਈਆਂ WIFS ਦਵਾਈਆਂ",
+        registeredStudents: "ਰਜਿਸਟਰਡ",
+        weeklyDistribution: "ਹਫਤਾਵਾਰੀ ਵੰਡ"
     },
     leaveApplication: {
         back: "ਵਾਪਸ",
