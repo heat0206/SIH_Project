@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import { Camera, CreditCard, Edit2, MessageCircle } from 'lucide-react';
+import { Camera, CreditCard, Edit2 } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
@@ -202,12 +202,7 @@ const AttendanceView = () => {
         }
     };
 
-    const handleNotify = (name) => {
-        const msg = `This is to notify you that ${name} is absent for the class on ${new Date().toLocaleDateString()}.`;
-        if (window.confirm(`Send SMS notification to parent?\n\nMessage: "${msg}"`)) {
-            alert('SMS notification sent successfully!');
-        }
-    };
+
 
     const filteredStudents = students.filter(s => {
         const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || String(s.rollNo || '').includes(searchTerm);
@@ -394,13 +389,12 @@ const AttendanceView = () => {
 
                     <div className={`list-shell ${density}`} style={{ background: 'white', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                         <div className="list-header" style={{
-                            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 0.8fr', padding: '1rem 1.5rem', background: '#f9fafb',
+                            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 1.5rem', background: '#f9fafb',
                             borderBottom: '1px solid var(--border-color)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)'
                         }}>
                             <div>{t.studentDetails}</div>
                             <div>{t.status}</div>
                             <div className="text-center">Image</div>
-                            <div>{t.actions}</div>
                         </div>
                         <div className="student-list">
                             {filteredStudents.length === 0 ? (
@@ -408,7 +402,7 @@ const AttendanceView = () => {
                             ) : (
                                 filteredStudents.map(s => (
                                     <div key={s.id} className="student-row" style={{
-                                        display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 0.8fr', padding: '1rem 1.5rem',
+                                        display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 1.5rem',
                                         borderBottom: '1px solid var(--border-color)', alignItems: 'center', transition: 'background 0.1s ease'
                                     }}
                                         onMouseOver={(e) => e.currentTarget.style.background = '#f9fafb'}
@@ -483,24 +477,7 @@ const AttendanceView = () => {
                                             )}
                                         </div>
 
-                                        <div>
-                                            {!s.present && canEdit && (
-                                                <button
-                                                    onClick={() => handleNotify(s.name)}
-                                                    title={t.notifyParent}
-                                                    style={{
-                                                        padding: '0.5rem', fontSize: '0.85rem', border: '1px solid #e5e7eb',
-                                                        background: 'white', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-dark)', fontWeight: 500,
-                                                        display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s ease'
-                                                    }}
-                                                    onMouseOver={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.background = '#eff6ff'; }}
-                                                    onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = 'var(--text-dark)'; e.currentTarget.style.background = 'white'; }}
-                                                >
-                                                    <MessageCircle size={18} />
-                                                    <span className="hidden sm:inline">SMS</span>
-                                                </button>
-                                            )}
-                                        </div>
+
                                     </div>
                                 ))
                             )}

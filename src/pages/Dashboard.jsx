@@ -112,7 +112,7 @@ const Dashboard = () => {
                     if (attendanceRecord && attendanceRecord.records) {
                         isMarked = true;
                         present = attendanceRecord.records.filter(r => r.present).length;
-                        absent = studentCount - present;
+                        absent = Math.max(0, studentCount - present);
                     }
 
                     // Setup Real-time Attendance Listener
@@ -130,7 +130,7 @@ const Dashboard = () => {
                                     ...c,
                                     isMarked: newIsMarked,
                                     present: newPresent,
-                                    absent: c.studentCount - newPresent
+                                    absent: Math.max(0, c.studentCount - newPresent)
                                 };
                             }
                             return c;
