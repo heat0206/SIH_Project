@@ -12,6 +12,7 @@ import { downloadCSV, generateClassRegisterReport } from '../utils/reportGenerat
 import { getClassById } from '../services/classService';
 import { getStudentsByClass as getStudentsByClassService } from '../services/studentService';
 import { markAttendance, getAttendanceByDate, logRFIDScan, subscribeToAttendance } from '../services/attendanceService';
+import { getCapturedImageByRFID } from '../services/imageService';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -30,6 +31,8 @@ const AttendanceView = () => {
     const [density, setDensity] = useState('comfortable');
     const [canEdit, setCanEdit] = useState(false);
     const [className, setClassName] = useState('');
+    const [imageMap, setImageMap] = useState({}); // studentId -> { status, image_base64 }
+    const [selectedImage, setSelectedImage] = useState(null); // For modal
     const { currentUser } = useAuth();
 
     useEffect(() => {
@@ -98,7 +101,46 @@ const AttendanceView = () => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, [students]);
+
+    // Subscribe to images for students with RFID
+    useEffect(() => {
+        const rfids = students.filter(s => s.rfidId).map(s => s.rfidId);
+        if (rfids.length === 0) return;
+
+        // Chunk RFIDs into groups of 10 for Firestore 'in' query limit
+        const chunkArray = (arr, size) => {
+            const chunks = [];
+            for (let i = 0; i < arr.length; i += size) {
+                chunks.push(arr.slice(i, i + size));
+            }
+            return chunks;
+        };
+
+        const chunks = chunkArray(rfids, 10);
+        const unsubs = [];
+        
+        // Import dynamically to avoid circular dependencies if any, or just call service
+        import('../services/imageService').then(({ subscribeToImagesByRFIDs }) => {
+            chunks.forEach(chunk => {
+                const unsub = subscribeToImagesByRFIDs(chunk, (updates) => {
+                    setImageMap(prev => {
+                        // Merge updates, ensuring we check timestamps if needed, 
+                        // but 'updates' already has the latest from the snapshot logic.
+                        // We also assume the listener provides the full latest state for these UIDs.
+                        return { ...prev, ...updates };
+                    });
+                });
+                unsubs.push(unsub);
+            });
+        });
+
+        return () => {
+            unsubs.forEach(u => u && u());
+        };
+    }, [students.length]); // Re-subscribe if student list changes (count changes)
 
     const handleRFIDScan = async (tagId) => {
         // Match against rfidId from database
@@ -352,11 +394,12 @@ const AttendanceView = () => {
 
                     <div className={`list-shell ${density}`} style={{ background: 'white', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
                         <div className="list-header" style={{
-                            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 1.5rem', background: '#f9fafb',
+                            display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 0.8fr', padding: '1rem 1.5rem', background: '#f9fafb',
                             borderBottom: '1px solid var(--border-color)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-light)'
                         }}>
                             <div>{t.studentDetails}</div>
                             <div>{t.status}</div>
+                            <div className="text-center">Image</div>
                             <div>{t.actions}</div>
                         </div>
                         <div className="student-list">
@@ -365,7 +408,7 @@ const AttendanceView = () => {
                             ) : (
                                 filteredStudents.map(s => (
                                     <div key={s.id} className="student-row" style={{
-                                        display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 1.5rem',
+                                        display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 0.8fr', padding: '1rem 1.5rem',
                                         borderBottom: '1px solid var(--border-color)', alignItems: 'center', transition: 'background 0.1s ease'
                                     }}
                                         onMouseOver={(e) => e.currentTarget.style.background = '#f9fafb'}
@@ -416,6 +459,30 @@ const AttendanceView = () => {
                                             {/* Verification Badge */}
                                             {s.present && getVerificationBadge(s.verificationMethod)}
                                         </div>
+                                        
+                                        {/* Image Column */}
+                                        <div className="flex flex-col items-center justify-center gap-1">
+                                            {imageMap[s.id] ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => setSelectedImage(imageMap[s.id])}
+                                                        className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-1"
+                                                    >
+                                                        <Camera size={12} /> View
+                                                    </button>
+                                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                                        (imageMap[s.id].status || '').toLowerCase() === 'match' 
+                                                            ? 'bg-green-100 text-green-700' 
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {imageMap[s.id].status || 'Unknown'}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs text-gray-400 italic">No Image</span>
+                                            )}
+                                        </div>
+
                                         <div>
                                             {!s.present && canEdit && (
                                                 <button
@@ -476,6 +543,32 @@ const AttendanceView = () => {
                 </div>
             </main >
             <Footer />
+            
+            {/* Image Modal */}
+            {selectedImage && (
+                <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 p-4" onClick={() => setSelectedImage(null)}>
+                    <div className="bg-white rounded-2xl overflow-hidden max-w-md w-full shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-800">Captured Image</h3>
+                            <button onClick={() => setSelectedImage(null)} className="text-gray-500 hover:text-gray-700 font-bold px-2">✕</button>
+                        </div>
+                        <div className="p-6 flex flex-col items-center">
+                            <img 
+                                src={`data:image/jpeg;base64,${selectedImage.image_base64}`} 
+                                alt="Captured" 
+                                className="w-full h-auto rounded-lg border-2 border-gray-200 shadow-md mb-4"
+                            />
+                            <div className={`px-4 py-2 rounded-full font-bold text-lg ${
+                                (selectedImage.status || '').toLowerCase() === 'match' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-red-100 text-red-700'
+                            }`}>
+                                {selectedImage.status || 'Unknown Status'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

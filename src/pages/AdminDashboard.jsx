@@ -47,10 +47,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { translations } from '../utils/translations';
 import { useLanguage } from '../context/LanguageContext';
 import { generateMasterComplianceReport, downloadCSV } from '../utils/reportGenerator';
-import { deleteStudent } from '../services/studentService';
+import { deleteStudent, getStudentById } from '../services/studentService';
 import { createParentProfile, updateUserProfile } from '../services/userService';
 import { subscribeToRFIDLogs } from '../services/attendanceService';
 import { getRequestsByUserRole, updateCorrectionRequestStatus, deleteCorrectionRequest } from '../services/correctionRequestService';
+import { getProxyAlerts } from '../services/imageService';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { Clock, AlertCircle as AlertCircleIcon } from 'lucide-react';
@@ -103,6 +104,10 @@ const AdminDashboard = () => {
     const [isEditingStudent, setIsEditingStudent] = useState(false);
     const [editingStudent, setEditingStudent] = useState(null);
 
+    // Proxy Alert State
+    const [proxyAlerts, setProxyAlerts] = useState([]);
+    const [selectedProxyImage, setSelectedProxyImage] = useState(null);
+
     // Search & Filter States
     const [searchStudentQuery, setSearchStudentQuery] = useState('');
     const [studentClassFilter, setStudentClassFilter] = useState('');
@@ -143,7 +148,21 @@ const AdminDashboard = () => {
 
             // Fetch Data Correction Requests from teachers and parents
             const corrections = await getRequestsByUserRole(['teacher', 'parent']);
+            // // Fetch Data Correction Requests from teachers and parents
+            // const corrections = await getRequestsByUserRole(['teacher', 'parent']);
             setCorrectionRequests(corrections);
+
+            // Fetch Proxy Alerts
+            const alerts = await getProxyAlerts();
+            const alertsWithNames = await Promise.all(alerts.map(async (alert) => {
+                let name = 'Unknown';
+                if (alert.uid) {
+                    const student = await getStudentById(alert.uid);
+                    if (student) name = student.name;
+                }
+                return { ...alert, studentName: name };
+            }));
+            setProxyAlerts(alertsWithNames);
 
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -854,77 +873,49 @@ const AdminDashboard = () => {
                                         </div>
                                     </div>
 
-                                    {/* Right: Live Camera Feed */}
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[400px] flex flex-col">
-                                        <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                                <Video size={18} /> {t.liveCameraFeed}
+                                    {/* Right: Proxy Alerts Section */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden h-[400px] flex flex-col">
+                                        <div className="p-4 border-b border-red-100 bg-red-50 flex justify-between items-center">
+                                            <h2 className="text-lg font-bold text-red-800 flex items-center gap-2">
+                                                <AlertCircleIcon size={18} /> These all have made PROXY
                                             </h2>
-                                            <div className="flex items-center gap-3">
-                                                <button
-                                                    onClick={() => setIsStreaming(!isStreaming)}
-                                                    className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors ${isStreaming
-                                                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                                                        : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                        }`}
-                                                >
-                                                    {isStreaming ? (
-                                                        <>
-                                                            <Square size={12} fill="currentColor" /> {t.stopFeed}
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Play size={12} fill="currentColor" /> {t.startFeed}
-                                                        </>
-                                                    )}
-                                                </button>
-                                                {isStreaming && (
-                                                    <span className="text-xs font-mono bg-red-100 text-red-800 px-2 py-1 rounded animate-pulse">REC</span>
-                                                )}
-                                            </div>
+                                            <span className="text-xs font-mono bg-red-200 text-red-900 px-2 py-1 rounded font-bold">{proxyAlerts.length} Alerts</span>
                                         </div>
-                                        <div className="flex-grow bg-gray-900 flex flex-col items-center justify-center text-gray-500 relative">
-                                            {isStreaming ? (
-                                                <div className="w-full h-full relative">
-                                                    <img
-                                                        src={streamUrl}
-                                                        alt="Live Feed"
-                                                        className="w-full h-full object-contain"
-                                                        onError={(e) => {
-                                                            e.target.onerror = null;
-                                                            setIsStreaming(false);
-                                                            alert("Failed to load stream. Ensure text ESP32-CAM is online and reachable.");
-                                                        }}
-                                                    />
-                                                    <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded backdrop-blur-sm">
-                                                        Live: {streamUrl}
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                /* Placeholder for Stream */
-                                                <div className="text-center p-6">
-                                                    <div className="w-16 h-16 border-4 border-gray-700 border-t-gray-500 rounded-full animate-spin mb-4 mx-auto"></div>
-                                                    <p className="text-gray-400 font-mono text-sm">{t.feedPaused}</p>
-                                                    <p className="text-gray-600 text-xs mt-2">{t.clickStartFeed}</p>
-                                                    <p className="text-gray-700 text-[10px] mt-1 font-mono">{streamUrl}</p>
-                                                </div>
-                                            )}
-
-                                            {/* Overlay latest face log if available (only when NOT streaming to avoid clutter, or maybe always?) 
-                                                Let's keep it always but semi-transparent if streaming 
-                                            */}
-                                            {faceLogs.length > 0 && !isStreaming && (
-                                                <div className="absolute bottom-4 right-4 w-32 h-24 bg-black border border-gray-700 rounded overflow-hidden shadow-lg">
-                                                    <img
-                                                        src={faceLogs[0].imageUrl}
-                                                        alt="Latest Face"
-                                                        className="w-full h-full object-cover opacity-80"
-                                                    />
-                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-[10px] px-1 py-0.5 truncate">
-                                                        Last: {faceLogs[0].timestamp?.seconds ? new Date(faceLogs[0].timestamp.seconds * 1000).toLocaleTimeString() : 'Now'}
-                                                    </div>
-                                                </div>
-                                            )}
+                                        <div className="overflow-y-auto flex-grow p-0">
+                                            <table className="w-full text-left">
+                                                <thead className="bg-gray-50 text-gray-500 text-xs uppercase sticky top-0 font-bold">
+                                                    <tr>
+                                                        <th className="px-4 py-3">Scanned RFID (Name)</th>
+                                                        <th className="px-4 py-3 text-right">Face Captured</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {proxyAlerts.length === 0 ? (
+                                                        <tr>
+                                                            <td colSpan="2" className="px-4 py-8 text-center text-gray-400 text-sm">
+                                                                No proxy alerts detected.
+                                                            </td>
+                                                        </tr>
+                                                    ) : (
+                                                        proxyAlerts.map((alert) => (
+                                                            <tr key={alert.id} className="hover:bg-red-50 transition-colors bg-white">
+                                                                <td className="px-4 py-3">
+                                                                    <div className="font-bold text-gray-800 text-sm">{alert.studentName}</div>
+                                                                    <div className="text-xs text-gray-500 font-mono mt-0.5">UID: {alert.uid}</div>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <button
+                                                                        onClick={() => setSelectedProxyImage(alert)}
+                                                                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg border border-gray-300 transition-colors"
+                                                                    >
+                                                                        <Video size={14} /> View Image
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    )}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -1584,6 +1575,38 @@ const AdminDashboard = () => {
                 </div>
             </div>
             <Footer />
+
+            {/* Proxy Image Modal */}
+            {selectedProxyImage && (
+                <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 p-4" onClick={() => setSelectedProxyImage(null)}>
+                    <div className="bg-white rounded-2xl overflow-hidden max-w-md w-full shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b flex justify-between items-center bg-red-50">
+                            <h3 className="font-bold text-red-800">Proxy Attempt Detection</h3>
+                            <button onClick={() => setSelectedProxyImage(null)} className="text-gray-500 hover:text-gray-700 font-bold px-2">✕</button>
+                        </div>
+                        <div className="p-6 flex flex-col items-center">
+                             <div className="w-full text-center mb-4">
+                                <div className="text-sm text-gray-500">Scanned ID belongs to:</div>
+                                <div className="text-xl font-bold text-gray-900">{selectedProxyImage.studentName}</div>
+                                <div className="text-xs text-gray-400 font-mono">{selectedProxyImage.uid}</div>
+                             </div>
+                            <img 
+                                src={`data:image/jpeg;base64,${selectedProxyImage.image_base64}`} 
+                                alt="Captured Face" 
+                                className="w-full h-auto rounded-lg border-2 border-red-200 shadow-md mb-4"
+                            />
+                            <div className="px-4 py-2 rounded-full font-bold text-lg bg-red-100 text-red-700 border border-red-200 uppercase">
+                                {selectedProxyImage.status}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-2">
+                                Captured: {selectedProxyImage.timestamp ? new Date(
+                                    selectedProxyImage.timestamp.seconds ? selectedProxyImage.timestamp.seconds * 1000 : selectedProxyImage.timestamp
+                                ).toLocaleString() : 'Just Now'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Assign Teacher Modal */}
             {

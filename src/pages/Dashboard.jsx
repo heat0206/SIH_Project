@@ -37,13 +37,24 @@ const Dashboard = () => {
     const { currentUser } = useAuth();
     const [classes, setClasses] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isOffline, setIsOffline] = useState(false); // Mock offline state
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
+    useEffect(() => {
+        const handleStatusChange = () => {
+            setIsOffline(!navigator.onLine);
+        };
+        window.addEventListener('online', handleStatusChange);
+        window.addEventListener('offline', handleStatusChange);
+        return () => {
+            window.removeEventListener('online', handleStatusChange);
+            window.removeEventListener('offline', handleStatusChange);
+        };
+    }, []);
     // Use name from context, fallback to 'Teacher' if not yet loaded
     const userName = currentUser?.name || 'Teacher';
 
     useEffect(() => {
-
+        let isMounted = true;
         let unsubLogs = () => { };
         let unsubAttendance = [];
 
@@ -70,8 +81,7 @@ const Dashboard = () => {
                 const classData = await getTeacherClasses(currentUser.uid);
                 if (!isMounted) return;
 
-                // Setup RFID Subscription (Process logs regardless of class initially)
-                // We only need one listener for the dashboard to trigger processing
+                // Setup RFID Subscription
                 unsubLogs = subscribeToRFIDLogs(date, (logs) => {
                     console.log("New RFID logs processed:", logs.length);
                 }, { autoProcess: true });
@@ -105,9 +115,7 @@ const Dashboard = () => {
                         absent = studentCount - present;
                     }
 
-                    // Setup Real-time Attendance Listener for this class
-                    // Note: We create the subscription immediately, but we must check mounted in the callback if we set state.
-                    // However, these listeners update 'classes' state below which is fine.
+                    // Setup Real-time Attendance Listener
                     const unsub = subscribeToAttendance(cls.id, date, (updatedRecord) => {
                          if (!isMounted) return;
                          setClasses(prevClasses => prevClasses.map(c => {
@@ -137,17 +145,12 @@ const Dashboard = () => {
                         const selectedDate = new Date(date);
                         const weekAttendance = [];
 
-                        // Get attendance for the previous 7 days (excluding current date)
                         for (let i = 1; i <= 7; i++) {
                             const pastDate = new Date(selectedDate);
                             pastDate.setDate(selectedDate.getDate() - i);
-
-                            // Skip Sundays (holidays)
                             if (pastDate.getDay() === 0) continue;
-
                             const pastDateStr = pastDate.toISOString().split('T')[0];
                             const pastRecord = await getAttendanceByDate(cls.id, pastDateStr);
-
                             if (pastRecord && pastRecord.records && pastRecord.records.length > 0) {
                                 const pastPresent = pastRecord.records.filter(r => r.present).length;
                                 const pastTotal = pastRecord.records.length;
@@ -156,8 +159,6 @@ const Dashboard = () => {
                                 }
                             }
                         }
-
-                        // Calculate average if we have data
                         if (weekAttendance.length > 0) {
                             previousWeekAvg = Math.round(
                                 weekAttendance.reduce((a, b) => a + b, 0) / weekAttendance.length
@@ -182,7 +183,6 @@ const Dashboard = () => {
                 
                 if (isMounted) {
                     setClasses(classesWithDetails);
-                    // Update Cache
                     localStorage.setItem(cacheKey, JSON.stringify(classesWithDetails));
                 }
                 
@@ -194,7 +194,6 @@ const Dashboard = () => {
                 }
             }
         };
-
 
         fetchData();
 
