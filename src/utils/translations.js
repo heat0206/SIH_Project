@@ -1,4 +1,4 @@
-const enWrapper = {
+﻿const enWrapper = {
     en: {
         header: {
             teacherLogin: "Teacher Login",
@@ -1236,7 +1236,12 @@ const hi = {
         nationalTrends: "राष्ट्रीय रुझान",
         districtBlockSpecifics: "जिला/ब्लॉक विनिर्देश",
         district: "जिला",
-        Amritsar: "अमृतसर"
+        Amritsar: "अमृतसर",
+        wifsMedicineTitle: "WIFS दवा वितरण अंतर्दृष्टि",
+        medicineReason: "ASER के रुझानों के अनुसार मासिक उपस्थिति पैटर्न पर आधारित।",
+        predictedMedicines: "सुझाई गई WIFS दवाएं",
+        registeredStudents: "पंजीकृत",
+        weeklyDistribution: "साप्ताहिक वितरण"
     }
 };
 
@@ -1599,7 +1604,12 @@ const pa = {
         nationalTrends: "ਰਾਸ਼ਟਰੀ ਰੁਝਾਨ",
         districtBlockSpecifics: "ਜ਼ਿਲ੍ਹਾ/ਬਲਾਕ ਵਿਸ਼ੇਸ਼ਤਾਵਾਂ",
         district: "ਜ਼ਿਲ੍ਹਾ",
-        Amritsar: "ਅੰਮ੍ਰਿਤਸਰ"
+        Amritsar: "ਅੰਮ੍ਰਿਤਸਰ",
+        wifsMedicineTitle: "WIFS ਦਵਾਈ ਵੰਡ ਸੂਝ",
+        medicineReason: "ASER ਰੁਝਾਨਾਂ ਦੇ ਅਨੁਸਾਰ ਮਾਸਿਕ ਹਾਜ਼ਰੀ ਪੈਟਰਨਾਂ 'ਤੇ ਅਧਾਰਤ।",
+        predictedMedicines: "ਸੁਝਾਈਆਂ ਗਈਆਂ WIFS ਦਵਾਈਆਂ",
+        registeredStudents: "ਰਜਿਸਟਰਡ",
+        weeklyDistribution: "ਹਫਤਾਵਾਰੀ ਵੰਡ"
     },
     leaveApplication: {
         back: "ਵਾਪਸ",
