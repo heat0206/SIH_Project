@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
-import { Camera, CreditCard, Edit2, MessageCircle } from 'lucide-react';
+import { Camera, CreditCard, Edit2 } from 'lucide-react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,6 +12,7 @@ import { downloadCSV, generateClassRegisterReport } from '../utils/reportGenerat
 import { getClassById } from '../services/classService';
 import { getStudentsByClass as getStudentsByClassService } from '../services/studentService';
 import { markAttendance, getAttendanceByDate, logRFIDScan, subscribeToAttendance } from '../services/attendanceService';
+import { getCapturedImageByRFID } from '../services/imageService';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -30,6 +31,8 @@ const AttendanceView = () => {
     const [density, setDensity] = useState('comfortable');
     const [canEdit, setCanEdit] = useState(false);
     const [className, setClassName] = useState('');
+    const [imageMap, setImageMap] = useState({}); // studentId -> { status, image_base64 }
+    const [selectedImage, setSelectedImage] = useState(null); // For modal
     const { currentUser } = useAuth();
 
     useEffect(() => {
@@ -98,7 +101,46 @@ const AttendanceView = () => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, [students]);
+
+    // Subscribe to images for students with RFID
+    useEffect(() => {
+        const rfids = students.filter(s => s.rfidId).map(s => s.rfidId);
+        if (rfids.length === 0) return;
+
+        // Chunk RFIDs into groups of 10 for Firestore 'in' query limit
+        const chunkArray = (arr, size) => {
+            const chunks = [];
+            for (let i = 0; i < arr.length; i += size) {
+                chunks.push(arr.slice(i, i + size));
+            }
+            return chunks;
+        };
+
+        const chunks = chunkArray(rfids, 10);
+        const unsubs = [];
+        
+        // Import dynamically to avoid circular dependencies if any, or just call service
+        import('../services/imageService').then(({ subscribeToImagesByRFIDs }) => {
+            chunks.forEach(chunk => {
+                const unsub = subscribeToImagesByRFIDs(chunk, (updates) => {
+                    setImageMap(prev => {
+                        // Merge updates, ensuring we check timestamps if needed, 
+                        // but 'updates' already has the latest from the snapshot logic.
+                        // We also assume the listener provides the full latest state for these UIDs.
+                        return { ...prev, ...updates };
+                    });
+                });
+                unsubs.push(unsub);
+            });
+        });
+
+        return () => {
+            unsubs.forEach(u => u && u());
+        };
+    }, [students.length]); // Re-subscribe if student list changes (count changes)
 
     const handleRFIDScan = async (tagId) => {
         // Match against rfidId from database
@@ -160,12 +202,7 @@ const AttendanceView = () => {
         }
     };
 
-    const handleNotify = (name) => {
-        const msg = `This is to notify you that ${name} is absent for the class on ${new Date().toLocaleDateString()}.`;
-        if (window.confirm(`Send SMS notification to parent?\n\nMessage: "${msg}"`)) {
-            alert('SMS notification sent successfully!');
-        }
-    };
+
 
     const filteredStudents = students.filter(s => {
         const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || String(s.rollNo || '').includes(searchTerm);
@@ -357,7 +394,7 @@ const AttendanceView = () => {
                         }}>
                             <div>{t.studentDetails}</div>
                             <div>{t.status}</div>
-                            <div>{t.actions}</div>
+                            <div className="text-center">Image</div>
                         </div>
                         <div className="student-list">
                             {filteredStudents.length === 0 ? (
@@ -416,24 +453,31 @@ const AttendanceView = () => {
                                             {/* Verification Badge */}
                                             {s.present && getVerificationBadge(s.verificationMethod)}
                                         </div>
-                                        <div>
-                                            {!s.present && canEdit && (
-                                                <button
-                                                    onClick={() => handleNotify(s.name)}
-                                                    title={t.notifyParent}
-                                                    style={{
-                                                        padding: '0.5rem', fontSize: '0.85rem', border: '1px solid #e5e7eb',
-                                                        background: 'white', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-dark)', fontWeight: 500,
-                                                        display: 'flex', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s ease'
-                                                    }}
-                                                    onMouseOver={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.color = '#3b82f6'; e.currentTarget.style.background = '#eff6ff'; }}
-                                                    onMouseOut={(e) => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = 'var(--text-dark)'; e.currentTarget.style.background = 'white'; }}
-                                                >
-                                                    <MessageCircle size={18} />
-                                                    <span className="hidden sm:inline">SMS</span>
-                                                </button>
+                                        
+                                        {/* Image Column */}
+                                        <div className="flex flex-col items-center justify-center gap-1">
+                                            {imageMap[s.id] ? (
+                                                <>
+                                                    <button
+                                                        onClick={() => setSelectedImage(imageMap[s.id])}
+                                                        className="px-3 py-1.5 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-1"
+                                                    >
+                                                        <Camera size={12} /> View
+                                                    </button>
+                                                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                                        (imageMap[s.id].status || '').toLowerCase() === 'match' 
+                                                            ? 'bg-green-100 text-green-700' 
+                                                            : 'bg-red-100 text-red-700'
+                                                    }`}>
+                                                        {imageMap[s.id].status || 'Unknown'}
+                                                    </span>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs text-gray-400 italic">No Image</span>
                                             )}
                                         </div>
+
+
                                     </div>
                                 ))
                             )}
@@ -476,6 +520,32 @@ const AttendanceView = () => {
                 </div>
             </main >
             <Footer />
+            
+            {/* Image Modal */}
+            {selectedImage && (
+                <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/80 p-4" onClick={() => setSelectedImage(null)}>
+                    <div className="bg-white rounded-2xl overflow-hidden max-w-md w-full shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-800">Captured Image</h3>
+                            <button onClick={() => setSelectedImage(null)} className="text-gray-500 hover:text-gray-700 font-bold px-2">✕</button>
+                        </div>
+                        <div className="p-6 flex flex-col items-center">
+                            <img 
+                                src={`data:image/jpeg;base64,${selectedImage.image_base64}`} 
+                                alt="Captured" 
+                                className="w-full h-auto rounded-lg border-2 border-gray-200 shadow-md mb-4"
+                            />
+                            <div className={`px-4 py-2 rounded-full font-bold text-lg ${
+                                (selectedImage.status || '').toLowerCase() === 'match' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-red-100 text-red-700'
+                            }`}>
+                                {selectedImage.status || 'Unknown Status'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
