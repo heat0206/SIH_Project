@@ -1236,7 +1236,12 @@ const hi = {
         nationalTrends: "राष्ट्रीय रुझान",
         districtBlockSpecifics: "जिला/ब्लॉक विनिर्देश",
         district: "जिला",
-        Amritsar: "अमृतसर"
+        Amritsar: "अमृतसर",
+        wifsMedicineTitle: "WIFS दवा वितरण अंतर्दृष्टि",
+        medicineReason: "ASER के रुझानों के अनुसार मासिक उपस्थिति पैटर्न पर आधारित।",
+        predictedMedicines: "सुझाई गई WIFS दवाएं",
+        registeredStudents: "पंजीकृत",
+        weeklyDistribution: "साप्ताहिक वितरण"
     }
 };
 
